@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Simulación Mexibús L1</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <h1>Simulación Mexibús L1</h1>
+  <p>Representación simplificada (cola circular por sentido)</p>
+
+  <div id="simulacion-container">
+    <canvas id="canvasSim" width="800" height="300"></canvas>
+  </div>
+
+  <!-- Panel de estado -->
+  <div id="panel"></div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
