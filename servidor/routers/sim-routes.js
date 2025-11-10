@@ -138,6 +138,7 @@ router.post("/sim/incidencia", async (req, res) => {
  */
 router.post("/sim/resolver", async (req, res) => {
   const client = await pool.connect();
+  const io = req.app.get("io"); // ✅ obtiene instancia global de Socket.IO
   try {
     let { id_incidencia, id_unidad } = req.body || {};
     if (!id_incidencia && !id_unidad) {
@@ -147,7 +148,7 @@ router.post("/sim/resolver", async (req, res) => {
 
     await client.query("BEGIN");
 
-    // Resolver incidencia (encontrando si falta)
+    // Buscar incidencia activa si no se pasa explícitamente
     if (!id_incidencia && id_unidad) {
       const q = await client.query(
         `SELECT id_incidencia
@@ -160,6 +161,7 @@ router.post("/sim/resolver", async (req, res) => {
       id_incidencia = q.rows[0]?.id_incidencia || null;
     }
 
+    // 1️⃣ Cerrar incidencia si existe
     if (id_incidencia) {
       await client.query(
         `UPDATE Incidencias
@@ -169,7 +171,7 @@ router.post("/sim/resolver", async (req, res) => {
       );
     }
 
-    // Poner unidad en EN_RUTA si estaba en INCIDENCIA
+    // 2️⃣ Obtener id_unidad si venía solo id_incidencia
     if (!id_unidad && id_incidencia) {
       const qU = await client.query(
         `SELECT id_unidad FROM Incidencias WHERE id_incidencia=$1`,
@@ -178,26 +180,42 @@ router.post("/sim/resolver", async (req, res) => {
       id_unidad = qU.rows[0]?.id_unidad || null;
     }
 
+    // 3️⃣ Liberar unidad (la reactiva en simulación)
     if (id_unidad) {
+      await client.query(`
+        UPDATE UnidadesMB
+        SET estado_unidad='EN_RUTA',
+            dwell_hasta=NULL,
+            en_circuito=TRUE,
+            progreso = LEAST(progreso + 0.20, 1.0)
+        WHERE id_unidad=$1
+      `, [id_unidad]);
+
+      // Registrar evento
       await client.query(
-        `UPDATE UnidadesMB
-            SET estado_unidad='EN_RUTA'
-          WHERE id_unidad=$1 AND estado_unidad='INCIDENCIA'`,
-        [id_unidad]
+        `INSERT INTO EventosUnidad (id_unidad, tipo, detalle)
+         VALUES ($1, 'RESOLVER_INCIDENCIA', $2::jsonb)`,
+        [id_unidad, JSON.stringify({ id_incidencia })]
       );
     }
 
-    await client.query(
-      `INSERT INTO EventosUnidad (id_unidad, tipo, detalle)
-       VALUES ($1, 'RESOLVER_INCIDENCIA', $2::jsonb)`,
-      [id_unidad, JSON.stringify({ id_incidencia })]
-    );
-
     await client.query("COMMIT");
+
+    // 4️⃣ Emitir evento Socket.IO para actualización instantánea
+    if (io && id_unidad) {
+      const { rows: snapshot } = await client.query(`
+        SELECT id_unidad, id_ruta, sentido, idx_tramo, progreso, estado_unidad, en_circuito, dwell_hasta
+        FROM UnidadesMB
+        WHERE id_unidad=$1
+      `, [id_unidad]);
+      io.emit("actualizar_posiciones", snapshot);
+    }
+
     client.release();
     res.json({ ok: true });
   } catch (e) {
-    await client.query("ROLLBACK"); client.release();
+    await client.query("ROLLBACK");
+    client.release();
     console.error("resolver:", e);
     res.status(500).json({ ok: false, error: "Error al resolver incidencia" });
   }

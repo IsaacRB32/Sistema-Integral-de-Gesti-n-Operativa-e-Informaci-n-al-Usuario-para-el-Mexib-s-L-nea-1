@@ -190,6 +190,80 @@ p {
   border-left: 3px solid #e74c3c;
 }
 
+/* Visualización de cola lineal */
+.cola-lineal {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding: 15px;
+  background: rgba(44, 62, 80, 0.5);
+  border-radius: 10px;
+  border: 1px solid var(--border);
+}
+
+.estacion {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  flex: 1;
+}
+
+.estacion:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 15px;
+  right: -20px;
+  width: 40px;
+  height: 2px;
+  background: var(--gray);
+  opacity: 0.5;
+}
+
+.punto-estacion {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--light);
+  margin-bottom: 8px;
+  position: relative;
+  z-index: 2;
+}
+
+.nombre-estacion {
+  font-size: 10px;
+  text-align: center;
+  max-width: 80px;
+  color: var(--gray);
+}
+
+.unidad-cola {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: bold;
+  z-index: 3;
+  transition: all 0.5s ease;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+}
+
+.unidad-cola::after {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
 /* Responsive */
 @media (max-width: 900px) {
   #canvasSim {
@@ -205,5 +279,19 @@ p {
   
   h1 {
     font-size: 1.8rem;
+  }
+  
+  .cola-lineal {
+    overflow-x: auto;
+    padding: 10px;
+  }
+  
+  .estacion {
+    min-width: 60px;
+  }
+  
+  .nombre-estacion {
+    font-size: 9px;
+    max-width: 60px;
   }
 }

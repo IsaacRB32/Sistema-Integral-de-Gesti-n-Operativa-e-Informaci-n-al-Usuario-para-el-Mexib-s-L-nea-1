@@ -5,9 +5,14 @@ let intervaloSim = null;
 
 // ===== Parámetros de simulación (simple) =====
 const TICK_MS = 1000;             // 1s por tick
-const SPEED_SEG = 0.25;           // avanza 25% del tramo por tick (4 ticks por tramo)
+//const SPEED_SEG = 20;           // avanza 25% del tramo por tick (4 ticks por tramo)
+const SEG_DUR_S = 20;      // ⬅️ NUEVO: 1 tramo tarda 20 s (ajústalo)
 const HEADWAY = 0.15;             // separación mínima de progreso (mismo tramo)
 const EPS = 1e-6;
+
+const logU = (tag, uo, extra={}) => {
+  console.log(`[${tag}] u=${uo.id_unidad} sent=${uo.sentido} idx=${uo.idx_tramo} prog=${Number(uo.progreso).toFixed(3)} est=${uo.estado_unidad}`, extra);
+};
 
 // Estados
 const S = {
@@ -68,11 +73,22 @@ export const iniciarSimulacion = (io) => {
       // 1) Unidades en circuito
       const { rows: unidades } = await client.query(`
         SELECT id_unidad, id_ruta, sentido, en_circuito, idx_tramo, progreso,
-               estado_unidad, dwell_hasta
+               estado_unidad, dwell_hasta, velocidad
         FROM UnidadesMB
         WHERE en_circuito = TRUE
         ORDER BY id_unidad ASC
       `);
+      // 🔁 Forzar sincronización de estado: si alguna unidad fue reactivada fuera del ciclo (resolver incidencia)
+      for (const u of unidades) {
+        if (u.estado_unidad === 'INCIDENCIA') {
+          const q = await client.query(`
+            SELECT estado_unidad, progreso, dwell_hasta
+            FROM UnidadesMB
+            WHERE id_unidad = $1
+          `, [u.id_unidad]);
+          Object.assign(u, q.rows[0]); // actualiza en memoria
+        }
+      }
 
       if (unidades.length === 0) {
         await client.query('COMMIT');
@@ -102,114 +118,156 @@ export const iniciarSimulacion = (io) => {
           const len = puntos.length;
           if (len === 0) continue;
 
-          // Ordenamos por “avance local” para saber quién va adelante
+          // ============================================================
+          // === CONSTRUCCIÓN DEL MAPA 'ahead' Y SIMULACIÓN POR SENTIDO ===
+          // ============================================================
+
+          // 1️⃣ Ordenamos las unidades del sentido actual por avance local
           const ordenadas = grupos[sentido]
             .map(u => ({
               u,
-              aLoc: avanceLocal(Number(u.idx_tramo||0), Number(u.progreso||0), len)
+              aLoc: avanceLocal(Number(u.idx_tramo || 0), Number(u.progreso || 0), len)
             }))
-            .sort((A,B) => B.aLoc - A.aLoc) // mayor aLoc va más adelante
+            .sort((A, B) => B.aLoc - A.aLoc) // la mayor aLoc va más adelante
             .map(x => x.u);
 
-          // Mapa: quién va adelante
+          // 2️⃣ Construimos el mapa 'ahead': quién va adelante de quién
           const ahead = new Map();
           for (let i = 0; i < ordenadas.length; i++) {
-          const actual = ordenadas[i];
-          // ⚠️ Si solo hay una unidad, no tiene "frente"
-          const frente = ordenadas.length > 1
-            ? ordenadas[(i - 1 + ordenadas.length) % ordenadas.length]?.u
-            : null;
-          ahead.set(actual.id_unidad, frente);
-        }
+            const actual = ordenadas[i];
+            // El “frente” real es el que está justo antes en el arreglo ordenado.
+            // Para el líder (i === 0) NO hay frente.
+            const frente = (i === 0) ? null : ordenadas[i - 1];
+            ahead.set(actual.id_unidad, frente);
+          }
 
-          // Simular desde el más adelantado hacia atrás
+          // 3️⃣ Simulamos desde el más adelantado hacia atrás
           for (const u of ordenadas) {
+            logU('BEFORE',   u);
             let estado = u.estado_unidad;
-            let idx = Number(u.idx_tramo || 0);    // índice local 0..len-1
-            let prog = Number(u.progreso || 0);    // 0..1
+            let idx = Number(u.idx_tramo || 0);
+            let prog = Number(u.progreso || 0);
             let dwellHasta = u.dwell_hasta ? new Date(u.dwell_hasta) : null;
 
             if (estado === S.INC) {
-              // Se queda quieto (no cambia idx/prog)
+              // 🚧 Unidad en incidencia: se mantiene detenida
             } else if (estado === S.EST) {
-              // Espera en estación hasta dwell
+              // ⏱ Espera en estación hasta que termine dwell
               if (dwellHasta && ahora >= dwellHasta) {
                 estado = S.RUTA;
                 dwellHasta = null;
               } else {
-                prog = 0; // en estación siempre prog=0
+                prog = 0;
               }
             } else if (estado === S.COLA) {
-              // Sólo salgo si el frente avanza y hay hueco
+              // 🚍 En cola: revisar continuamente si el frente ya avanzó o liberó el tramo
               const f = ahead.get(u.id_unidad);
               if (f) {
-                const mismoTramo = (Number(f.idx_tramo||0) === idx);
+                const mismoTramo = (Number(f.idx_tramo || 0) === idx);
                 const fBloquea = [S.INC, S.EST, S.COLA].includes(f.estado_unidad);
-                const hayHueco = !mismoTramo || (Number(f.progreso||0) - prog > HEADWAY + 0.02);
+                const fProg = Number(f.progreso || 0);
+                const hayHueco = !mismoTramo || (fProg - prog > HEADWAY + 0.02);
+
+                // 🟢 Si el frente ya no bloquea y hay espacio, retomar movimiento
                 if (!fBloquea && hayHueco) {
+                  console.log(`🚀 Unidad ${u.id_unidad} sale de COLA — frente ${f.id_unidad} liberó tramo`);
                   estado = S.RUTA;
-                } // si no, me quedo en COLA
+                } else {
+                  // 🚧 Mantener en cola si aún está bloqueado o muy cerca
+                  estado = S.COLA;
+                }
               } else {
+                // Si no hay frente, avanzar
                 estado = S.RUTA;
               }
             }
 
+            // ============================================================
+            // === BLOQUE DE AVANCE Y DETECCIÓN DE BLOQUEO ===
+            // ============================================================
             if (estado === S.RUTA) {
-              // Avanza dentro del tramo actual
-              prog += SPEED_SEG;
+              const dt = TICK_MS / 1000;
+              const vel = Number(u.velocidad || 1);
+              const step = (vel * dt) / SEG_DUR_S;
 
-              // No rebasar al de adelante dentro del mismo tramo
+              const aNow = avanceLocal(idx, prog, len);
+              let aNext = (aNow + step) % len;
+
               const f = ahead.get(u.id_unidad);
-              if (f && Number(f.idx_tramo||0) === idx) {
-                const fProg = Number(f.progreso||0);
-                if (fProg - prog < HEADWAY || [S.INC, S.EST, S.COLA].includes(f.estado_unidad)) {
-                  // Colocarme detrás con headway
-                  prog = Math.max(0, Math.min(fProg - HEADWAY, prog));
+
+              if (f) {
+                const fIdx = Number(f.idx_tramo || 0);
+                const fProg = Number(f.progreso || 0);
+                const fA = avanceLocal(fIdx, fProg, len);
+                const fEstado = f.estado_unidad;
+                const fBloquea = [S.INC, S.EST, S.COLA].includes(fEstado);
+                const mismoTramo = (idx === fIdx);
+
+                let gap = (fA - aNow + len) % len;
+                if (gap < EPS) gap = 0;
+
+                console.log(`🟨 Frente detectado para u=${u.id_unidad}: f=${f.id_unidad} estado=${fEstado} gap=${gap.toFixed(3)} tramoU=${aNow.toFixed(3)} tramoF=${fA.toFixed(3)}`);
+
+                if (fBloquea && gap < HEADWAY) {
+                  console.log(`[COLISION PREVENIDA] u=${u.id_unidad} detrás de u=${f.id_unidad} gap=${gap.toFixed(3)} estado_frente=${fEstado}`);
+                  aNext = aNow;
                   estado = S.COLA;
                 }
               }
 
-              // ¿Llegó a estación siguiente?
-              if (prog >= 1 - EPS) {
-                prog = 0;
+              const newIdx = Math.floor(aNext);
+              const newProg = aNext - newIdx;
+              const cruzoEstacion = (newIdx !== idx) && (estado !== S.COLA);
 
-                // ¿Llegó al final del sentido actual?
-                const enUltima = (idx + 1 >= len);
+              idx = newIdx;
+              prog = newProg;
 
-                if (enUltima) {
-                  // Cambiar de sentido
-                  if (sentido === 'IDA') {
-                    sentido = 'REGRESO';
-                    idx = 0; // inicio del regreso
-                  } else {
-                    sentido = 'IDA';
-                    idx = 0; // inicio del ida nuevamente
-                  }
-                } else {
-                  idx = (idx + 1);
-                }
-
+              if (cruzoEstacion) {
                 const d = dwellRand(puntos, idx);
                 dwellHasta = new Date(Date.now() + d * 1000);
                 estado = S.EST;
 
-                // Actualizar sentido en BD también
-                await pool.query(
-                  `UPDATE UnidadesMB
-                  SET sentido=$1
-                  WHERE id_unidad=$2`,
-                  [sentido, u.id_unidad]
-                );
+                const enUltima = (idx === 0 && aNext < aNow);
+                if (enUltima) {
+                  const nuevoSentido = (sentido === 'IDA') ? 'REGRESO' : 'IDA';
+                  await pool.query(`UPDATE UnidadesMB SET sentido=$1 WHERE id_unidad=$2`, [nuevoSentido, u.id_unidad]);
+                  sentido = nuevoSentido;
+                }
               }
             }
 
-            // Persistir
+            // 🔁 Propagación del estado EN_COLA hacia atrás (efecto cadena)
+            const f = ahead.get(u.id_unidad);
+            if (f) {
+              const fEstado = f.estado_unidad;
+              const fTramo = Number(f.idx_tramo || 0);
+              const fProg = Number(f.progreso || 0);
+              const mismoTramo = (fTramo === idx);
+              const distTramos = (fTramo - idx);
+              const distancia = mismoTramo ? (fProg - prog) : distTramos + (1 - prog);
+
+              if ([S.COLA, S.INC].includes(fEstado) && distancia < 0.4) {
+                estado = S.COLA;
+                prog = Math.max(0, Math.min(fProg - HEADWAY, prog));
+              }
+            }
+
+            // Guardamos los nuevos valores
+            u.idx_tramo = idx;
+            u.progreso = prog;
+            u.estado_unidad = estado;
+            u.dwell_hasta = dwellHasta;
+            u.sentido = sentido;
+
+            logU('AFTER', u, { idx, prog: prog.toFixed(3), estado });
+
             await pool.query(`
               UPDATE UnidadesMB
               SET idx_tramo=$1, progreso=$2, estado_unidad=$3, dwell_hasta=$4
               WHERE id_unidad=$5
             `, [idx, prog, estado, dwellHasta, u.id_unidad]);
           }
+          
         }
       }
 

@@ -18,6 +18,7 @@ app.use(express.static(path.join(__dirname, "frontend")));
 
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: "*" } });
+app.set("io", io); // ✅ para acceder dentro de los endpoints
 
 io.on("connection", (socket) => {
   console.log("🟢 Cliente conectado al socket");

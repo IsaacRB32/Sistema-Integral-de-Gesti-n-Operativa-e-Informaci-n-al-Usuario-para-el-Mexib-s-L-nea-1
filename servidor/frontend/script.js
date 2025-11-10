@@ -29,7 +29,77 @@ const colores = {
   INCIDENCIA: "#e74c3c",
 };
 
-// ========== DIBUJO ==========
+// ========== VISUALIZACIÓN LINEAL ==========
+function crearVisualizacionLineal() {
+  const contenedor = document.getElementById("simulacion-container");
+  
+  // Crear elemento para la visualización lineal
+  let colaLineal = document.getElementById("cola-lineal");
+  if (!colaLineal) {
+    colaLineal = document.createElement("div");
+    colaLineal.id = "cola-lineal";
+    colaLineal.className = "cola-lineal";
+    contenedor.insertBefore(colaLineal, canvas);
+  }
+  
+  // Limpiar contenido previo
+  colaLineal.innerHTML = "";
+  
+  // Crear estaciones en formato lineal
+  estacionesIDA.forEach((estacion, index) => {
+    const estacionElem = document.createElement("div");
+    estacionElem.className = "estacion";
+    
+    const punto = document.createElement("div");
+    punto.className = "punto-estacion";
+    
+    const nombre = document.createElement("div");
+    nombre.className = "nombre-estacion";
+    nombre.textContent = estacion;
+    
+    estacionElem.appendChild(punto);
+    estacionElem.appendChild(nombre);
+    colaLineal.appendChild(estacionElem);
+  });
+}
+
+function actualizarVisualizacionLineal(unidades) {
+  // Limpiar unidades anteriores
+  document.querySelectorAll('.unidad-cola').forEach(el => el.remove());
+  
+  // Posicionar cada unidad en la visualización lineal
+  unidades.forEach(u => {
+    const posicion = calcularPosicionLineal(u);
+    const estaciones = document.querySelectorAll('.estacion');
+    
+    if (estaciones[posicion.estacionIndex]) {
+      const unidadElem = document.createElement("div");
+      unidadElem.className = "unidad-cola";
+      unidadElem.textContent = u.id_unidad;
+      unidadElem.style.background = colores[u.estado_unidad] || "#ecf0f1";
+      unidadElem.style.color = "#fff";
+      unidadElem.style.left = `calc(${(posicion.estacionIndex / (N_ESTACIONES - 1)) * 100}% + ${posicion.offset}px)`;
+      
+      estaciones[posicion.estacionIndex].appendChild(unidadElem);
+    }
+  });
+}
+
+function calcularPosicionLineal(u) {
+  const idx = Number(u.idx_tramo || 0);
+  const prog = Number(u.progreso || 0);
+  const esRegreso = u.sentido === "REGRESO";
+  
+  // Para la visualización lineal, invertimos el índice si es regreso
+  let estacionIndex = esRegreso ? (N_ESTACIONES - 1 - idx) : idx;
+  
+  // Ajustar por progreso entre estaciones
+  const offset = esRegreso ? -prog * 40 : prog * 40;
+  
+  return { estacionIndex, offset };
+}
+
+// ========== DIBUJO CIRCULAR (se mantiene como respaldo) ==========
 function dibujarCircuito() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   const cx = canvas.width / 2;
@@ -81,21 +151,6 @@ function dibujarCircuito() {
     ctx.strokeStyle = "rgba(236, 240, 241, 0.3)";
     ctx.lineWidth = 1;
     ctx.stroke();
-    
-    // Nombre de estación (cada 3 estaciones para evitar saturación)
-    if (i % 3 === 0) {
-      const textX = cx + Math.cos(ang) * (r + 25);
-      const textY = cy + Math.sin(ang) * (r + 25);
-      
-      ctx.save();
-      ctx.translate(textX, textY);
-      ctx.rotate(ang + Math.PI/2);
-      ctx.textAlign = "center";
-      ctx.fillStyle = "#bdc3c7";
-      ctx.font = "10px Arial";
-      ctx.fillText(estacionesIDA[i], 0, 0);
-      ctx.restore();
-    }
   }
 }
 
@@ -227,10 +282,14 @@ function renderPanel(unidades) {
 
 // ========== SOCKET ==========
 socket.on("actualizar_posiciones", (unidades) => {
+  // Actualizar ambas visualizaciones
   dibujarCircuito();
   dibujarUnidades(unidades);
+  actualizarVisualizacionLineal(unidades);
   renderPanel(unidades);
 });
 
-// Dibujar inicialmente
-dibujarCircuito();
+// Inicializar visualización lineal al cargar
+document.addEventListener('DOMContentLoaded', () => {
+  crearVisualizacionLineal();
+});
