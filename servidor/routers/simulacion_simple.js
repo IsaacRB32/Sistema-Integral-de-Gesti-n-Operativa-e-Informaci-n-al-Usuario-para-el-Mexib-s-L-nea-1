@@ -6,7 +6,7 @@ let intervaloSim = null;
 // ===== Parámetros de simulación (simple) =====
 const TICK_MS = 1000;             // 1s por tick
 //const SPEED_SEG = 20;           // avanza 25% del tramo por tick (4 ticks por tramo)
-const SEG_DUR_S = 20;      // ⬅️ NUEVO: 1 tramo tarda 20 s (ajústalo)
+const SEG_DUR_S = 20;             // NUEVO: 1 tramo tarda 20 s (ajústalo)
 const HEADWAY = 0.15;             // separación mínima de progreso (mismo tramo)
 const EPS = 1e-6;
 
@@ -78,7 +78,7 @@ export const iniciarSimulacion = (io) => {
         WHERE en_circuito = TRUE
         ORDER BY id_unidad ASC
       `);
-      // 🔁 Forzar sincronización de estado: si alguna unidad fue reactivada fuera del ciclo (resolver incidencia)
+      // Forzar sincronización de estado: si alguna unidad fue reactivada fuera del ciclo (resolver incidencia)
       for (const u of unidades) {
         if (u.estado_unidad === 'INCIDENCIA') {
           const q = await client.query(`
@@ -118,11 +118,9 @@ export const iniciarSimulacion = (io) => {
           const len = puntos.length;
           if (len === 0) continue;
 
-          // ============================================================
-          // === CONSTRUCCIÓN DEL MAPA 'ahead' Y SIMULACIÓN POR SENTIDO ===
-          // ============================================================
+          // CONSTRUCCIÓN DEL MAPA 'ahead' Y SIMULACIÓN POR SENTIDO 
 
-          // 1️⃣ Ordenamos las unidades del sentido actual por avance local
+          // 1-. Ordenamos las unidades del sentido actual por avance local
           const ordenadas = grupos[sentido]
             .map(u => ({
               u,
@@ -131,7 +129,7 @@ export const iniciarSimulacion = (io) => {
             .sort((A, B) => B.aLoc - A.aLoc) // la mayor aLoc va más adelante
             .map(x => x.u);
 
-          // 2️⃣ Construimos el mapa 'ahead': quién va adelante de quién
+          // 2-. Construimos el mapa 'ahead': quién va adelante de quién
           const ahead = new Map();
           for (let i = 0; i < ordenadas.length; i++) {
             const actual = ordenadas[i];
@@ -141,7 +139,7 @@ export const iniciarSimulacion = (io) => {
             ahead.set(actual.id_unidad, frente);
           }
 
-          // 3️⃣ Simulamos desde el más adelantado hacia atrás
+          // 3-. Simulamos desde el más adelantado hacia atrás
           for (const u of ordenadas) {
             logU('BEFORE',   u);
             let estado = u.estado_unidad;
@@ -150,9 +148,9 @@ export const iniciarSimulacion = (io) => {
             let dwellHasta = u.dwell_hasta ? new Date(u.dwell_hasta) : null;
 
             if (estado === S.INC) {
-              // 🚧 Unidad en incidencia: se mantiene detenida
+              //Unidad en incidencia: se mantiene detenida
             } else if (estado === S.EST) {
-              // ⏱ Espera en estación hasta que termine dwell
+              //Espera en estación hasta que termine dwell
               if (dwellHasta && ahora >= dwellHasta) {
                 estado = S.RUTA;
                 dwellHasta = null;
@@ -160,20 +158,42 @@ export const iniciarSimulacion = (io) => {
                 prog = 0;
               }
             } else if (estado === S.COLA) {
-              // 🚍 En cola: revisar continuamente si el frente ya avanzó o liberó el tramo
+              //En cola: revisar continuamente si el frente ya avanzó o liberó el tramo
               const f = ahead.get(u.id_unidad);
               if (f) {
                 const mismoTramo = (Number(f.idx_tramo || 0) === idx);
                 const fBloquea = [S.INC, S.EST, S.COLA].includes(f.estado_unidad);
                 const fProg = Number(f.progreso || 0);
                 const hayHueco = !mismoTramo || (fProg - prog > HEADWAY + 0.02);
-
-                // 🟢 Si el frente ya no bloquea y hay espacio, retomar movimiento
+                const DELAY_COLA_BASE = 20000; // 20 segundos
+                // Si el frente ya no bloquea y hay espacio, retomar movimiento
                 if (!fBloquea && hayHueco) {
                   console.log(`🚀 Unidad ${u.id_unidad} sale de COLA — frente ${f.id_unidad} liberó tramo`);
-                  estado = S.RUTA;
+
+                  // Liberación escalonada: retrasar arranque según posición en cola
+                  const posCola = ordenadas.findIndex(o => o.id_unidad === u.id_unidad); // posición en lista
+                  const delay = posCola * DELAY_COLA_BASE;
+
+                  console.log(`🕒 Unidad ${u.id_unidad} esperará ${delay / 1000}s antes de salir de COLA`);
+
+                  // mantenerla en COLA mientras espera
+                  estado = S.COLA;
+
+                  // Programar el cambio a EN_RUTA tras el delay
+                  setTimeout(async () => {
+                    try {
+                      await pool.query(`
+                        UPDATE UnidadesMB
+                        SET estado_unidad='EN_RUTA'
+                        WHERE id_unidad=$1
+                      `, [u.id_unidad]);
+                      console.log(`✅ Unidad ${u.id_unidad} ahora EN_RUTA (tras ${delay / 1000}s)`);
+                    } catch (err) {
+                      console.error("Error al liberar unidad con delay:", err);
+                    }
+                  }, delay);
                 } else {
-                  // 🚧 Mantener en cola si aún está bloqueado o muy cerca
+                  // Mantener en cola si aún está bloqueado o muy cerca
                   estado = S.COLA;
                 }
               } else {
@@ -181,10 +201,7 @@ export const iniciarSimulacion = (io) => {
                 estado = S.RUTA;
               }
             }
-
-            // ============================================================
-            // === BLOQUE DE AVANCE Y DETECCIÓN DE BLOQUEO ===
-            // ============================================================
+            // BLOQUE DE AVANCE Y DETECCIÓN DE BLOQUEO 
             if (estado === S.RUTA) {
               const dt = TICK_MS / 1000;
               const vel = Number(u.velocidad || 1);
@@ -236,7 +253,7 @@ export const iniciarSimulacion = (io) => {
               }
             }
 
-            // 🔁 Propagación del estado EN_COLA hacia atrás (efecto cadena)
+            // Propagación del estado EN_COLA hacia atrás (efecto cadena)
             const f = ahead.get(u.id_unidad);
             if (f) {
               const fEstado = f.estado_unidad;

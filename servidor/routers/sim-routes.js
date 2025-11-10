@@ -138,7 +138,7 @@ router.post("/sim/incidencia", async (req, res) => {
  */
 router.post("/sim/resolver", async (req, res) => {
   const client = await pool.connect();
-  const io = req.app.get("io"); // ✅ obtiene instancia global de Socket.IO
+  const io = req.app.get("io"); // Obtiene instancia global de Socket.IO
   try {
     let { id_incidencia, id_unidad } = req.body || {};
     if (!id_incidencia && !id_unidad) {
@@ -161,7 +161,7 @@ router.post("/sim/resolver", async (req, res) => {
       id_incidencia = q.rows[0]?.id_incidencia || null;
     }
 
-    // 1️⃣ Cerrar incidencia si existe
+    // 1-. Cerrar incidencia si existe
     if (id_incidencia) {
       await client.query(
         `UPDATE Incidencias
@@ -171,7 +171,7 @@ router.post("/sim/resolver", async (req, res) => {
       );
     }
 
-    // 2️⃣ Obtener id_unidad si venía solo id_incidencia
+    // 2-. Obtener id_unidad si venía solo id_incidencia
     if (!id_unidad && id_incidencia) {
       const qU = await client.query(
         `SELECT id_unidad FROM Incidencias WHERE id_incidencia=$1`,
@@ -180,7 +180,7 @@ router.post("/sim/resolver", async (req, res) => {
       id_unidad = qU.rows[0]?.id_unidad || null;
     }
 
-    // 3️⃣ Liberar unidad (la reactiva en simulación)
+    // 3-. Liberar unidad (la reactiva en simulación)
     if (id_unidad) {
       await client.query(`
         UPDATE UnidadesMB
@@ -201,7 +201,7 @@ router.post("/sim/resolver", async (req, res) => {
 
     await client.query("COMMIT");
 
-    // 4️⃣ Emitir evento Socket.IO para actualización instantánea
+    // 4-. Emitir evento Socket.IO para actualización instantánea
     if (io && id_unidad) {
       const { rows: snapshot } = await client.query(`
         SELECT id_unidad, id_ruta, sentido, idx_tramo, progreso, estado_unidad, en_circuito, dwell_hasta

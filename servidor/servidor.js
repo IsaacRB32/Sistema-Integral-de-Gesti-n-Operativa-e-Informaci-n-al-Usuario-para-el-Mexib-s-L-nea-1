@@ -11,17 +11,17 @@ const app = express();
 app.use(express.json());
 app.use("/api", simRoutes);
 
-// 👉 Servir archivos estáticos del frontend
+//Servir archivos estáticos del frontend
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 app.use(express.static(path.join(__dirname, "frontend")));
 
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: "*" } });
-app.set("io", io); // ✅ para acceder dentro de los endpoints
+app.set("io", io); // Para acceder dentro de los endpoints
 
 io.on("connection", (socket) => {
-  console.log("🟢 Cliente conectado al socket");
+  console.log("Cliente conectado al socket");
 });
 
 server.listen(3000, () => {
