@@ -1,0 +1,60 @@
+DB_USER=postgres
+DB_PASSWORD=saturno123
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=mexibusdb
+PORT=3000
+cd C:\Ingenieria\Pruebas\servidor
+npm list bcrypt
+cd C:\Ingenieria\Pruebas\servidor
+# Instalar JWT
+npm install jsonwebtoken bcrypt
+cd C:\Ingenieria\Pruebas\servidor
+npm install
+
+Iniciar servidor
+node servidor.js
+http://localhost:3000/
+http://localhost:3000/api/sim/salir
+
+http://localhost:3000/api/sim/entrar
+
+{
+  "id_unidad": 1,
+  "id_ruta": 1,
+  "sentido": "IDA",
+  "idx_tramo": 0,
+  "estado_inicial": "EN_RUTA"
+}
+
+{
+  "id_unidad": 3,
+  "id_ruta": 1,
+  "sentido": "REGRESO",
+  "idx_tramo": 0,
+  "estado_inicial": "EN_RUTA"
+}
+
+ http://localhost:3000/api/sim/salir
+
+{
+  "id_unidad": 1
+}
+
+http://localhost:3000/api/sim/incidencia
+{
+  "id_unidad": 1,
+  "descripcion": "Falla mecánica en motor",
+  "id_cincidencia": 1
+}
+
+http://localhost:3000/api/sim/resolver
+
+{
+  "id_unidad": 1
+}
+
+$2b$10$mSmvl8t.WZahZkuqZuOQZeb/MQ1vxjRgxzSgcurD/CJ72V42oJiMW
+UPDATE usuarios
+SET password_hash = '$2b$10$mSmvl8t.WZahZkuqZuOQZeb/MQ1vxjRgxzSgcurD/CJ72V42oJiMW'
+WHERE id_usuario = 3;
