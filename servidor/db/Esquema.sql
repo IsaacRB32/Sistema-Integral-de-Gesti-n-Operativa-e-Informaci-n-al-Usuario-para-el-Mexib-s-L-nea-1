@@ -122,6 +122,12 @@ CREATE TABLE IF NOT EXISTS EventosUnidad (
 );
 CREATE INDEX IF NOT EXISTS ix_eventos_unidad_ts ON EventosUnidad(id_unidad, ts DESC);
 
+ALTER TABLE Usuarios
+ADD COLUMN password VARCHAR(100);
+
+ALTER TABLE Usuarios
+ALTER COLUMN email SET NOT NULL;
+
 -- =========================
 -- 5) SEMILLA / CATALOGOS
 -- =========================
@@ -235,6 +241,10 @@ SET id_ruta = EXCLUDED.id_ruta,
     sentido = EXCLUDED.sentido,
     estado_unidad = EXCLUDED.estado_unidad,
     en_circuito = EXCLUDED.en_circuito;
+
+INSERT INTO Usuarios (nombre, primer_apellido, email, password, id_rol)
+VALUES ('Admin', 'Supervisor', 'admin@mexibus.com', '1234', 
+        (SELECT id_rol FROM Roles WHERE rol = 'SUPERVISOR'));
 
 -- ===========================================================
 --  FIN DEL ESQUEMA COMPLETO (Simulación Circular)
