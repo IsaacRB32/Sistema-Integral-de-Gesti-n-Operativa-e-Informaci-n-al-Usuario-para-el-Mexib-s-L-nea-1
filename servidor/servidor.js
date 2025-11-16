@@ -3,6 +3,7 @@ import http from "http";
 import { Server } from "socket.io";
 import path from "path";
 import { fileURLToPath } from "url";
+import loginRoutes from "./routers/login.js";
 
 import { iniciarSimulacion, detenerSimulacion } from "./routers/simulacion_simple.js";
 import simRoutes from "./routers/sim-routes.js";
@@ -10,10 +11,22 @@ import simRoutes from "./routers/sim-routes.js";
 const app = express();
 app.use(express.json());
 app.use("/api", simRoutes);
+app.use("/api", loginRoutes);
 
 //Servir archivos estáticos del frontend
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Servir carpeta del supervisor
+app.use("/supervisor", express.static(path.join(__dirname, "../supervisor")));
+
+
+
+
+
+
+
+
 app.use(express.static(path.join(__dirname, "frontend")));
 
 const server = http.createServer(app);
