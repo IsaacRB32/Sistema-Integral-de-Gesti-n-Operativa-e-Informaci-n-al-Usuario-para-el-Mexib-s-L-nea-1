@@ -1,0 +1,319 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AndroidLayouts">
+    <shared>
+      <config />
+    </shared>
+  </component>
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="NONE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="0ad459bf-cf9c-4b3c-92c7-f68c72c58a4a" name="Changes" comment="Se agrega arquitectura MVVM con implemetación de AppNavigation">
+      <change beforePath="$PROJECT_DIR$/../../Arquitectura.pdf" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../info.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../mexibus_db_export.sql" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../node_modules/.bin/node-gyp-build" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../node_modules/.bin/node-gyp-build-optional" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../node_modules/.bin/node-gyp-build-optional.cmd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../node_modules/.bin/node-gyp-build-optional.ps1" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../node_modules/.bin/node-gyp-build-test" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../node_modules/.bin/node-gyp-build-test.cmd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../node_modules/.bin/node-gyp-build-test.ps1" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../node_modules/.bin/node-gyp-build.cmd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../node_modules/.bin/node-gyp-build.ps1" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../node_modules/.package-lock.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../node_modules/bcrypt/.dockerignore" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../node_modules/bcrypt/.editorconfig" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../node_modules/bcrypt/.github/workflows/build-pack-publish.yml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../node_modules/bcrypt/.github/workflows/ci.yaml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../node_modules/bcrypt/CHANGELOG.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../node_modules/bcrypt/Dockerfile" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../node_modules/bcrypt/Dockerfile-alpine" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../node_modules/bcrypt/ISSUE_TEMPLATE.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../node_modules/bcrypt/LICENSE" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../node_modules/bcrypt/Makefile" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../node_modules/bcrypt/README.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../node_modules/bcrypt/SECURITY.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../node_modules/bcrypt/bcrypt.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../node_modules/bcrypt/binding.gyp" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../node_modules/bcrypt/build-all.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../node_modules/bcrypt/examples/async_compare.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../node_modules/bcrypt/examples/forever_gen_salt.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../node_modules/bcrypt/package.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../node_modules/bcrypt/prebuilds/darwin-arm64/bcrypt.node" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../node_modules/bcrypt/prebuilds/darwin-x64/bcrypt.node" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../node_modules/bcrypt/prebuilds/linux-arm/bcrypt.glibc.node" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../node_modules/bcrypt/prebuilds/linux-arm/bcrypt.musl.node" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../node_modules/bcrypt/prebuilds/linux-arm64/bcrypt.glibc.node" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../node_modules/bcrypt/prebuilds/linux-arm64/bcrypt.musl.node" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../node_modules/bcrypt/prebuilds/linux-x64/bcrypt.glibc.node" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../node_modules/bcrypt/prebuilds/linux-x64/bcrypt.musl.node" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../node_modules/bcrypt/prebuilds/win32-arm64/bcrypt.node" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../node_modules/bcrypt/prebuilds/win32-x64/bcrypt.node" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../node_modules/bcrypt/promises.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../node_modules/bcrypt/src/bcrypt.cc" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../node_modules/bcrypt/src/bcrypt_node.cc" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../node_modules/bcrypt/src/blowfish.cc" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../node_modules/bcrypt/src/node_blf.h" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../node_modules/bcrypt/test/async.test.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../node_modules/bcrypt/test/implementation.test.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../node_modules/bcrypt/test/promise.test.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../node_modules/bcrypt/test/repetitions.test.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../node_modules/bcrypt/test/sync.test.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../node_modules/node-addon-api/LICENSE.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../node_modules/node-addon-api/README.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../node_modules/node-addon-api/common.gypi" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../node_modules/node-addon-api/except.gypi" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../node_modules/node-addon-api/index.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../node_modules/node-addon-api/napi-inl.deprecated.h" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../node_modules/node-addon-api/napi-inl.h" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../node_modules/node-addon-api/napi.h" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../node_modules/node-addon-api/node_addon_api.gyp" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../node_modules/node-addon-api/node_api.gyp" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../node_modules/node-addon-api/noexcept.gypi" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../node_modules/node-addon-api/nothing.c" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../node_modules/node-addon-api/package-support.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../node_modules/node-addon-api/package.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../node_modules/node-addon-api/tools/README.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../node_modules/node-addon-api/tools/check-napi.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../node_modules/node-addon-api/tools/clang-format.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../node_modules/node-addon-api/tools/conversion.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../node_modules/node-gyp-build/LICENSE" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../node_modules/node-gyp-build/README.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../node_modules/node-gyp-build/SECURITY.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../node_modules/node-gyp-build/bin.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../node_modules/node-gyp-build/build-test.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../node_modules/node-gyp-build/index.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../node_modules/node-gyp-build/node-gyp-build.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../node_modules/node-gyp-build/optional.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../node_modules/node-gyp-build/package.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../package-lock.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../package.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../servidor/.env" beforeDir="false" afterPath="$PROJECT_DIR$/../../servidor/.env" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../servidor/db/.env" beforeDir="false" afterPath="$PROJECT_DIR$/../../servidor/db/.env" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../servidor/routers/auth.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../servidor/servidor.js" beforeDir="false" afterPath="$PROJECT_DIR$/../../servidor/servidor.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../supervisor/css/styles.css" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../supervisor/index.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../supervisor/js/auth.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../supervisor/js/config.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../supervisor/js/dashboard.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../supervisor/login.html" beforeDir="false" afterPath="$PROJECT_DIR$/../../supervisor/login.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../test-bcrypt.js" beforeDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="ClangdSettings">
+    <option name="formatViaClangd" value="false" />
+  </component>
+  <component name="ExecutionTargetManager" SELECTED_TARGET="device_and_snapshot_combo_box_target[]" />
+  <component name="ExternalProjectsData">
+    <projectState path="$PROJECT_DIR$">
+      <ProjectState />
+    </projectState>
+  </component>
+  <component name="ExternalProjectsManager">
+    <system id="GRADLE">
+      <state>
+        <projects_view>
+          <tree_state>
+            <expand>
+              <path>
+                <item name="" type="6a2764b6:ExternalProjectsStructure$RootNode" />
+                <item name="botoneraOperador" type="f1a62948:ProjectNode" />
+              </path>
+            </expand>
+            <select />
+          </tree_state>
+        </projects_view>
+      </state>
+    </system>
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Kotlin Class" />
+        <option value="Kotlin File" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_BRANCH_BY_REPOSITORY">
+      <map>
+        <entry key="$PROJECT_DIR$/../.." value="ferAndroid" />
+      </map>
+    </option>
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/../.." />
+  </component>
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;IsaacRB32&quot;
+  }
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/IsaacRB32/Sistema-Integral-de-Gesti-n-Operativa-e-Informaci-n-al-Usuario-para-el-Mexib-s-L-nea-1.git&quot;,
+    &quot;accountId&quot;: &quot;941d253c-4c45-4621-b464-812f56bba89b&quot;
+  }
+}</component>
+  <component name="GradleScriptDefinitionsStorage" workingDir="$PROJECT_DIR$" gradleHome="C:\Users\isaac\.gradle\wrapper\dists\gradle-8.13-bin\5xuhj0ry160q40clulazy9h7d\gradle-8.13" javaHome="C:\Program Files\Android\Android Studio\jbr" gradleVersion="8.13" />
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 8
+}</component>
+  <component name="ProjectId" id="35WjrgRPRPd5bHpKEMbF7OlmqeH" />
+  <component name="ProjectReloadState">
+    <option name="STATE" value="1" />
+  </component>
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Android App.app.executor": "Run",
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.cidr.known.project.marker": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "RunOnceActivity.readMode.enableVisualFormatting": "true",
+    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
+    "android.gradle.sync.needed": "true",
+    "cf.first.check.clang-format": "false",
+    "cidr.known.project.marker": "true",
+    "git-widget-placeholder": "Supervisor-Brandon",
+    "kotlin-language-version-configured": "true",
+    "last_opened_file_path": "C:/Users/isaac/Documents/6TO SEMESTRE/I de Software/Proyecto/botonera/botoneraOperador"
+  }
+}]]></component>
+  <component name="RunManager">
+    <configuration name="app" type="AndroidRunConfigurationType" factoryName="Android App" activateToolWindowBeforeRun="false">
+      <module name="botoneraOperador.app" />
+      <option name="ANDROID_RUN_CONFIGURATION_SCHEMA_VERSION" value="1" />
+      <option name="DEPLOY" value="true" />
+      <option name="DEPLOY_APK_FROM_BUNDLE" value="false" />
+      <option name="DEPLOY_AS_INSTANT" value="false" />
+      <option name="ARTIFACT_NAME" value="" />
+      <option name="PM_INSTALL_OPTIONS" value="" />
+      <option name="ALL_USERS" value="false" />
+      <option name="ALWAYS_INSTALL_WITH_PM" value="false" />
+      <option name="ALLOW_ASSUME_VERIFIED" value="false" />
+      <option name="CLEAR_APP_STORAGE" value="false" />
+      <option name="DYNAMIC_FEATURES_DISABLED_LIST" value="" />
+      <option name="ACTIVITY_EXTRA_FLAGS" value="" />
+      <option name="MODE" value="default_activity" />
+      <option name="RESTORE_ENABLED" value="false" />
+      <option name="RESTORE_FILE" value="" />
+      <option name="RESTORE_FRESH_INSTALL_ONLY" value="false" />
+      <option name="CLEAR_LOGCAT" value="false" />
+      <option name="SHOW_LOGCAT_AUTOMATICALLY" value="false" />
+      <option name="TARGET_SELECTION_MODE" value="DEVICE_AND_SNAPSHOT_COMBO_BOX" />
+      <option name="SELECTED_CLOUD_MATRIX_CONFIGURATION_ID" value="-1" />
+      <option name="SELECTED_CLOUD_MATRIX_PROJECT_ID" value="" />
+      <option name="DEBUGGER_TYPE" value="Auto" />
+      <Auto>
+        <option name="USE_JAVA_AWARE_DEBUGGER" value="false" />
+        <option name="SHOW_STATIC_VARS" value="true" />
+        <option name="WORKING_DIR" value="" />
+        <option name="TARGET_LOGGING_CHANNELS" value="lldb process:gdb-remote packets" />
+        <option name="SHOW_OPTIMIZED_WARNING" value="true" />
+        <option name="ATTACH_ON_WAIT_FOR_DEBUGGER" value="false" />
+        <option name="DEBUG_SANDBOX_SDK" value="false" />
+      </Auto>
+      <Hybrid>
+        <option name="USE_JAVA_AWARE_DEBUGGER" value="false" />
+        <option name="SHOW_STATIC_VARS" value="true" />
+        <option name="WORKING_DIR" value="" />
+        <option name="TARGET_LOGGING_CHANNELS" value="lldb process:gdb-remote packets" />
+        <option name="SHOW_OPTIMIZED_WARNING" value="true" />
+        <option name="ATTACH_ON_WAIT_FOR_DEBUGGER" value="false" />
+        <option name="DEBUG_SANDBOX_SDK" value="false" />
+      </Hybrid>
+      <Java>
+        <option name="ATTACH_ON_WAIT_FOR_DEBUGGER" value="false" />
+        <option name="DEBUG_SANDBOX_SDK" value="false" />
+      </Java>
+      <Native>
+        <option name="USE_JAVA_AWARE_DEBUGGER" value="false" />
+        <option name="SHOW_STATIC_VARS" value="true" />
+        <option name="WORKING_DIR" value="" />
+        <option name="TARGET_LOGGING_CHANNELS" value="lldb process:gdb-remote packets" />
+        <option name="SHOW_OPTIMIZED_WARNING" value="true" />
+        <option name="ATTACH_ON_WAIT_FOR_DEBUGGER" value="false" />
+        <option name="DEBUG_SANDBOX_SDK" value="false" />
+      </Native>
+      <Profilers>
+        <option name="ADVANCED_PROFILING_ENABLED" value="false" />
+        <option name="STARTUP_PROFILING_ENABLED" value="false" />
+        <option name="STARTUP_CPU_PROFILING_ENABLED" value="false" />
+        <option name="STARTUP_CPU_PROFILING_CONFIGURATION_NAME" value="Java/Kotlin Method Sample (legacy)" />
+        <option name="STARTUP_NATIVE_MEMORY_PROFILING_ENABLED" value="false" />
+        <option name="NATIVE_MEMORY_SAMPLE_RATE_BYTES" value="2048" />
+      </Profilers>
+      <option name="DEEP_LINK" value="" />
+      <option name="ACTIVITY" value="" />
+      <option name="ACTIVITY_CLASS" value="" />
+      <option name="SEARCH_ACTIVITY_IN_GLOBAL_SCOPE" value="false" />
+      <option name="SKIP_ACTIVITY_VALIDATION" value="false" />
+      <method v="2">
+        <option name="Android.Gradle.BeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="0ad459bf-cf9c-4b3c-92c7-f68c72c58a4a" name="Changes" comment="" />
+      <created>1763232921994</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1763232921994</updated>
+    </task>
+    <task id="LOCAL-00001" summary="Se agrega arquitectura MVVM con implemetación de AppNavigation">
+      <option name="closed" value="true" />
+      <created>1763249173708</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1763249173708</updated>
+    </task>
+    <task id="LOCAL-00002" summary="Se agrega arquitectura MVVM con implemetación de AppNavigation">
+      <option name="closed" value="true" />
+      <created>1763249226257</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1763249226257</updated>
+    </task>
+    <task id="LOCAL-00003" summary="Se agrega arquitectura MVVM con implemetación de AppNavigation">
+      <option name="closed" value="true" />
+      <created>1763254239720</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1763254239720</updated>
+    </task>
+    <option name="localTasksCounter" value="4" />
+    <servers />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="Se agrega arquitectura MVVM con implemetación de AppNavigation" />
+    <option name="LAST_COMMIT_MESSAGE" value="Se agrega arquitectura MVVM con implemetación de AppNavigation" />
+  </component>
+</project>
