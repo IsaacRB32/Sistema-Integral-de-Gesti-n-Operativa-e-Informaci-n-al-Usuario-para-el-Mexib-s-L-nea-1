@@ -8,3 +8,4 @@ import androidx.navigation.NavController
 fun BotoneraScreen(navController: NavController) {
     Text("Pantalla Botonera")
 }
+
