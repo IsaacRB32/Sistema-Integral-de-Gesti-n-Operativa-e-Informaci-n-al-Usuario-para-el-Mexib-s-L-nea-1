@@ -1,60 +1,61 @@
-com.example.botoneraoperador.app-animation-release-0 C:\Users\isaac\.gradle\caches\8.13\transforms\04c29c3f7bfed137b168b7e6165dde7b\transformed\animation-release\res
-com.example.botoneraoperador.app-savedstate-ktx-1.2.1-1 C:\Users\isaac\.gradle\caches\8.13\transforms\0aef0bd2ed1b21f966176e2dfe51a419\transformed\savedstate-ktx-1.2.1\res
-com.example.botoneraoperador.app-foundation-release-2 C:\Users\isaac\.gradle\caches\8.13\transforms\13771ae2b4e3d2800a9d3ae0bb6613b1\transformed\foundation-release\res
-com.example.botoneraoperador.app-core-runtime-2.2.0-3 C:\Users\isaac\.gradle\caches\8.13\transforms\197e7abce099d9c1d38cc438ac86b88e\transformed\core-runtime-2.2.0\res
-com.example.botoneraoperador.app-core-ktx-1.13.1-4 C:\Users\isaac\.gradle\caches\8.13\transforms\1af3da0e2744bac02855df1a7716011a\transformed\core-ktx-1.13.1\res
-com.example.botoneraoperador.app-lifecycle-viewmodel-compose-release-5 C:\Users\isaac\.gradle\caches\8.13\transforms\22a6c66eaf90390be023cf40b31a10b2\transformed\lifecycle-viewmodel-compose-release\res
-com.example.botoneraoperador.app-animation-core-release-6 C:\Users\isaac\.gradle\caches\8.13\transforms\2320df4521097fadc7637ad50babbed0\transformed\animation-core-release\res
-com.example.botoneraoperador.app-ui-text-release-7 C:\Users\isaac\.gradle\caches\8.13\transforms\28110f350d82437779f1d1614a74c916\transformed\ui-text-release\res
-com.example.botoneraoperador.app-emoji2-1.3.0-8 C:\Users\isaac\.gradle\caches\8.13\transforms\2cd9e0f9a06992aa6d5dd796fd56c271\transformed\emoji2-1.3.0\res
-com.example.botoneraoperador.app-lifecycle-livedata-core-ktx-2.8.3-9 C:\Users\isaac\.gradle\caches\8.13\transforms\2e7592ec9557a895ab6e5eb68d34a94a\transformed\lifecycle-livedata-core-ktx-2.8.3\res
-com.example.botoneraoperador.app-lifecycle-process-2.8.3-10 C:\Users\isaac\.gradle\caches\8.13\transforms\356a64bdd3c45150d76d01b75a3acde7\transformed\lifecycle-process-2.8.3\res
-com.example.botoneraoperador.app-runtime-release-11 C:\Users\isaac\.gradle\caches\8.13\transforms\36e9db28b5b1d3ab3d97b732fec845b2\transformed\runtime-release\res
-com.example.botoneraoperador.app-material3-release-12 C:\Users\isaac\.gradle\caches\8.13\transforms\381d2a39124ea28a9a4986247df6f5b8\transformed\material3-release\res
-com.example.botoneraoperador.app-ui-release-13 C:\Users\isaac\.gradle\caches\8.13\transforms\3cd8e954aac543d15569d510a16f3576\transformed\ui-release\res
-com.example.botoneraoperador.app-lifecycle-viewmodel-savedstate-2.8.3-14 C:\Users\isaac\.gradle\caches\8.13\transforms\3fa13378cc7f7f92f3954fba68e77123\transformed\lifecycle-viewmodel-savedstate-2.8.3\res
-com.example.botoneraoperador.app-lifecycle-viewmodel-ktx-2.8.3-15 C:\Users\isaac\.gradle\caches\8.13\transforms\4c0b838b334c2f0df3fa695f7bf02c0c\transformed\lifecycle-viewmodel-ktx-2.8.3\res
-com.example.botoneraoperador.app-navigation-compose-2.7.1-16 C:\Users\isaac\.gradle\caches\8.13\transforms\4c6f624ee8f538e9928ec7acb4cbdefb\transformed\navigation-compose-2.7.1\res
-com.example.botoneraoperador.app-ui-tooling-data-release-17 C:\Users\isaac\.gradle\caches\8.13\transforms\4e09eeeb3d87ce09d48cf3c14a365c12\transformed\ui-tooling-data-release\res
-com.example.botoneraoperador.app-profileinstaller-1.3.1-18 C:\Users\isaac\.gradle\caches\8.13\transforms\5006425632763205d6eef0fae8c31677\transformed\profileinstaller-1.3.1\res
-com.example.botoneraoperador.app-core-1.13.1-19 C:\Users\isaac\.gradle\caches\8.13\transforms\53186d59d1566c747867fc2c8ee498f6\transformed\core-1.13.1\res
-com.example.botoneraoperador.app-runtime-saveable-release-20 C:\Users\isaac\.gradle\caches\8.13\transforms\5721a5de40d8d06a510ef0c3e4727500\transformed\runtime-saveable-release\res
-com.example.botoneraoperador.app-ui-tooling-preview-release-21 C:\Users\isaac\.gradle\caches\8.13\transforms\59adc9fd78cd2eb4e288cbcfc853d6ee\transformed\ui-tooling-preview-release\res
-com.example.botoneraoperador.app-customview-poolingcontainer-1.0.0-22 C:\Users\isaac\.gradle\caches\8.13\transforms\5ce99e99c52f0b608d231e7495703d76\transformed\customview-poolingcontainer-1.0.0\res
-com.example.botoneraoperador.app-ui-tooling-release-23 C:\Users\isaac\.gradle\caches\8.13\transforms\6565306f2dfbf13c166a350183c2dfde\transformed\ui-tooling-release\res
-com.example.botoneraoperador.app-startup-runtime-1.1.1-24 C:\Users\isaac\.gradle\caches\8.13\transforms\6d7a436a81246ccbfba2fb53e6806243\transformed\startup-runtime-1.1.1\res
-com.example.botoneraoperador.app-ui-unit-release-25 C:\Users\isaac\.gradle\caches\8.13\transforms\75a24e27ed5aed48eff30387af549c86\transformed\ui-unit-release\res
-com.example.botoneraoperador.app-lifecycle-runtime-ktx-release-26 C:\Users\isaac\.gradle\caches\8.13\transforms\766925ab1e7d27b340b96d409cd9f9f9\transformed\lifecycle-runtime-ktx-release\res
-com.example.botoneraoperador.app-annotation-experimental-1.4.0-27 C:\Users\isaac\.gradle\caches\8.13\transforms\7943498b17537f6a96010154fe28e7fd\transformed\annotation-experimental-1.4.0\res
-com.example.botoneraoperador.app-lifecycle-livedata-2.8.3-28 C:\Users\isaac\.gradle\caches\8.13\transforms\7baff491386f33d0f9d8756c48a0fa57\transformed\lifecycle-livedata-2.8.3\res
-com.example.botoneraoperador.app-appcompat-resources-1.2.0-29 C:\Users\isaac\.gradle\caches\8.13\transforms\7c7b77ebb9788511cedc7bcee5209c27\transformed\appcompat-resources-1.2.0\res
-com.example.botoneraoperador.app-ui-graphics-release-30 C:\Users\isaac\.gradle\caches\8.13\transforms\84055a354fcf843a8a7611ae3213bf76\transformed\ui-graphics-release\res
-com.example.botoneraoperador.app-material-icons-core-release-31 C:\Users\isaac\.gradle\caches\8.13\transforms\892b981b17b32be93f37d2bc7a37a82f\transformed\material-icons-core-release\res
-com.example.botoneraoperador.app-navigation-common-ktx-2.7.1-32 C:\Users\isaac\.gradle\caches\8.13\transforms\89ed5ed7478f470f461e50c5494b081d\transformed\navigation-common-ktx-2.7.1\res
-com.example.botoneraoperador.app-lifecycle-viewmodel-release-33 C:\Users\isaac\.gradle\caches\8.13\transforms\8f88fd5c27b98186ffa01da390036a87\transformed\lifecycle-viewmodel-release\res
-com.example.botoneraoperador.app-material-ripple-release-34 C:\Users\isaac\.gradle\caches\8.13\transforms\916e6c6af157aa0cecec66ca0b4b6ec3\transformed\material-ripple-release\res
-com.example.botoneraoperador.app-activity-1.8.2-35 C:\Users\isaac\.gradle\caches\8.13\transforms\921c09677ae5904779a490bc0db8f635\transformed\activity-1.8.2\res
-com.example.botoneraoperador.app-navigation-runtime-2.7.1-36 C:\Users\isaac\.gradle\caches\8.13\transforms\9f556473043421701c09e5f9bfb89ba0\transformed\navigation-runtime-2.7.1\res
-com.example.botoneraoperador.app-lifecycle-runtime-compose-release-37 C:\Users\isaac\.gradle\caches\8.13\transforms\a03f52ea46751770406fce50e05c9583\transformed\lifecycle-runtime-compose-release\res
-com.example.botoneraoperador.app-ui-test-manifest-1.7.0-38 C:\Users\isaac\.gradle\caches\8.13\transforms\aa352a701c601581d896c2c602339dc5\transformed\ui-test-manifest-1.7.0\res
-com.example.botoneraoperador.app-material-release-39 C:\Users\isaac\.gradle\caches\8.13\transforms\acb77bf06c8c63df6ae72c0e4eb08d5d\transformed\material-release\res
-com.example.botoneraoperador.app-activity-compose-1.8.2-40 C:\Users\isaac\.gradle\caches\8.13\transforms\ad7d7e59572c017c57c7617f40fb20d9\transformed\activity-compose-1.8.2\res
-com.example.botoneraoperador.app-navigation-common-2.7.1-41 C:\Users\isaac\.gradle\caches\8.13\transforms\ad8926fa9eb90a0232461f5c6cc43ba1\transformed\navigation-common-2.7.1\res
-com.example.botoneraoperador.app-activity-ktx-1.8.2-42 C:\Users\isaac\.gradle\caches\8.13\transforms\af559b102b24739e7f92175e4cb60d8b\transformed\activity-ktx-1.8.2\res
-com.example.botoneraoperador.app-navigation-runtime-ktx-2.7.1-43 C:\Users\isaac\.gradle\caches\8.13\transforms\aff7247fc3932599cb80363b977f668d\transformed\navigation-runtime-ktx-2.7.1\res
-com.example.botoneraoperador.app-graphics-path-1.0.1-44 C:\Users\isaac\.gradle\caches\8.13\transforms\b075bdfe27545dc71bea5e0490cb40ca\transformed\graphics-path-1.0.1\res
-com.example.botoneraoperador.app-appcompat-1.2.0-45 C:\Users\isaac\.gradle\caches\8.13\transforms\b85fabf3ef545e20bb7094adc11bcc38\transformed\appcompat-1.2.0\res
-com.example.botoneraoperador.app-savedstate-1.2.1-46 C:\Users\isaac\.gradle\caches\8.13\transforms\cc7cc66983f1e73896799dddb974fc1c\transformed\savedstate-1.2.1\res
-com.example.botoneraoperador.app-foundation-layout-release-47 C:\Users\isaac\.gradle\caches\8.13\transforms\d0fa310cf5ca69202108f6887ddbee08\transformed\foundation-layout-release\res
-com.example.botoneraoperador.app-ui-geometry-release-48 C:\Users\isaac\.gradle\caches\8.13\transforms\dc487f2713595eebcc2509280c368704\transformed\ui-geometry-release\res
-com.example.botoneraoperador.app-lifecycle-livedata-core-2.8.3-49 C:\Users\isaac\.gradle\caches\8.13\transforms\eb3b0b509be1277aabbbe808928b41fd\transformed\lifecycle-livedata-core-2.8.3\res
-com.example.botoneraoperador.app-lifecycle-runtime-release-50 C:\Users\isaac\.gradle\caches\8.13\transforms\ed9f98d5e0099d69e154bd6ab7b0d7e6\transformed\lifecycle-runtime-release\res
-com.example.botoneraoperador.app-constraintlayout-2.1.4-51 C:\Users\isaac\.gradle\caches\8.13\transforms\ef9cbae8f65e3f14127d6cd808d2e898\transformed\constraintlayout-2.1.4\res
-com.example.botoneraoperador.app-ui-util-release-52 C:\Users\isaac\.gradle\caches\8.13\transforms\fbb3a0e6315b0710dd84f1745c1a01a6\transformed\ui-util-release\res
+com.example.botoneraoperador.app-ui-tooling-release-0 C:\Users\isaac\.gradle\caches\8.13\transforms\0613ceecd8cf0fa1ec1db155045f1dbc\transformed\ui-tooling-release\res
+com.example.botoneraoperador.app-lifecycle-runtime-release-1 C:\Users\isaac\.gradle\caches\8.13\transforms\0a2eabcf4d54e6cfb895a9aba5ade2da\transformed\lifecycle-runtime-release\res
+com.example.botoneraoperador.app-runtime-saveable-release-2 C:\Users\isaac\.gradle\caches\8.13\transforms\0a7f8d992790adafdbb10a267331e473\transformed\runtime-saveable-release\res
+com.example.botoneraoperador.app-emoji2-1.3.0-3 C:\Users\isaac\.gradle\caches\8.13\transforms\0d410a0abd59f72f338ca1eb7778c1fe\transformed\emoji2-1.3.0\res
+com.example.botoneraoperador.app-navigation-runtime-2.7.1-4 C:\Users\isaac\.gradle\caches\8.13\transforms\0e6a68f578cb71eb66873ce97219f095\transformed\navigation-runtime-2.7.1\res
+com.example.botoneraoperador.app-lifecycle-process-2.8.3-5 C:\Users\isaac\.gradle\caches\8.13\transforms\135345684eb2a51051d92c463f037497\transformed\lifecycle-process-2.8.3\res
+com.example.botoneraoperador.app-savedstate-ktx-1.2.1-6 C:\Users\isaac\.gradle\caches\8.13\transforms\1afe5aaa27d0541c0f6096724f5ac1bc\transformed\savedstate-ktx-1.2.1\res
+com.example.botoneraoperador.app-constraintlayout-2.1.4-7 C:\Users\isaac\.gradle\caches\8.13\transforms\1bfa5ea238248709b5b4e91310a5ddb5\transformed\constraintlayout-2.1.4\res
+com.example.botoneraoperador.app-material-icons-core-release-8 C:\Users\isaac\.gradle\caches\8.13\transforms\34c947a765938b99e8b681186a622d33\transformed\material-icons-core-release\res
+com.example.botoneraoperador.app-material-ripple-release-9 C:\Users\isaac\.gradle\caches\8.13\transforms\365d7d6da5836995cc6151d8323b7f49\transformed\material-ripple-release\res
+com.example.botoneraoperador.app-foundation-layout-release-10 C:\Users\isaac\.gradle\caches\8.13\transforms\36a239ae94d8847fd927d13b8308cf09\transformed\foundation-layout-release\res
+com.example.botoneraoperador.app-lifecycle-runtime-ktx-release-11 C:\Users\isaac\.gradle\caches\8.13\transforms\393096de1960ece4f9eb08c757207ec7\transformed\lifecycle-runtime-ktx-release\res
+com.example.botoneraoperador.app-lifecycle-livedata-2.8.3-12 C:\Users\isaac\.gradle\caches\8.13\transforms\405d76b1770fb24e029feaa59d588802\transformed\lifecycle-livedata-2.8.3\res
+com.example.botoneraoperador.app-runtime-release-13 C:\Users\isaac\.gradle\caches\8.13\transforms\4758ef5262a3da8f3aa8f87f3f774ea4\transformed\runtime-release\res
+com.example.botoneraoperador.app-startup-runtime-1.1.1-14 C:\Users\isaac\.gradle\caches\8.13\transforms\47f11c161e7449d80f9d5d6e3df605ed\transformed\startup-runtime-1.1.1\res
+com.example.botoneraoperador.app-navigation-compose-2.7.1-15 C:\Users\isaac\.gradle\caches\8.13\transforms\4adf2abaf1c4417cb335498eb65b21f3\transformed\navigation-compose-2.7.1\res
+com.example.botoneraoperador.app-profileinstaller-1.3.1-16 C:\Users\isaac\.gradle\caches\8.13\transforms\51ad589aa946691743faff7d37dbc007\transformed\profileinstaller-1.3.1\res
+com.example.botoneraoperador.app-material3-release-17 C:\Users\isaac\.gradle\caches\8.13\transforms\55aa825f95b0c0353c2437f597fc7823\transformed\material3-release\res
+com.example.botoneraoperador.app-lifecycle-viewmodel-savedstate-2.8.3-18 C:\Users\isaac\.gradle\caches\8.13\transforms\5a4186e9238c170b48a17bc2d3173d30\transformed\lifecycle-viewmodel-savedstate-2.8.3\res
+com.example.botoneraoperador.app-material-release-19 C:\Users\isaac\.gradle\caches\8.13\transforms\5ab0a109a0d3137e981958b7e2261a30\transformed\material-release\res
+com.example.botoneraoperador.app-lifecycle-runtime-compose-release-20 C:\Users\isaac\.gradle\caches\8.13\transforms\5cd76f8ef163b579cfe47322dd53cdfc\transformed\lifecycle-runtime-compose-release\res
+com.example.botoneraoperador.app-savedstate-1.2.1-21 C:\Users\isaac\.gradle\caches\8.13\transforms\62e86d24e90ff407406241297c70559f\transformed\savedstate-1.2.1\res
+com.example.botoneraoperador.app-ui-tooling-preview-release-22 C:\Users\isaac\.gradle\caches\8.13\transforms\6a1569e185c285b3bc1892b2f6514a3b\transformed\ui-tooling-preview-release\res
+com.example.botoneraoperador.app-core-1.13.1-23 C:\Users\isaac\.gradle\caches\8.13\transforms\6e7333a8daf3f5ba51f8846ef8bbda9c\transformed\core-1.13.1\res
+com.example.botoneraoperador.app-animation-core-release-24 C:\Users\isaac\.gradle\caches\8.13\transforms\74560a8f393bbf0f091a1c8b924ff1f4\transformed\animation-core-release\res
+com.example.botoneraoperador.app-lifecycle-viewmodel-compose-release-25 C:\Users\isaac\.gradle\caches\8.13\transforms\7726d85effc18ca309ea5ccc16e12cd1\transformed\lifecycle-viewmodel-compose-release\res
+com.example.botoneraoperador.app-annotation-experimental-1.4.0-26 C:\Users\isaac\.gradle\caches\8.13\transforms\78c7622f8cd09e2f8a3f5590e304c8f4\transformed\annotation-experimental-1.4.0\res
+com.example.botoneraoperador.app-core-ktx-1.13.1-27 C:\Users\isaac\.gradle\caches\8.13\transforms\8971fff68c5fa98fc726020559266d0d\transformed\core-ktx-1.13.1\res
+com.example.botoneraoperador.app-activity-compose-1.8.2-28 C:\Users\isaac\.gradle\caches\8.13\transforms\8d69345e7592b9569160c08058c0a0e9\transformed\activity-compose-1.8.2\res
+com.example.botoneraoperador.app-core-runtime-2.2.0-29 C:\Users\isaac\.gradle\caches\8.13\transforms\956ccd5f8b0ea59280600e885ecf5bdb\transformed\core-runtime-2.2.0\res
+com.example.botoneraoperador.app-navigation-runtime-ktx-2.7.1-30 C:\Users\isaac\.gradle\caches\8.13\transforms\999bb062ee6e00293c1428e027dc9c3b\transformed\navigation-runtime-ktx-2.7.1\res
+com.example.botoneraoperador.app-ui-unit-release-31 C:\Users\isaac\.gradle\caches\8.13\transforms\9a2a26ac949dd92f13ba668cf76edcaf\transformed\ui-unit-release\res
+com.example.botoneraoperador.app-ui-tooling-data-release-32 C:\Users\isaac\.gradle\caches\8.13\transforms\a5550c8a1fc27cbd1504ce62e4ff613c\transformed\ui-tooling-data-release\res
+com.example.botoneraoperador.app-lifecycle-livedata-core-2.8.3-33 C:\Users\isaac\.gradle\caches\8.13\transforms\aaf57e9a3d397009a5105a517dbbdd61\transformed\lifecycle-livedata-core-2.8.3\res
+com.example.botoneraoperador.app-customview-poolingcontainer-1.0.0-34 C:\Users\isaac\.gradle\caches\8.13\transforms\aaff0d65ef1fe6f37d40cbf19b4ef134\transformed\customview-poolingcontainer-1.0.0\res
+com.example.botoneraoperador.app-ui-graphics-release-35 C:\Users\isaac\.gradle\caches\8.13\transforms\ab7b0af0c65ca62be9c61193021bd1e1\transformed\ui-graphics-release\res
+com.example.botoneraoperador.app-appcompat-1.2.0-36 C:\Users\isaac\.gradle\caches\8.13\transforms\afdc2e528a983324340a4e7befb5c81a\transformed\appcompat-1.2.0\res
+com.example.botoneraoperador.app-navigation-common-ktx-2.7.1-37 C:\Users\isaac\.gradle\caches\8.13\transforms\b07e0ba275cdf1561c07a361c1dba4df\transformed\navigation-common-ktx-2.7.1\res
+com.example.botoneraoperador.app-graphics-path-1.0.1-38 C:\Users\isaac\.gradle\caches\8.13\transforms\b135cb0835dea9c0bd2b074ed1c3a96d\transformed\graphics-path-1.0.1\res
+com.example.botoneraoperador.app-lifecycle-livedata-core-ktx-2.8.3-39 C:\Users\isaac\.gradle\caches\8.13\transforms\b95303cd4f493d16176f77e05f9fce04\transformed\lifecycle-livedata-core-ktx-2.8.3\res
+com.example.botoneraoperador.app-appcompat-resources-1.2.0-40 C:\Users\isaac\.gradle\caches\8.13\transforms\b9c557286757890e2d0eaf1101755e52\transformed\appcompat-resources-1.2.0\res
+com.example.botoneraoperador.app-ui-test-manifest-1.7.0-41 C:\Users\isaac\.gradle\caches\8.13\transforms\bad0ba8a4f5daca2cc8e822c4943aeda\transformed\ui-test-manifest-1.7.0\res
+com.example.botoneraoperador.app-navigation-common-2.7.1-42 C:\Users\isaac\.gradle\caches\8.13\transforms\c1208e4423beb2a3116bcdee22d65a70\transformed\navigation-common-2.7.1\res
+com.example.botoneraoperador.app-ui-geometry-release-43 C:\Users\isaac\.gradle\caches\8.13\transforms\d4d51a089f114fa1c253ca1fa18caa1e\transformed\ui-geometry-release\res
+com.example.botoneraoperador.app-animation-release-44 C:\Users\isaac\.gradle\caches\8.13\transforms\d861bb7761a9b8cb52da7014de7612fa\transformed\animation-release\res
+com.example.botoneraoperador.app-lifecycle-viewmodel-ktx-2.8.3-45 C:\Users\isaac\.gradle\caches\8.13\transforms\e4ddcc62543a61bc0e40cac1ba08d5e2\transformed\lifecycle-viewmodel-ktx-2.8.3\res
+com.example.botoneraoperador.app-ui-util-release-46 C:\Users\isaac\.gradle\caches\8.13\transforms\ed6f7959c2cbb477aceed112989376db\transformed\ui-util-release\res
+com.example.botoneraoperador.app-ui-text-release-47 C:\Users\isaac\.gradle\caches\8.13\transforms\ee78c82517313c52606388d7fe1fee6d\transformed\ui-text-release\res
+com.example.botoneraoperador.app-foundation-release-48 C:\Users\isaac\.gradle\caches\8.13\transforms\f005ac0b71e84b5b9946c454a53ddf07\transformed\foundation-release\res
+com.example.botoneraoperador.app-activity-1.8.2-49 C:\Users\isaac\.gradle\caches\8.13\transforms\f4c3e71d57b580cf458b69b42b7d4768\transformed\activity-1.8.2\res
+com.example.botoneraoperador.app-activity-ktx-1.8.2-50 C:\Users\isaac\.gradle\caches\8.13\transforms\f6e5def3ae0552cc75493348d12e41d3\transformed\activity-ktx-1.8.2\res
+com.example.botoneraoperador.app-ui-release-51 C:\Users\isaac\.gradle\caches\8.13\transforms\f8dc0f000ba06198cb0bd708d4154ca4\transformed\ui-release\res
+com.example.botoneraoperador.app-lifecycle-viewmodel-release-52 C:\Users\isaac\.gradle\caches\8.13\transforms\fbdc06f4a4c29ee850f34bdd8d466173\transformed\lifecycle-viewmodel-release\res
 com.example.botoneraoperador.app-pngs-53 C:\Users\isaac\Documents\6TO SEMESTRE\I de Software\Proyecto\botonera\botoneraOperador\app\build\generated\res\pngs\debug
 com.example.botoneraoperador.app-resValues-54 C:\Users\isaac\Documents\6TO SEMESTRE\I de Software\Proyecto\botonera\botoneraOperador\app\build\generated\res\resValues\debug
-com.example.botoneraoperador.app-packageDebugResources-55 C:\Users\isaac\Documents\6TO SEMESTRE\I de Software\Proyecto\botonera\botoneraOperador\app\build\intermediates\incremental\debug\packageDebugResources\merged.dir
-com.example.botoneraoperador.app-packageDebugResources-56 C:\Users\isaac\Documents\6TO SEMESTRE\I de Software\Proyecto\botonera\botoneraOperador\app\build\intermediates\incremental\debug\packageDebugResources\stripped.dir
-com.example.botoneraoperador.app-debug-57 C:\Users\isaac\Documents\6TO SEMESTRE\I de Software\Proyecto\botonera\botoneraOperador\app\build\intermediates\merged_res\debug\mergeDebugResources
-com.example.botoneraoperador.app-debug-58 C:\Users\isaac\Documents\6TO SEMESTRE\I de Software\Proyecto\botonera\botoneraOperador\app\src\debug\res
-com.example.botoneraoperador.app-main-59 C:\Users\isaac\Documents\6TO SEMESTRE\I de Software\Proyecto\botonera\botoneraOperador\app\src\main\res
+com.example.botoneraoperador.app-updated_navigation_xml-55 C:\Users\isaac\Documents\6TO SEMESTRE\I de Software\Proyecto\botonera\botoneraOperador\app\build\generated\updated_navigation_xml\debug
+com.example.botoneraoperador.app-packageDebugResources-56 C:\Users\isaac\Documents\6TO SEMESTRE\I de Software\Proyecto\botonera\botoneraOperador\app\build\intermediates\incremental\debug\packageDebugResources\merged.dir
+com.example.botoneraoperador.app-packageDebugResources-57 C:\Users\isaac\Documents\6TO SEMESTRE\I de Software\Proyecto\botonera\botoneraOperador\app\build\intermediates\incremental\debug\packageDebugResources\stripped.dir
+com.example.botoneraoperador.app-debug-58 C:\Users\isaac\Documents\6TO SEMESTRE\I de Software\Proyecto\botonera\botoneraOperador\app\build\intermediates\merged_res\debug\mergeDebugResources
+com.example.botoneraoperador.app-debug-59 C:\Users\isaac\Documents\6TO SEMESTRE\I de Software\Proyecto\botonera\botoneraOperador\app\src\debug\res
+com.example.botoneraoperador.app-main-60 C:\Users\isaac\Documents\6TO SEMESTRE\I de Software\Proyecto\botonera\botoneraOperador\app\src\main\res

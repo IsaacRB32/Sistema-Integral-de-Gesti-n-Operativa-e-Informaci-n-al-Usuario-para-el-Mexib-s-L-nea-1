@@ -9,98 +9,12 @@
     <option name="autoReloadType" value="NONE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="0ad459bf-cf9c-4b3c-92c7-f68c72c58a4a" name="Changes" comment="Se agrega arquitectura MVVM con implemetación de AppNavigation">
-      <change beforePath="$PROJECT_DIR$/../../Arquitectura.pdf" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../info.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../mexibus_db_export.sql" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../node_modules/.bin/node-gyp-build" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../node_modules/.bin/node-gyp-build-optional" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../node_modules/.bin/node-gyp-build-optional.cmd" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../node_modules/.bin/node-gyp-build-optional.ps1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../node_modules/.bin/node-gyp-build-test" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../node_modules/.bin/node-gyp-build-test.cmd" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../node_modules/.bin/node-gyp-build-test.ps1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../node_modules/.bin/node-gyp-build.cmd" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../node_modules/.bin/node-gyp-build.ps1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../node_modules/.package-lock.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../node_modules/bcrypt/.dockerignore" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../node_modules/bcrypt/.editorconfig" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../node_modules/bcrypt/.github/workflows/build-pack-publish.yml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../node_modules/bcrypt/.github/workflows/ci.yaml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../node_modules/bcrypt/CHANGELOG.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../node_modules/bcrypt/Dockerfile" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../node_modules/bcrypt/Dockerfile-alpine" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../node_modules/bcrypt/ISSUE_TEMPLATE.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../node_modules/bcrypt/LICENSE" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../node_modules/bcrypt/Makefile" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../node_modules/bcrypt/README.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../node_modules/bcrypt/SECURITY.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../node_modules/bcrypt/bcrypt.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../node_modules/bcrypt/binding.gyp" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../node_modules/bcrypt/build-all.sh" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../node_modules/bcrypt/examples/async_compare.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../node_modules/bcrypt/examples/forever_gen_salt.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../node_modules/bcrypt/package.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../node_modules/bcrypt/prebuilds/darwin-arm64/bcrypt.node" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../node_modules/bcrypt/prebuilds/darwin-x64/bcrypt.node" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../node_modules/bcrypt/prebuilds/linux-arm/bcrypt.glibc.node" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../node_modules/bcrypt/prebuilds/linux-arm/bcrypt.musl.node" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../node_modules/bcrypt/prebuilds/linux-arm64/bcrypt.glibc.node" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../node_modules/bcrypt/prebuilds/linux-arm64/bcrypt.musl.node" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../node_modules/bcrypt/prebuilds/linux-x64/bcrypt.glibc.node" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../node_modules/bcrypt/prebuilds/linux-x64/bcrypt.musl.node" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../node_modules/bcrypt/prebuilds/win32-arm64/bcrypt.node" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../node_modules/bcrypt/prebuilds/win32-x64/bcrypt.node" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../node_modules/bcrypt/promises.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../node_modules/bcrypt/src/bcrypt.cc" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../node_modules/bcrypt/src/bcrypt_node.cc" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../node_modules/bcrypt/src/blowfish.cc" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../node_modules/bcrypt/src/node_blf.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../node_modules/bcrypt/test/async.test.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../node_modules/bcrypt/test/implementation.test.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../node_modules/bcrypt/test/promise.test.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../node_modules/bcrypt/test/repetitions.test.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../node_modules/bcrypt/test/sync.test.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../node_modules/node-addon-api/LICENSE.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../node_modules/node-addon-api/README.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../node_modules/node-addon-api/common.gypi" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../node_modules/node-addon-api/except.gypi" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../node_modules/node-addon-api/index.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../node_modules/node-addon-api/napi-inl.deprecated.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../node_modules/node-addon-api/napi-inl.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../node_modules/node-addon-api/napi.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../node_modules/node-addon-api/node_addon_api.gyp" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../node_modules/node-addon-api/node_api.gyp" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../node_modules/node-addon-api/noexcept.gypi" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../node_modules/node-addon-api/nothing.c" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../node_modules/node-addon-api/package-support.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../node_modules/node-addon-api/package.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../node_modules/node-addon-api/tools/README.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../node_modules/node-addon-api/tools/check-napi.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../node_modules/node-addon-api/tools/clang-format.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../node_modules/node-addon-api/tools/conversion.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../node_modules/node-gyp-build/LICENSE" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../node_modules/node-gyp-build/README.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../node_modules/node-gyp-build/SECURITY.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../node_modules/node-gyp-build/bin.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../node_modules/node-gyp-build/build-test.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../node_modules/node-gyp-build/index.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../node_modules/node-gyp-build/node-gyp-build.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../node_modules/node-gyp-build/optional.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../node_modules/node-gyp-build/package.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../package-lock.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../package.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../servidor/.env" beforeDir="false" afterPath="$PROJECT_DIR$/../../servidor/.env" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../servidor/db/.env" beforeDir="false" afterPath="$PROJECT_DIR$/../../servidor/db/.env" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../servidor/routers/auth.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../servidor/servidor.js" beforeDir="false" afterPath="$PROJECT_DIR$/../../servidor/servidor.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../supervisor/css/styles.css" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../supervisor/index.html" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../supervisor/js/auth.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../supervisor/js/config.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../supervisor/js/dashboard.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../supervisor/login.html" beforeDir="false" afterPath="$PROJECT_DIR$/../../supervisor/login.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../test-bcrypt.js" beforeDir="false" />
+    <list default="true" id="0ad459bf-cf9c-4b3c-92c7-f68c72c58a4a" name="Changes" comment="Merge branch 'Supervisor-Brandon'&#10;&#10;# Conflicts:&#10;#&#9;botonera/botoneraOperador/.idea/deploymentTargetSelector.xml&#10;#&#9;botonera/botoneraOperador/.idea/gradle.xml&#10;#&#9;botonera/botoneraOperador/.idea/misc.xml">
+      <change beforePath="$PROJECT_DIR$/.gradle/8.13/fileHashes/fileHashes.lock" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/8.13/fileHashes/fileHashes.lock" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/gradle.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/gradle.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/reports/problems/problems-report.html" beforeDir="false" afterPath="$PROJECT_DIR$/build/reports/problems/problems-report.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gradle/libs.versions.toml" beforeDir="false" afterPath="$PROJECT_DIR$/gradle/libs.versions.toml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -110,7 +24,7 @@
   <component name="ClangdSettings">
     <option name="formatViaClangd" value="false" />
   </component>
-  <component name="ExecutionTargetManager" SELECTED_TARGET="device_and_snapshot_combo_box_target[]" />
+  <component name="ExecutionTargetManager" SELECTED_TARGET="device_and_snapshot_combo_box_target[DeviceId(pluginId=PhysicalDevice, isTemplate=false, identifier=serial=R5CY43A1M5J)]" />
   <component name="ExternalProjectsData">
     <projectState path="$PROJECT_DIR$">
       <ProjectState />
@@ -183,10 +97,9 @@
     "RunOnceActivity.git.unshallow": "true",
     "RunOnceActivity.readMode.enableVisualFormatting": "true",
     "SHARE_PROJECT_CONFIGURATION_FILES": "true",
-    "android.gradle.sync.needed": "true",
     "cf.first.check.clang-format": "false",
     "cidr.known.project.marker": "true",
-    "git-widget-placeholder": "Supervisor-Brandon",
+    "git-widget-placeholder": "main",
     "kotlin-language-version-configured": "true",
     "last_opened_file_path": "C:/Users/isaac/Documents/6TO SEMESTRE/I de Software/Proyecto/botonera/botoneraOperador"
   }
@@ -263,6 +176,17 @@
       <method v="2">
         <option name="Android.Gradle.BeforeRunTask" enabled="true" />
       </method>
+    </configuration>
+    <configuration default="true" type="JetRunConfigurationType">
+      <module name="botoneraOperador" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration default="true" type="KotlinStandaloneScriptRunConfigurationType">
+      <module name="botoneraOperador" />
+      <option name="filePath" />
+      <method v="2" />
     </configuration>
   </component>
   <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />

@@ -4,7 +4,7 @@
             "outputFile": "com.example.botoneraoperador.app-mergeDebugResources-55:/values-v28/values-v28.xml",
             "map": [
                 {
-                    "source": "C:\\Users\\isaac\\.gradle\\caches\\8.13\\transforms\\b85fabf3ef545e20bb7094adc11bcc38\\transformed\\appcompat-1.2.0\\res\\values-v28\\values-v28.xml",
+                    "source": "C:\\Users\\isaac\\.gradle\\caches\\8.13\\transforms\\afdc2e528a983324340a4e7befb5c81a\\transformed\\appcompat-1.2.0\\res\\values-v28\\values-v28.xml",
                     "from": {
                         "startLines": "2,3,4,8",
                         "startColumns": "4,4,4,4",

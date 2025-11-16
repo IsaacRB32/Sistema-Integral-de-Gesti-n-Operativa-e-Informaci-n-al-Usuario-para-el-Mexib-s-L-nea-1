@@ -4,7 +4,7 @@
             "outputFile": "com.example.botoneraoperador.app-mergeDebugResources-55:/values-night-v8/values-night-v8.xml",
             "map": [
                 {
-                    "source": "C:\\Users\\isaac\\.gradle\\caches\\8.13\\transforms\\b85fabf3ef545e20bb7094adc11bcc38\\transformed\\appcompat-1.2.0\\res\\values-night-v8\\values-night-v8.xml",
+                    "source": "C:\\Users\\isaac\\.gradle\\caches\\8.13\\transforms\\afdc2e528a983324340a4e7befb5c81a\\transformed\\appcompat-1.2.0\\res\\values-night-v8\\values-night-v8.xml",
                     "from": {
                         "startLines": "2,3,4,5,6,7,8,9",
                         "startColumns": "4,4,4,4,4,4,4,4",
