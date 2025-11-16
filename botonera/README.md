@@ -274,6 +274,9 @@ Caso de uso para login.
 #### **EnviarIncidenciaUseCase.kt**
 Caso de uso para enviar incidencias.
 
+<<<<<<< HEAD
 ---
 
 
+=======
+>>>>>>> 4e47bc09fdb6df646c413efe7428338a0682cfb2
