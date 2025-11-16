@@ -167,4 +167,4 @@ fun DefaultPreview() {
     BotoneraOperadorTheme {
         BotoneraScreen(navController = rememberNavController())
     }
-}
+}//Hola
