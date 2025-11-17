@@ -77,7 +77,7 @@ fun LoginHeader() {
         verticalArrangement = Arrangement.spacedBy(18.dp)
     ) {
         Image(
-            painter = painterResource(id = R.drawable.mexibusicon), // Asumiendo el nombre renombrado
+            painter = painterResource(id = R.drawable.mexibusicoN), // Asumiendo el nombre renombrado
             contentDescription = "Logo de Mexibús",
             modifier = Modifier.size(100.dp)
         )
