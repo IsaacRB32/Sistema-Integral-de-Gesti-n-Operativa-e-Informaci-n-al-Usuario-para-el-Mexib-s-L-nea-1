@@ -12,7 +12,7 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
     var usuario: Usuario? = null
         private set
 
-    fun login(email: String, password: String, onResult: (Boolean, String) -> Unit) {
+    fun login(email: String, password: String, onResult: (success: Boolean, message: String) -> Unit) {
         val context = getApplication<Application>().applicationContext
         repository.login(context, email, password,
             onSuccess = {

@@ -17,7 +17,7 @@ class LoginRepository {
         onError: (String) -> Unit
     ) {
         val queue = Volley.newRequestQueue(context)
-        val url = "http://192.168.100.207:3000/api/login"
+        val url="http://192.168.100.207:3000/api/auth/login"
 
         val body = JSONObject().apply {
             put("email", email)
@@ -30,15 +30,22 @@ class LoginRepository {
             body,
             { response ->
                 try {
-                    val usuarioJson = response.getJSONObject("usuario")
-                    val usuario = Usuario(
-                        id = usuarioJson.getInt("id_usuario"),
-                        nombre = usuarioJson.getString("nombre"),
-                        primerApellido = usuarioJson.getString("primer_apellido"),
-                        segundoApellido = usuarioJson.optString("segundo_apellido", null),
-                        email = usuarioJson.getString("email")
-                    )
-                    onSuccess(usuario)
+                    // El backend responde con { message, usuario }
+                    if (response.has("usuario")) {
+                        val usuarioJson = response.getJSONObject("usuario")
+                        val usuario = Usuario(
+                            id = usuarioJson.getInt("id_usuario"),
+                            nombre = usuarioJson.getString("nombre"),
+                            primerApellido = usuarioJson.getString("primer_apellido"),
+                            segundoApellido = usuarioJson.optString("segundo_apellido", null),
+                            email = usuarioJson.getString("email")
+                        )
+                        onSuccess(usuario)
+                    } else {
+                        // Si no viene usuario, la credencial es incorrecta
+                        val msg = response.optString("message", "Credenciales incorrectas")
+                        onError(msg)
+                    }
                 } catch (e: Exception) {
                     onError("Error al procesar la respuesta")
                 }
@@ -49,8 +56,8 @@ class LoginRepository {
                     val body = String(response.data)
                     try {
                         val json = JSONObject(body)
-                        val mensaje = json.optString("message", "error desconocido")
-                        onError(mensaje)
+                        val msg = json.optString("message", "Credenciales incorrectas")
+                        onError(msg)
                     } catch (e: Exception) {
                         onError("Error desconocido")
                     }
@@ -59,7 +66,6 @@ class LoginRepository {
                 }
             }
         )
-
         queue.add(request)
     }
 }

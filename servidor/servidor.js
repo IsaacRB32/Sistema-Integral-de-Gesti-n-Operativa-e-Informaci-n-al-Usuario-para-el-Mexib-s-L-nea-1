@@ -7,9 +7,12 @@ import { fileURLToPath } from "url";
 import { iniciarSimulacion, detenerSimulacion } from "./routers/simulacion_simple.js";
 import simRoutes from "./routers/sim-routes.js";
 
+import authRoutes from "./routers/auth-routes.js";
+
 const app = express();
 app.use(express.json());
 app.use("/api", simRoutes);
+app.use("/api/auth", authRoutes);
 
 //Servir archivos estáticos del frontend
 const __filename = fileURLToPath(import.meta.url);
