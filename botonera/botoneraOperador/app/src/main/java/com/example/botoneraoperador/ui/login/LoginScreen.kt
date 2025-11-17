@@ -6,24 +6,27 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
-import androidx.compose.ui.graphics.Color
 import com.example.botoneraoperador.R
 import com.example.botoneraoperador.ui.theme.Blue40
 import com.example.botoneraoperador.ui.theme.Blue41
 
-
 @Composable
-fun LoginScreen(navController: NavController) {
+fun LoginScreen(
+    navController: NavController,
+    loginViewModel: LoginViewModel = viewModel()
+) {
+    var email by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
 
-    var usuario by remember { mutableStateOf("") }
-    var pwd by remember { mutableStateOf("") }
-    var showNoUnitDialog by remember { mutableStateOf(false) }
+    var showEmptyFieldsDialog by remember { mutableStateOf(false) }
     var showLoginFailedDialog by remember { mutableStateOf(false) }
 
     Box(
@@ -39,35 +42,64 @@ fun LoginScreen(navController: NavController) {
             LoginHeader()
 
             LoginForm(
-                usuario = usuario,
-                onUsuarioChange = { usuario = it },
-                pwd = pwd,
-                onPwdChange = { pwd = it },
+                usuario = email,
+                onUsuarioChange = { email = it },
+                pwd = password,
+                onPwdChange = { password = it },
                 onLoginClick = {
-                    // Lógica simulada de LOGIN
-                    when (usuario) {
-                        "sinunidad" -> showNoUnitDialog = true // Muestra diálogo de no unidad
-                        "error" -> showLoginFailedDialog = true // Muestra diálogo de error de login
-                        else -> navController.navigate("botonera") // Navegación exitosa
+                    when {
+                        email.isEmpty() || password.isEmpty() -> {
+                            showEmptyFieldsDialog = true
+                        }
+                        else -> {
+                            loginViewModel.login(email, password) { success, _ ->
+                                if (success) {
+                                    navController.navigate("botonera")
+                                } else {
+                                    showLoginFailedDialog = true
+                                }
+                            }
+                        }
                     }
                 }
             )
         }
     }
 
-    if (showNoUnitDialog) {
-        NoUnitAssignedDialog(
-            onDismiss = { showNoUnitDialog = false }
+    // Diálogo campos vacíos
+    if (showEmptyFieldsDialog) {
+        AlertDialog(
+            onDismissRequest = { showEmptyFieldsDialog = false },
+            confirmButton = {
+                TextButton(
+                    onClick = { showEmptyFieldsDialog = false },
+                    colors = ButtonDefaults.textButtonColors(contentColor = Blue41)
+                ) {
+                    Text("Aceptar")
+                }
+            },
+            title = { Text("Campos Vacíos") },
+            text = { Text("Por favor, completa todos los campos.") }
         )
     }
 
+    // Diálogo login fallido
     if (showLoginFailedDialog) {
-        LoginFailedDialog(
-            onDismiss = { showLoginFailedDialog = false }
+        AlertDialog(
+            onDismissRequest = { showLoginFailedDialog = false },
+            confirmButton = {
+                TextButton(
+                    onClick = { showLoginFailedDialog = false },
+                    colors = ButtonDefaults.textButtonColors(contentColor = Blue41)
+                ) {
+                    Text("Cerrar")
+                }
+            },
+            title = { Text("Error de Acceso") },
+            text = { Text("El nombre de usuario o la contraseña son incorrectos. Por favor, verifica tus credenciales y vuelve a intentarlo.") }
         )
     }
 }
-
 
 @Composable
 fun LoginHeader() {
@@ -76,7 +108,7 @@ fun LoginHeader() {
         verticalArrangement = Arrangement.spacedBy(18.dp)
     ) {
         Image(
-            painter = painterResource(id = R.drawable.mexibusicon), // Asumiendo el nombre renombrado
+            painter = painterResource(id = R.drawable.mexibusicon),
             contentDescription = "Logo de Mexibús",
             modifier = Modifier.size(100.dp)
         )
@@ -88,7 +120,6 @@ fun LoginHeader() {
         )
     }
 }
-
 
 @Composable
 fun LoginForm(
@@ -129,66 +160,9 @@ fun LoginForm(
     }
 }
 
-@Composable
-fun NoUnitAssignedDialog(onDismiss: () -> Unit) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Text(text = "Sin unidad asignada")
-        },
-
-        confirmButton = {
-            TextButton(
-                onClick = onDismiss,
-                colors = ButtonDefaults.textButtonColors(contentColor = Blue41)
-            ) {
-                Text("Aceptar")
-            }
-        },
-
-
-        text = {
-            Text(text = "Tu usuario ha iniciado sesión correctamente, pero no tienes una unidad de transporte asignada en este momento.")
-        }
-    )
-}
-
-@Composable
-fun LoginFailedDialog(onDismiss: () -> Unit) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        confirmButton = {
-            TextButton(
-                onClick = onDismiss,
-                colors = ButtonDefaults.textButtonColors(contentColor = Blue41)
-            ) {
-                Text("Cerrar")
-            }
-        },
-        title = {
-            Text(text = "Error de Acceso")
-        },
-        text = {
-            Text(text = "El nombre de usuario o la contraseña son incorrectos. Por favor, verifica tus credenciales y vuelve a intentarlo.")
-        }
-    )
-}
-
-
+// Previews
 @Preview(showBackground = true)
 @Composable
 fun LoginScreenPreview() {
     LoginScreen(navController = rememberNavController())
-}
-
-@Preview
-@Composable
-fun LoginFailedDialogPreview() {
-    LoginFailedDialog(onDismiss = {})
-}
-
-@Preview
-@Composable
-fun NoUnitAssignedDialogPreview() {
-    NoUnitAssignedDialog(onDismiss = {})
 }
