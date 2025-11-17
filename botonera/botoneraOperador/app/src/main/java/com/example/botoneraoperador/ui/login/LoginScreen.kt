@@ -24,7 +24,6 @@ fun LoginScreen(navController: NavController) {
     var usuario by remember { mutableStateOf("") }
     var pwd by remember { mutableStateOf("") }
     var showNoUnitDialog by remember { mutableStateOf(false) }
-    // NUEVO ESTADO: Controla la visibilidad del diálogo de error de login
     var showLoginFailedDialog by remember { mutableStateOf(false) }
 
     Box(
@@ -77,7 +76,7 @@ fun LoginHeader() {
         verticalArrangement = Arrangement.spacedBy(18.dp)
     ) {
         Image(
-            painter = painterResource(id = R.drawable.mexibusicoN), // Asumiendo el nombre renombrado
+            painter = painterResource(id = R.drawable.mexibusicon), // Asumiendo el nombre renombrado
             contentDescription = "Logo de Mexibús",
             modifier = Modifier.size(100.dp)
         )
@@ -121,7 +120,7 @@ fun LoginForm(
             onClick = onLoginClick,
             modifier = Modifier.fillMaxWidth(),
             colors = ButtonDefaults.buttonColors(
-                containerColor = Blue40, // Usando el color Blue40
+                containerColor = Blue40,
                 contentColor = Color.White
             )
         ) {
@@ -163,7 +162,7 @@ fun LoginFailedDialog(onDismiss: () -> Unit) {
                 onClick = onDismiss,
                 colors = ButtonDefaults.textButtonColors(contentColor = Blue41)
             ) {
-                Text("Cerrar") // Cambiamos el texto a Cerrar
+                Text("Cerrar")
             }
         },
         title = {

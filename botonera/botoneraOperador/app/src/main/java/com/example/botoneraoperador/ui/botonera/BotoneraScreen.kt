@@ -23,8 +23,10 @@ import com.example.botoneraoperador.R
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.style.TextAlign
 
-//Importaciones de Reloj
+
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -34,8 +36,9 @@ import kotlinx.coroutines.delay
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 
-// Color principal de la app
-val AppTealColor = Color(0xFF018786)
+
+val AppTealColor = Color(0xFF3D6D7A)
+
 
 @Composable
 fun BotoneraScreen(navController: NavHostController) {
@@ -45,19 +48,16 @@ fun BotoneraScreen(navController: NavHostController) {
             .background(Color.White)
     ) {
         TopBar()
-        IconGrid() //Cuadricula de Iconos
+        IconGrid()
     }
 }
 
+
 @Composable
 fun TopBar() {
-    // 1. Prepara un formateador para la hora "HH:mm"
     val formatter = remember { DateTimeFormatter.ofPattern("HH:mm") }
-
-    // 2. Crea un "estado" para guardar el texto de la hora.
     var currentTime by remember { mutableStateOf("") }
 
-    // 3. Este efecto se "lanza" una vez y se ejecuta en un bucle
     LaunchedEffect(Unit) {
         while (true) {
             currentTime = LocalTime.now().format(formatter)
@@ -72,7 +72,7 @@ fun TopBar() {
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Logo
+        // Botón de Menú
         Box(
             modifier = Modifier
                 .size(40.dp)
@@ -81,7 +81,7 @@ fun TopBar() {
         ) {
             Icon(
                 imageVector = Icons.Default.Menu,
-                contentDescription = "Logo",
+                contentDescription = "Menú",
                 tint = AppTealColor,
                 modifier = Modifier.size(30.dp)
             )
@@ -89,7 +89,7 @@ fun TopBar() {
 
         Spacer(modifier = Modifier.weight(1f))
 
-        // 4. El texto ahora usa la variable de estado "currentTime"
+        // Reloj
         Text(
             text = currentTime,
             color = Color.White,
@@ -99,31 +99,33 @@ fun TopBar() {
     }
 }
 
+
 @Composable
 fun IconGrid() {
     Column(
         modifier = Modifier
             .fillMaxWidth()
+            .fillMaxHeight()
             .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.SpaceAround
     ) {
-        // Fila 1 de íconos
+
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceEvenly
+            horizontalArrangement = Arrangement.SpaceEvenly // Distribuye los 4 botones
         ) {
-            InfoButton(drawableId = R.drawable.bloqueo_manif, description = "Bloqueo")
+            InfoButton(drawableId = R.drawable.bloqueo_manif, description = "Bloqueos")
             InfoButton(drawableId = R.drawable.colision_terceros, description = "Colisión Terceros")
             InfoButton(drawableId = R.drawable.colision_unidad, description = "Colisión Unidad")
             InfoButton(drawableId = R.drawable.fallas_tecnicas, description = "Fallas Técnicas")
         }
 
-        Spacer(modifier = Modifier.height(16.dp)) // Espacio entre filas
 
-        // Fila 2 de íconos
         Row(
-            modifier = Modifier.fillMaxWidth(0.8f),
-            horizontalArrangement = Arrangement.SpaceEvenly
+
+            modifier = Modifier.fillMaxWidth(0.75f),
+            horizontalArrangement = Arrangement.SpaceEvenly // Distribuye los 3 botones
         ) {
             InfoButton(drawableId = R.drawable.incidente_estacion, description = "Inc. Estación")
             InfoButton(drawableId = R.drawable.inundacion, description = "Inundación")
@@ -132,34 +134,47 @@ fun IconGrid() {
     }
 }
 
+
 @Composable
 fun InfoButton(drawableId: Int, description: String) {
     Column(
-        modifier = Modifier
-            .size(90.dp)
-            .background(AppTealColor, RoundedCornerShape(12.dp))
-            .clickable { /* AQUI VAN LAS ACCIONES DEL BOTON */ },
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        modifier = Modifier.padding(1.dp)
     ) {
-        Image(
-            painter = painterResource(id = drawableId),
-            contentDescription = description,
-            modifier = Modifier.size(48.dp)
-        )
 
-        Spacer(modifier = Modifier.height(4.dp))
+        Box(
+
+            modifier = Modifier
+                .size(90.dp)
+                .background(AppTealColor, RoundedCornerShape(3.dp))
+                .clickable { /* AQUI VAN LAS ACCIONES DEL BOTON */ },
+            contentAlignment = Alignment.Center
+        ) {
+            Image(
+                painter = painterResource(id = drawableId),
+                contentDescription = description,
+                modifier = Modifier.fillMaxSize().padding(1.5.dp),
+                contentScale = ContentScale.Fit
+            )
+        }
+
+
+        Spacer(modifier = Modifier.height(3.dp))
 
         Text(
             text = description,
-            color = Color.White,
-            fontSize = 10.sp,
+            color = Color.Black,
+            fontSize = 12.sp,
             fontWeight = FontWeight.Normal,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            textAlign = TextAlign.Center,
+
+            modifier = Modifier.widthIn(min = 90.dp)
         )
     }
 }
+
 
 @Preview(showBackground = true)
 @Composable
@@ -167,4 +182,4 @@ fun DefaultPreview() {
     BotoneraOperadorTheme {
         BotoneraScreen(navController = rememberNavController())
     }
-}//Hola
+}
