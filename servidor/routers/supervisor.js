@@ -12,6 +12,7 @@ router.get("/incidencias", async (req, res) => {
         i.id_incidencia,
         i.fecha_inicio,
         i.descripcion,
+        i.id_unidad,
         e.estado_incidencia,
         est.nombre_estacion,
         c.nombre_incidencia,

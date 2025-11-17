@@ -7,11 +7,13 @@ import loginRoutes from "./routers/login.js";
 
 import { iniciarSimulacion, detenerSimulacion } from "./routers/simulacion_simple.js";
 import simRoutes from "./routers/sim-routes.js";
+import supervisorRoutes from "./routers/supervisor.js";
 
 const app = express();
 app.use(express.json());
 app.use("/api", simRoutes);
 app.use("/api", loginRoutes);
+app.use("/api/supervisor", supervisorRoutes);
 
 //Servir archivos estáticos del frontend
 const __filename = fileURLToPath(import.meta.url);
