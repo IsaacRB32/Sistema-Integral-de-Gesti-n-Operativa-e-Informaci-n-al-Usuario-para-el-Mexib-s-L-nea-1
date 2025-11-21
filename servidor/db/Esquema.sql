@@ -79,22 +79,23 @@ CREATE INDEX IF NOT EXISTS ix_rutaestaciones_ruta_sen_orden
 -- =========================
 CREATE TABLE IF NOT EXISTS UnidadesMB (
   id_unidad SERIAL PRIMARY KEY,
-  id_usuario INT REFERENCES Usuarios(id_usuario),
   id_ruta INT REFERENCES Rutas(id_ruta),
 
-  -- Nueva estructura para simulación circular
   sentido sentido_dir DEFAULT 'IDA',
   en_circuito BOOLEAN NOT NULL DEFAULT FALSE,
   idx_tramo INT DEFAULT 0,
   progreso NUMERIC(6,4) DEFAULT 0,
   velocidad NUMERIC(6,2) DEFAULT 1.50,
+
   estado_unidad VARCHAR(30)
     CHECK (estado_unidad IN ('EN_RUTA','EN_ESTACION','EN_COLA','INCIDENCIA','FUERA_DE_SERVICIO'))
     DEFAULT 'FUERA_DE_SERVICIO',
+
   dwell_hasta TIMESTAMP NULL
 );
 CREATE INDEX IF NOT EXISTS ix_unidades_en_circuito ON UnidadesMB(en_circuito);
 CREATE INDEX IF NOT EXISTS ix_unidades_ruta_tramo ON UnidadesMB(id_ruta, idx_tramo);
+
 
 -- =========================
 -- 4) INCIDENCIAS Y EVENTOS
@@ -128,6 +129,33 @@ ADD COLUMN password VARCHAR(100);
 ALTER TABLE Usuarios
 ALTER COLUMN email SET NOT NULL;
 
+-- ============================================
+--  ASIGNACIONES ENTRE OPERADORES Y UNIDADES
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS AsignacionesUnidad (
+  id_asignacion SERIAL PRIMARY KEY,
+
+  id_usuario INT NOT NULL REFERENCES Usuarios(id_usuario),
+  id_unidad INT NOT NULL REFERENCES UnidadesMB(id_unidad),
+
+  fecha_asignacion TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  fecha_fin TIMESTAMP NULL,
+
+  activo BOOLEAN NOT NULL DEFAULT TRUE,
+
+  -- Un operador solo puede tener UNA unidad asignada activa
+  CONSTRAINT uq_asign_usuario UNIQUE (id_usuario, activo)
+    DEFERRABLE INITIALLY DEFERRED,
+
+  -- Una unidad solo puede estar asignada a UN operador activo
+  CONSTRAINT uq_asign_unidad UNIQUE (id_unidad, activo)
+    DEFERRABLE INITIALLY DEFERRED
+);
+
+ALTER TABLE Usuarios
+ADD CONSTRAINT uq_usuarios_email UNIQUE (email);
+
 -- =========================
 -- 5) SEMILLA / CATALOGOS
 -- =========================
@@ -140,8 +168,9 @@ ON CONFLICT (id_estado) DO UPDATE
 SET estado_incidencia = EXCLUDED.estado_incidencia;
 
 INSERT INTO CatalogoIncidencias(nombre_incidencia)
-VALUES ('Falla mecánica'), ('Obstrucción en vía'), ('Puerta atascada'),
-       ('Emergencia médica'), ('Pérdida de energía'), ('Otro')
+VALUES ('Bloqueo por manifestación'), ('Inundación'), ('Colisión de unidad'),
+       ('Colisión de terceros'), ('Fallas técnicas de la unidad'), ('Unidad detenida en el carril'),
+        ('Incidente en la estación'), ('Otro')
 ON CONFLICT (nombre_incidencia) DO NOTHING;
 
 INSERT INTO Rutas(id_ruta, nombre, es_circular)
@@ -231,35 +260,30 @@ SET id_estacion = EXCLUDED.id_estacion,
 -- =========================
 -- 7) UNIDADES DE PRUEBA
 -- =========================
-INSERT INTO UnidadesMB(id_unidad, id_usuario, id_ruta, sentido, estado_unidad, en_circuito)
+INSERT INTO UnidadesMB(id_unidad, id_ruta, sentido, estado_unidad, en_circuito)
 VALUES
-  (1, NULL, 1, 'IDA', 'FUERA_DE_SERVICIO', FALSE),
-  (2, NULL, 1, 'IDA', 'FUERA_DE_SERVICIO', FALSE),
-  (3, NULL, 1, 'IDA', 'FUERA_DE_SERVICIO', FALSE)
+  (1, 1, 'IDA', 'FUERA_DE_SERVICIO', FALSE),
+  (2, 1, 'IDA', 'FUERA_DE_SERVICIO', FALSE),
+  (3, 1, 'IDA', 'FUERA_DE_SERVICIO', FALSE)
 ON CONFLICT (id_unidad) DO UPDATE
 SET id_ruta = EXCLUDED.id_ruta,
     sentido = EXCLUDED.sentido,
     estado_unidad = EXCLUDED.estado_unidad,
     en_circuito = EXCLUDED.en_circuito;
 
+-- INSERT INTO Usuarios (nombre, primer_apellido, email, password, id_rol)
+-- VALUES ('Admin', 'Supervisor', 'admin@mexibus.com', '1234', 
+--         (SELECT id_rol FROM Roles WHERE rol = 'SUPERVISOR'));
+
 INSERT INTO Usuarios (nombre, primer_apellido, email, password, id_rol)
 VALUES ('Admin', 'Supervisor', 'admin@mexibus.com', '1234', 
-        (SELECT id_rol FROM Roles WHERE rol = 'SUPERVISOR'));
+        (SELECT id_rol FROM Roles WHERE rol = 'SUPERVISOR'))
+ON CONFLICT (email) DO NOTHING;
+
 
 -- ===========================================================
 --  FIN DEL ESQUEMA COMPLETO (Simulación Circular)
 -- ===========================================================
 
-
-
-
-SELECT id_unidad, idx_tramo, progreso, estado_unidad, en_circuito
-FROM UnidadesMB
-WHERE en_circuito = TRUE;
-
-UPDATE UnidadesMB
-SET en_circuito = FALSE, progreso = 0, estado_unidad = 'FUERA_DE_SERVICIO';
-
-SELECT id_unidad, sentido, idx_tramo, estado_unidad FROM UnidadesMB;
 
 
