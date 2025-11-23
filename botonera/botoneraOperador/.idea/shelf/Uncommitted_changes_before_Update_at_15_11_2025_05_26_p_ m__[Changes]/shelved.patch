@@ -1,0 +1,20 @@
+Index: app/src/main/java/com/example/botoneraoperador/ui/botonera/BotoneraScreen.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/example/botoneraoperador/ui/botonera/BotoneraScreen.kt b/app/src/main/java/com/example/botoneraoperador/ui/botonera/BotoneraScreen.kt
+new file mode 100644
+--- /dev/null	(date 1763238122864)
++++ b/app/src/main/java/com/example/botoneraoperador/ui/botonera/BotoneraScreen.kt	(date 1763238122864)
+@@ -0,0 +1,10 @@
++package com.example.botoneraoperador.ui.botonera
++
++import androidx.compose.material3.Text
++import androidx.compose.runtime.Composable
++import androidx.navigation.NavController
++
++@Composable
++fun BotoneraScreen(navController: NavController) {
++    Text("Pantalla Botonera")
++}
