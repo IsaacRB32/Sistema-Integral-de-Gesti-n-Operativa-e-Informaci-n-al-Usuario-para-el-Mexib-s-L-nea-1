@@ -1,5 +1,7 @@
 package com.example.botoneraoperador.ui.botonera
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.material3.Surface
 import androidx.compose.ui.res.painterResource
 import androidx.compose.foundation.background
@@ -40,6 +42,7 @@ import java.time.format.DateTimeFormatter
 val AppTealColor = Color(0xFF3D6D7A)
 
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun BotoneraScreen(navController: NavHostController) {
     Column(
@@ -53,6 +56,7 @@ fun BotoneraScreen(navController: NavHostController) {
 }
 
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun TopBar() {
     val formatter = remember { DateTimeFormatter.ofPattern("HH:mm") }
@@ -176,6 +180,7 @@ fun InfoButton(drawableId: Int, description: String) {
 }
 
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Preview(showBackground = true)
 @Composable
 fun DefaultPreview() {

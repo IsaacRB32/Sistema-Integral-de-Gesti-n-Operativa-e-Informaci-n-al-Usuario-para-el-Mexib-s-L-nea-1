@@ -17,7 +17,7 @@ class LoginRepository {
         onError: (String) -> Unit
     ) {
         val queue = Volley.newRequestQueue(context)
-        val url="http://192.168.100.207:3000/api/auth/login"
+        val url="http://192.168.100.207:3000/api/login"
 
         val body = JSONObject().apply {
             put("email", email)
