@@ -1,8 +1,9 @@
 package com.example.botoneraoperador.ui.botonera
 
+import android.content.Context
 import android.os.Build
+import android.widget.Toast
 import androidx.annotation.RequiresApi
-import androidx.compose.material3.Surface
 import androidx.compose.ui.res.painterResource
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -34,13 +35,18 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
+import com.example.botoneraoperador.data.repository.IncidenciasRepository
 import kotlinx.coroutines.delay
+import org.json.JSONObject
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 
 
 val AppTealColor = Color(0xFF3D6D7A)
-
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
@@ -106,6 +112,12 @@ fun TopBar() {
 
 @Composable
 fun IconGrid() {
+    val context=LocalContext.current;
+    val repo=IncidenciasRepository(context)
+    var mostrarDialogo by remember {mutableStateOf(false)}
+    var tipoIncidencia by remember { mutableStateOf("") }
+    var descripcionIncidencia by remember { mutableStateOf("") }
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -119,10 +131,34 @@ fun IconGrid() {
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceEvenly // Distribuye los 4 botones
         ) {
-            InfoButton(drawableId = R.drawable.bloqueo_manif, description = "Bloqueos")
-            InfoButton(drawableId = R.drawable.colision_terceros, description = "Colisión Terceros")
-            InfoButton(drawableId = R.drawable.colision_unidad, description = "Colisión Unidad")
-            InfoButton(drawableId = R.drawable.fallas_tecnicas, description = "Fallas Técnicas")
+            InfoButton(
+                drawableId = R.drawable.bloqueo_manif, description = "Bloqueos"
+            ){
+                tipoIncidencia="Bloqueo"
+                descripcionIncidencia="Se presenta un bloqueo en el recorrido debido a una manifestación"
+                mostrarDialogo=true
+            }
+            InfoButton(
+                drawableId = R.drawable.colision_terceros, description = "Colisión Terceros"
+            ){
+                tipoIncidencia="Colisión de Terceros"
+                descripcionIncidencia="Se presenta una colisión entre dos autos particulares"
+                mostrarDialogo=true
+            }
+            InfoButton(
+                drawableId = R.drawable.colision_unidad, description = "Colisión Unidad"
+            ){
+                tipoIncidencia="Colisión de Unidad"
+                descripcionIncidencia="La unidad está involucrada en una colisión con otro vehículo"
+                mostrarDialogo=true
+            }
+            InfoButton(
+                drawableId = R.drawable.fallas_tecnicas, description = "Fallas Técnicas"
+            ){
+                tipoIncidencia="Fallas Técnicas"
+                descripcionIncidencia="La unidad presenta fallas técnicas"
+                mostrarDialogo=true
+            }
         }
 
 
@@ -131,16 +167,105 @@ fun IconGrid() {
             modifier = Modifier.fillMaxWidth(0.75f),
             horizontalArrangement = Arrangement.SpaceEvenly // Distribuye los 3 botones
         ) {
-            InfoButton(drawableId = R.drawable.incidente_estacion, description = "Inc. Estación")
-            InfoButton(drawableId = R.drawable.inundacion, description = "Inundación")
-            InfoButton(drawableId = R.drawable.unidad_detenida, description = "Unidad Detenida")
+            InfoButton(
+                drawableId = R.drawable.incidente_estacion, description = "Inc. Estación"
+            ){
+                tipoIncidencia="Incidencia en Estación"
+                descripcionIncidencia="Se ha presentado un incidente dentro de una estación"
+                mostrarDialogo=true
+            }
+            InfoButton(
+                drawableId = R.drawable.inundacion, description = "Inundación"
+            ){
+                tipoIncidencia="Inundación"
+                descripcionIncidencia="Un tramo del recorrido presenta afectaciones por inundación"
+                mostrarDialogo=true
+            }
+            InfoButton(
+                drawableId = R.drawable.unidad_detenida, description = "Unidad Detenida"
+            ){
+                tipoIncidencia="Unidad Detenida"
+                descripcionIncidencia="La unidad se encuentra detenida en un tramo del recorrido"
+                mostrarDialogo=true
+            }
         }
     }
+    ConfirmDialog(
+        mostrar=mostrarDialogo,
+        tipo=tipoIncidencia,
+        descripcion=descripcionIncidencia,
+        unidad=1258,
+        operador=3,
+        onCorfirm = {
+            mostrarDialogo=false
+            reportar(descripcionIncidencia, repo, context)
+        },
+        onCancel = {
+            mostrarDialogo=false
+        }
+    )
 }
 
+@Composable
+fun ConfirmDialog(
+    mostrar: Boolean,
+    tipo: String,
+    descripcion: String,
+    unidad: Int,
+    operador: Int,
+    onCorfirm: () -> Unit,
+    onCancel: () -> Unit
+){
+    if(mostrar){
+        AlertDialog(
+            onDismissRequest={ onCancel() },
+            title = {Text("Confirmar incidencia")},
+            text={
+                Text(
+                    "Se enviará una la incidencia de tipo: $tipo\n\n"+
+                            "Descripción: $descripcion\n"+
+                            "Unidad: $unidad\n"+
+                            "Operador: $operador\n\n"+
+                            "¿Desea confirmar el envío?"
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = onCorfirm){
+                    Text("Aceptar")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = onCancel){
+                    Text("Cancelar")
+                }
+            }
+        )
+    }
+}
+fun reportar(descripcion: String, repo: IncidenciasRepository, context: Context){
+    val data= JSONObject().apply {
+        put("descripcion", descripcion)
+        put("id_cincidencia", 1)
+        put("id_estacion", 1)
+        put("id_usuario_reporta", 3)
+    }
+
+    val url="http://192.168.100.207:3000/api/operador/incidencias"
+
+    repo.reportarIncidencia(
+        url,
+        data,
+        onSuccess = { respuesta ->
+            Toast.makeText(context, "Incidencia enviada correctamente", Toast.LENGTH_SHORT).show()
+        },
+        onError = { error ->
+            Toast.makeText(context, "Error al enviar la incidencia. Intente más tarde", Toast.LENGTH_SHORT).show()
+        }
+    )
+}
 
 @Composable
-fun InfoButton(drawableId: Int, description: String) {
+fun InfoButton(drawableId: Int, description: String, onClick: () -> Unit){
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.padding(1.dp)
@@ -151,7 +276,7 @@ fun InfoButton(drawableId: Int, description: String) {
             modifier = Modifier
                 .size(90.dp)
                 .background(AppTealColor, RoundedCornerShape(3.dp))
-                .clickable { /* AQUI VAN LAS ACCIONES DEL BOTON */ },
+                .clickable { onClick() },
             contentAlignment = Alignment.Center
         ) {
             Image(
@@ -178,7 +303,6 @@ fun InfoButton(drawableId: Int, description: String) {
         )
     }
 }
-
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Preview(showBackground = true)

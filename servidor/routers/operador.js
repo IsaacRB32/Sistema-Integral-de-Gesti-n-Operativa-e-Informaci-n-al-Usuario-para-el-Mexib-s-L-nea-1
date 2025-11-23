@@ -5,6 +5,8 @@ const router = express.Router();
 
 //   1. Registrar nueva incidencia (POST /api/operador/incidencias)
 router.post("/incidencias", async (req, res) => {
+  console.log("LLEGÓ PETICIÓN DESDE LA APP");
+  console.log("BODY:", req.body);
   try {
     const { descripcion, id_cincidencia, id_estacion, id_usuario_reporta } = req.body;
 

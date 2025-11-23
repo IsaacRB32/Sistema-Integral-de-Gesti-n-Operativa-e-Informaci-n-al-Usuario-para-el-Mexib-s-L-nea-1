@@ -4,6 +4,7 @@ import { Server } from "socket.io";
 import path from "path";
 import { fileURLToPath } from "url";
 import loginRoutes from "./routers/login.js";
+import operadorRoutes from "./routers/operador.js";
 
 import { iniciarSimulacion, detenerSimulacion } from "./routers/simulacion_simple.js";
 import simRoutes from "./routers/sim-routes.js";
@@ -14,6 +15,7 @@ const app = express();
 app.use(express.json());
 app.use("/api", simRoutes);
 app.use("/api", loginRoutes);
+app.use("/api/operador", operadorRoutes);
 
 //Servir archivos estáticos del frontend
 const __filename = fileURLToPath(import.meta.url);
