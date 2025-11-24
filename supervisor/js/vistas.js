@@ -105,12 +105,14 @@ const VISTAS = {
                 <div class="space-y-4">
                     <input type="number" id="inc-unidad" placeholder="ID Unidad" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-mexibus-blue focus:outline-none text-gray-900">
                     <select id="inc-tipo" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-mexibus-blue focus:outline-none text-gray-900">
-                        <option value="1">Falla mecánica</option>
-                        <option value="2">Obstrucción en vía</option>
-                        <option value="3">Puerta atascada</option>
-                        <option value="4">Emergencia médica</option>
-                        <option value="5">Pérdida de energía</option>
-                        <option value="6">Otro</option>
+                        <option value="1">Bloqueo por Manifestación</option>
+                        <option value="2">Colisión de Terceros</option>
+                        <option value="3">Colisión de Unidad</option>
+                        <option value="4">Fallas Técnicas</option>
+                        <option value="5">Incidente en Estación</option>
+                        <option value="6">Inundación</option>
+                        <option value="7">Unidad Detenida</option>
+                        <option value="8">Otro</option>
                     </select>
                     <textarea id="inc-desc" rows="3" placeholder="Descripción" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-mexibus-blue focus:outline-none text-gray-900"></textarea>
                     <button onclick="moduloIncidencias.reportar()" class="w-full bg-red-500 hover:bg-red-600 font-bold py-3 rounded-lg transition shadow text-white">

@@ -1,4 +1,4 @@
-// Módulo de gestión de unidades
+// Módulo de gestión de unidades CON ICONOS
 const moduloUnidades = {
     async meterUnidad() {
         const id = document.getElementById('input-unidad-id').value;
@@ -55,6 +55,52 @@ const moduloUnidades = {
         }
     },
 
+    // Función para obtener icono de estación
+    obtenerIconoEstacion(nombreEstacion) {
+        if (!nombreEstacion || nombreEstacion === 'Desconocida') {
+            return '<span class="w-5 h-5 inline-block bg-gray-300 rounded-full mr-2 flex items-center justify-center text-xs" title="Ubicación desconocida">📍</span>';
+        }
+        
+        // Ruta corregida: ../ para subir desde /js a /supervisor
+        const rutaBase = '../mexibusSystemImages/stationsIcons/';
+        
+        const iconos = {
+            'Adolfo López Mateos': 'adolfoLopezMateosIcon.png',
+            '19 de Septiembre': '19deSeptiembreIcon.png',
+            'Alfredo Torres': 'alfredoTorresIcon.png',
+            'Aquiles Serdán': 'aquilesSerdanIcon.png',
+            'Central de Abastos': 'centraldeAbastosIcon.png',
+            'Ciudad Azteca': 'ciudadAztecaIcon.png',
+            'Cuauhtémoc Norte': 'cuauhtemocNorteIcon.png',
+            'Cuauhtémoc Sur': 'cuauhtemocSurIcon.png',
+            'Esmeralda': 'esmeraldaIcon.png',
+            'Hidalgo': 'hidalgoIcon.png',
+            'Hospital': 'hospitalIcon.png',
+            'Industrial': 'industrialIcon.png',
+            'Insurgentes': 'insurgentesIcon.png',
+            'Jardines del Morelos': 'jardinesdeMorelosIcon.png',
+            'Josefa Ortiz': 'josefaOrtizIcon.png',
+            'Las Américas': 'lasAmericasIcon.png',
+            'Las Torres': 'lasTorresIcon.png',
+            'Ojo de Agua': 'ojodeAguaIcon.png',
+            'Palomas': 'palomasIcon.png',
+            'Primero de Mayo': 'primerodeMayo.png',
+            'Quinto Sol': 'quintoSolIcon.png',
+            'Unitec': 'unitecIcon.png',
+            'Valle de Ecatepec': 'valledeEcatepecIcon.png',
+            'Vocacional 3': 'vocacional3Icon.png',
+            'Zodiaco': 'zodiacoIcon.png'
+        };
+        
+        const icono = iconos[nombreEstacion];
+        if (icono) {
+            return `<img src="${rutaBase}${icono}" alt="${nombreEstacion}" 
+                     class="w-5 h-5 inline-block mr-2 rounded" title="${nombreEstacion}">`;
+        }
+        
+        return `<span class="w-5 h-5 inline-block bg-blue-500 rounded-full mr-2 flex items-center justify-center text-white text-xs" title="${nombreEstacion}">🚉</span>`;
+    },
+
     async cargar() {
         try {
             const res = await fetch(`${CONFIG.API_BASE}/sim/snapshot`);
@@ -78,6 +124,7 @@ const moduloUnidades = {
 
                 const estacion = CONFIG.estaciones[u.idx_tramo] || 'Desconocida';
                 const progreso = Math.round(u.progreso * 100);
+                const iconoEstacion = this.obtenerIconoEstacion(estacion);
 
                 return `
                     <tr class="border-b border-gray-200 hover:bg-gray-50">
@@ -92,7 +139,12 @@ const moduloUnidades = {
                                 ${u.estado_unidad.replace('_', ' ')}
                             </span>
                         </td>
-                        <td class="py-3 px-2 text-sm text-gray-700">${estacion}</td>
+                        <td class="py-3 px-2 text-sm text-gray-700">
+                            <div class="flex items-center gap-2">
+                                ${iconoEstacion}
+                                <span>${estacion}</span>
+                            </div>
+                        </td>
                         <td class="py-3 px-2">
                             <div class="flex items-center gap-2">
                                 <div class="flex-1 bg-gray-200 rounded-full h-2">

@@ -140,8 +140,9 @@ ON CONFLICT (id_estado) DO UPDATE
 SET estado_incidencia = EXCLUDED.estado_incidencia;
 
 INSERT INTO CatalogoIncidencias(nombre_incidencia)
-VALUES ('Falla mecánica'), ('Obstrucción en vía'), ('Puerta atascada'),
-       ('Emergencia médica'), ('Pérdida de energía'), ('Otro')
+VALUES ('Bloqueo Manifestación'), ('Colisión de Terceros'), ('Colisión de Unidad'),
+       ('Falla Técnica'), ('Incidente en Estación'), ('Inundación'),
+       ('Unidad Detenida'), ('Otro')
 ON CONFLICT (nombre_incidencia) DO NOTHING;
 
 INSERT INTO Rutas(id_ruta, nombre, es_circular)
