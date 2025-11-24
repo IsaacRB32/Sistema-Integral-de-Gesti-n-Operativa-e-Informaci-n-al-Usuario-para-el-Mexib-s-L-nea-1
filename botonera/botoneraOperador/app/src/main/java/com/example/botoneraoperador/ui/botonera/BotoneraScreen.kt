@@ -40,13 +40,21 @@ import com.example.botoneraoperador.data.repository.IncidenciasRepository
 import kotlinx.coroutines.delay
 import org.json.JSONObject
 import java.time.LocalTime
+import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 
+//Importaciones para que sea Responsive
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 
-val AppTealColor = Color(0xFF3D6D7A)
+
+val AppTealColor = Color(0xFF378EA6)
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
@@ -61,148 +69,139 @@ fun BotoneraScreen(navController: NavHostController) {
     }
 }
 
-
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun TopBar() {
-    val formatter = remember { DateTimeFormatter.ofPattern("HH:mm") }
-    var currentTime by remember { mutableStateOf("") }
+    val configuration = LocalConfiguration.current
+    // Consideramos "Tableta" si el ancho es mayor a 600dp
+    val isTablet = configuration.screenWidthDp > 600
+
+    val timeFormatter = remember { DateTimeFormatter.ofPattern("HH:mm") }
+    val dateFormatter = remember { DateTimeFormatter.ofPattern("dd/MM/yyyy") }
+    var timeString by remember { mutableStateOf("") }
+    var dateString by remember { mutableStateOf("") }
 
     LaunchedEffect(Unit) {
         while (true) {
-            currentTime = LocalTime.now().format(formatter)
+            val now = LocalDateTime.now()
+            timeString = now.format(timeFormatter)
+            dateString = now.format(dateFormatter)
             delay(1000L)
         }
     }
+
+    // Tamaños dinámicos
+    val logoHeight = if (isTablet) 70.dp else 45.dp
+    val dateSize = if (isTablet) 28.sp else 18.sp
+    val timeSize = if (isTablet) 50.sp else 32.sp
+    val paddingH = if (isTablet) 32.dp else 16.dp
+    val paddingV = if (isTablet) 20.dp else 12.dp
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .background(AppTealColor)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = paddingH, vertical = paddingV),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Botón de Menú
-        Box(
+        Image(
+            painter = painterResource(id = R.drawable.mexibusicon),
+            contentDescription = "Logo Mexibus",
             modifier = Modifier
-                .size(40.dp)
-                .background(Color.White, RoundedCornerShape(8.dp)),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.Default.Menu,
-                contentDescription = "Menú",
-                tint = AppTealColor,
-                modifier = Modifier.size(30.dp)
-            )
-        }
+                .height(logoHeight)
+                .wrapContentWidth(Alignment.Start),
+            contentScale = ContentScale.Fit
+        )
 
         Spacer(modifier = Modifier.weight(1f))
 
-        // Reloj
         Text(
-            text = currentTime,
+            text = dateString,
             color = Color.White,
-            fontSize = 32.sp,
+            fontSize = dateSize,
+            fontWeight = FontWeight.Normal,
+            modifier = Modifier.padding(end = if (isTablet) 24.dp else 12.dp)
+        )
+
+        Text(
+            text = timeString,
+            color = Color.White,
+            fontSize = timeSize,
             fontWeight = FontWeight.Bold
         )
     }
 }
 
-
 @Composable
 fun IconGrid() {
-    val context=LocalContext.current;
-    val repo=IncidenciasRepository(context)
-    var mostrarDialogo by remember {mutableStateOf(false)}
+    val context = LocalContext.current
+    val repo = IncidenciasRepository(context)
+    var mostrarDialogo by remember { mutableStateOf(false) }
     var tipoIncidencia by remember { mutableStateOf("") }
     var descripcionIncidencia by remember { mutableStateOf("") }
 
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .fillMaxHeight()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.SpaceAround
+    // DETECCIÓN INTELIGENTE
+    val configuration = LocalConfiguration.current
+    val screenWidth = configuration.screenWidthDp
+    val isTablet = screenWidth > 600
+
+    // Si es tableta -> 4 columnas. Si es celular -> 2 columnas.
+    val columnCount = if (isTablet) 4 else 2
+
+    // Espaciado dinámico
+    val gridPadding = if (isTablet) 32.dp else 16.dp
+    val itemSpacing = if (isTablet) 24.dp else 12.dp
+
+    // Usamos LazyVerticalGrid para que se acomode solo
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(columnCount),
+        contentPadding = PaddingValues(gridPadding),
+        verticalArrangement = Arrangement.spacedBy(itemSpacing),
+        horizontalArrangement = Arrangement.spacedBy(itemSpacing),
+        modifier = Modifier.fillMaxSize()
     ) {
+        // Aquí definimos los botones como items del grid
+        item { InfoButton(R.drawable.bloqueo_manif, "Bloqueos", isTablet) {
+            tipoIncidencia = "Bloqueo"; descripcionIncidencia = "Bloqueo en recorrido"; mostrarDialogo = true
+        } }
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceEvenly // Distribuye los 4 botones
-        ) {
-            InfoButton(
-                drawableId = R.drawable.bloqueo_manif, description = "Bloqueos"
-            ){
-                tipoIncidencia="Bloqueo"
-                descripcionIncidencia="Se presenta un bloqueo en el recorrido debido a una manifestación"
-                mostrarDialogo=true
-            }
-            InfoButton(
-                drawableId = R.drawable.colision_terceros, description = "Colisión Terceros"
-            ){
-                tipoIncidencia="Colisión de Terceros"
-                descripcionIncidencia="Se presenta una colisión entre dos autos particulares"
-                mostrarDialogo=true
-            }
-            InfoButton(
-                drawableId = R.drawable.colision_unidad, description = "Colisión Unidad"
-            ){
-                tipoIncidencia="Colisión de Unidad"
-                descripcionIncidencia="La unidad está involucrada en una colisión con otro vehículo"
-                mostrarDialogo=true
-            }
-            InfoButton(
-                drawableId = R.drawable.fallas_tecnicas, description = "Fallas Técnicas"
-            ){
-                tipoIncidencia="Fallas Técnicas"
-                descripcionIncidencia="La unidad presenta fallas técnicas"
-                mostrarDialogo=true
-            }
-        }
+        item { InfoButton(R.drawable.colision_terceros, "Colisión\nTerceros", isTablet) {
+            tipoIncidencia = "Colisión Terceros"; descripcionIncidencia = "Choque de particulares"; mostrarDialogo = true
+        } }
 
+        item { InfoButton(R.drawable.colision_unidad, "Colisión\nUnidad", isTablet) {
+            tipoIncidencia = "Colisión Unidad"; descripcionIncidencia = "Unidad chocada"; mostrarDialogo = true
+        } }
 
-        Row(
+        item { InfoButton(R.drawable.fallas_tecnicas, "Fallas\nTécnicas", isTablet) {
+            tipoIncidencia = "Fallas Técnicas"; descripcionIncidencia = "Falla mecánica"; mostrarDialogo = true
+        } }
 
-            modifier = Modifier.fillMaxWidth(0.75f),
-            horizontalArrangement = Arrangement.SpaceEvenly // Distribuye los 3 botones
-        ) {
-            InfoButton(
-                drawableId = R.drawable.incidente_estacion, description = "Inc. Estación"
-            ){
-                tipoIncidencia="Incidencia en Estación"
-                descripcionIncidencia="Se ha presentado un incidente dentro de una estación"
-                mostrarDialogo=true
-            }
-            InfoButton(
-                drawableId = R.drawable.inundacion, description = "Inundación"
-            ){
-                tipoIncidencia="Inundación"
-                descripcionIncidencia="Un tramo del recorrido presenta afectaciones por inundación"
-                mostrarDialogo=true
-            }
-            InfoButton(
-                drawableId = R.drawable.unidad_detenida, description = "Unidad Detenida"
-            ){
-                tipoIncidencia="Unidad Detenida"
-                descripcionIncidencia="La unidad se encuentra detenida en un tramo del recorrido"
-                mostrarDialogo=true
-            }
-        }
+        item { InfoButton(R.drawable.incidente_estacion, "Incidente\nEstación", isTablet) {
+            tipoIncidencia = "Incidente Estación"; descripcionIncidencia = "Incidente en estación"; mostrarDialogo = true
+        } }
+
+        item { InfoButton(R.drawable.inundacion, "Inundación", isTablet) {
+            tipoIncidencia = "Inundación"; descripcionIncidencia = "Tramo inundado"; mostrarDialogo = true
+        } }
+
+        item { InfoButton(R.drawable.unidad_detenida, "Unidad\nDetenida", isTablet) {
+            tipoIncidencia = "Unidad Detenida"; descripcionIncidencia = "Unidad parada"; mostrarDialogo = true
+        } }
+
+        item { InfoButton(R.drawable.otra_incidencia, "Otra\nIncidencia", isTablet) {
+            tipoIncidencia = "Otra Incidencia"; descripcionIncidencia = "Incidencia no listada"; mostrarDialogo = true
+        } }
     }
+
     ConfirmDialog(
-        mostrar=mostrarDialogo,
-        tipo=tipoIncidencia,
-        descripcion=descripcionIncidencia,
-        unidad=1258,
-        operador=3,
-        onCorfirm = {
-            mostrarDialogo=false
-            reportar(descripcionIncidencia, repo, context)
-        },
-        onCancel = {
-            mostrarDialogo=false
-        }
+        mostrar = mostrarDialogo,
+        tipo = tipoIncidencia,
+        descripcion = descripcionIncidencia,
+        unidad = 1258,
+        operador = 3,
+        onCorfirm = { mostrarDialogo = false; reportar(descripcionIncidencia, repo, context) },
+        onCancel = { mostrarDialogo = false }
     )
 }
 
@@ -265,41 +264,45 @@ fun reportar(descripcion: String, repo: IncidenciasRepository, context: Context)
 }
 
 @Composable
-fun InfoButton(drawableId: Int, description: String, onClick: () -> Unit){
+fun InfoButton(drawableId: Int, description: String, isTablet: Boolean, onClick: () -> Unit) {
+    // Tamaños dinámicos basados en si es tableta o no
+    val cardSize = if (isTablet) 180.dp else 110.dp // Grande en tablet, normal en cel
+    val iconPadding = if (isTablet) 30.dp else 16.dp
+    val fontSize = if (isTablet) 20.sp else 13.sp
+    val cornerRadius = if (isTablet) 24.dp else 16.dp
+
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.padding(1.dp)
+        // No ponemos padding externo aquí, el Grid se encarga de eso
     ) {
-
         Box(
-
             modifier = Modifier
-                .size(90.dp)
-                .background(AppTealColor, RoundedCornerShape(3.dp))
+                .fillMaxWidth() // Ocupa el ancho de la columna del grid
+                .aspectRatio(1f) // Mantiene forma cuadrada perfecta
+                .background(AppTealColor, RoundedCornerShape(cornerRadius))
                 .clickable { onClick() },
             contentAlignment = Alignment.Center
         ) {
             Image(
                 painter = painterResource(id = drawableId),
                 contentDescription = description,
-                modifier = Modifier.fillMaxSize().padding(1.5.dp),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(iconPadding),
                 contentScale = ContentScale.Fit
             )
         }
 
-
-        Spacer(modifier = Modifier.height(3.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
         Text(
             text = description,
             color = Color.Black,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Normal,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
+            fontSize = fontSize,
+            fontWeight = FontWeight.Medium,
             textAlign = TextAlign.Center,
-
-            modifier = Modifier.widthIn(min = 90.dp)
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
         )
     }
 }
