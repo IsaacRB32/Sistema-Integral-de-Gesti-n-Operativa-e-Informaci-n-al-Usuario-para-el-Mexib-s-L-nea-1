@@ -92,21 +92,38 @@ router.put("/incidencias/:id", async (req, res) => {
   }
 });
 
-
 //   4. Consultar estado de todas las unidades (GET /api/supervisor/unidades)
 router.get("/unidades", async (req, res) => {
   try {
     const query = `
       SELECT 
         u.id_unidad,
-        u.pos_x,
-        u.pos_y,
+        u.sentido,
+        u.idx_tramo,
+        u.progreso,
         u.estado_unidad,
-        e.nombre_estacion,
+        u.id_ruta,
+        u.en_circuito,
+        u.velocidad,
+        u.dwell_hasta,
+        -- Información de estación actual (origen)
+        e_orig.nombre_estacion as estacion_origen,
+        -- Información de estación siguiente (destino)  
+        e_dest.nombre_estacion as estacion_destino,
+        -- Información de operador desde AsignacionesUnidad
         op.nombre || ' ' || op.primer_apellido AS operador
       FROM UnidadesMB u
-      LEFT JOIN Estaciones e ON u.id_estacion = e.id_estacion
-      LEFT JOIN Usuarios op ON u.id_usuario = op.id_usuario
+      LEFT JOIN RutaEstaciones re_orig ON u.id_ruta = re_orig.id_ruta 
+        AND u.sentido = re_orig.sentido 
+        AND u.idx_tramo = re_orig.orden
+      LEFT JOIN Estaciones e_orig ON re_orig.id_estacion = e_orig.id_estacion
+      LEFT JOIN RutaEstaciones re_dest ON u.id_ruta = re_dest.id_ruta 
+        AND u.sentido = re_dest.sentido 
+        AND u.idx_tramo + 1 = re_dest.orden
+      LEFT JOIN Estaciones e_dest ON re_dest.id_estacion = e_dest.id_estacion
+      LEFT JOIN AsignacionesUnidad au ON u.id_unidad = au.id_unidad AND au.activo = true
+      LEFT JOIN Usuarios op ON au.id_usuario = op.id_usuario
+      WHERE u.en_circuito = true OR u.estado_unidad != 'FUERA_DE_SERVICIO'
       ORDER BY u.id_unidad ASC;
     `;
     const result = await pool.query(query);
@@ -114,6 +131,61 @@ router.get("/unidades", async (req, res) => {
   } catch (error) {
     console.error("Error al consultar unidades:", error);
     res.status(500).json({ error: "Error al obtener unidades" });
+  }
+});
+
+//   5. Consultar información de rutas y tramos (GET /api/supervisor/rutas/:id/tramos)
+router.get("/rutas/:id/tramos", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const query = `
+      SELECT 
+        re.orden,
+        re.sentido,
+        e_orig.nombre_estacion as estacion_origen,
+        e_dest.nombre_estacion as estacion_destino
+      FROM RutaEstaciones re
+      LEFT JOIN Estaciones e_orig ON re.id_estacion = e_orig.id_estacion
+      LEFT JOIN RutaEstaciones re_next ON re.id_ruta = re_next.id_ruta 
+        AND re.sentido = re_next.sentido 
+        AND re.orden + 1 = re_next.orden
+      LEFT JOIN Estaciones e_dest ON re_next.id_estacion = e_dest.id_estacion
+      WHERE re.id_ruta = $1
+      ORDER BY re.sentido, re.orden;
+    `;
+    const result = await pool.query(query, [id]);
+    res.status(200).json(result.rows);
+  } catch (error) {
+    console.error("Error al consultar tramos de ruta:", error);
+    res.status(500).json({ error: "Error al obtener tramos de ruta" });
+  }
+});
+
+//   6. Consultar todas las unidades (incluyendo fuera de servicio)
+router.get("/unidades/todas", async (req, res) => {
+  try {
+    const query = `
+      SELECT 
+        u.id_unidad,
+        u.sentido,
+        u.idx_tramo,
+        u.progreso,
+        u.estado_unidad,
+        u.id_ruta,
+        u.en_circuito,
+        u.velocidad,
+        u.dwell_hasta,
+        op.nombre || ' ' || op.primer_apellido AS operador
+      FROM UnidadesMB u
+      LEFT JOIN AsignacionesUnidad au ON u.id_unidad = au.id_unidad AND au.activo = true
+      LEFT JOIN Usuarios op ON au.id_usuario = op.id_usuario
+      ORDER BY u.id_unidad ASC;
+    `;
+    const result = await pool.query(query);
+    res.status(200).json(result.rows);
+  } catch (error) {
+    console.error("Error al consultar todas las unidades:", error);
+    res.status(500).json({ error: "Error al obtener todas las unidades" });
   }
 });
 

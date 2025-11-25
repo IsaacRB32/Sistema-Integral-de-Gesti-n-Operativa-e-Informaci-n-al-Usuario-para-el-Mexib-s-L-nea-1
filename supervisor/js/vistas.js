@@ -106,12 +106,12 @@ const VISTAS = {
                     <input type="number" id="inc-unidad" placeholder="ID Unidad" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-mexibus-blue focus:outline-none text-gray-900">
                     <select id="inc-tipo" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-mexibus-blue focus:outline-none text-gray-900">
                         <option value="1">Bloqueo por Manifestación</option>
-                        <option value="2">Colisión de Terceros</option>
+                        <option value="2">Inundación</option>
                         <option value="3">Colisión de Unidad</option>
-                        <option value="4">Fallas Técnicas</option>
-                        <option value="5">Incidente en Estación</option>
-                        <option value="6">Inundación</option>
-                        <option value="7">Unidad Detenida</option>
+                        <option value="4">Colisión de Terceros</option>
+                        <option value="5">Fallas Técnicas de la Unidad</option>
+                        <option value="6">Unidad Detenida en el Carril</option>
+                        <option value="7">Incidente en la Estación</option>
                         <option value="8">Otro</option>
                     </select>
                     <textarea id="inc-desc" rows="3" placeholder="Descripción" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-mexibus-blue focus:outline-none text-gray-900"></textarea>

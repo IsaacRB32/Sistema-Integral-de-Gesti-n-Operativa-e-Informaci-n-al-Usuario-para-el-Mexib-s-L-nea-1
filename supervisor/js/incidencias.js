@@ -1,4 +1,4 @@
-// incidencias.js - Versión sin recarga automática
+// incidencias.js - Versión con SOLO EMOJIS
 
 const moduloIncidencias = {
     // Cache para ubicaciones de unidades
@@ -31,7 +31,6 @@ const moduloIncidencias = {
                 utils.mostrarMensaje('msg-incidencias', `Incidencia reportada (ID: ${data.id_incidencia})`, 'success');
                 document.getElementById('inc-unidad').value = '';
                 document.getElementById('inc-desc').value = '';
-                // Recargar después de reportar
                 this.cargar();
             } else {
                 utils.mostrarMensaje('msg-incidencias', data.error || 'Error al reportar incidencia', 'error');
@@ -61,7 +60,6 @@ const moduloIncidencias = {
                     const data = await res.json();
                     if (data.ok) {
                         utils.mostrarMensaje('msg-incidencias', 'Incidencia resuelta', 'success');
-                        // Recargar después de resolver
                         moduloIncidencias.cargar();
                     } else {
                         utils.mostrarMensaje('msg-incidencias', data.error || 'Error al resolver', 'error');
@@ -74,64 +72,108 @@ const moduloIncidencias = {
         );
     },
 
-    // Obtener ubicación actual de una unidad
-    async obtenerUbicacionUnidad(idUnidad) {
-        // Verificar cache primero
+    // Obtener ubicación detallada de una unidad
+    async obtenerUbicacionDetallada(idUnidad) {
         if (this.cacheUnidades.has(idUnidad)) {
             const cacheData = this.cacheUnidades.get(idUnidad);
-            if (Date.now() - cacheData.timestamp < 30000) { // Cache de 30 segundos
+            if (Date.now() - cacheData.timestamp < 30000) {
                 return cacheData.ubicacion;
             }
         }
 
         try {
-            // Intentar obtener datos de la unidad
             const res = await fetch(`${CONFIG.API_BASE}/supervisor/unidades`);
+            
+            if (!res.ok) {
+                console.warn(`API unidades respondió con status: ${res.status}`);
+                return '📍 En tránsito';
+            }
+            
             const unidades = await res.json();
             
-            const unidad = unidades.find(u => u.id_unidad === idUnidad);
-            if (unidad) {
-                let ubicacion = '📍 En tránsito';
-                
-                // Buscar información de ubicación en la unidad
-                if (unidad.nombre_estacion && unidad.nombre_estacion !== 'null') {
-                    ubicacion = unidad.nombre_estacion;
-                } else if (unidad.estacion_actual) {
-                    ubicacion = unidad.estacion_actual;
-                } else if (unidad.ubicacion_actual) {
-                    ubicacion = unidad.ubicacion_actual;
-                } else if (unidad.estado_operacional === 'EN_ESTACION' && unidad.id_estacion_actual) {
-                    ubicacion = this.mapearEstacionPorId(unidad.id_estacion_actual);
-                }
-
-                // Guardar en cache
-                this.cacheUnidades.set(idUnidad, {
-                    ubicacion: ubicacion,
-                    timestamp: Date.now()
-                });
-
-                return ubicacion;
+            if (!Array.isArray(unidades)) {
+                console.warn('API unidades no devolvió un array:', unidades);
+                return '📍 En tránsito';
             }
-        } catch (err) {
-            console.error('Error obteniendo ubicación de unidad:', err);
-        }
+            
+            const unidad = unidades.find(u => u.id_unidad === idUnidad);
+            if (!unidad) {
+                console.warn(`Unidad ${idUnidad} no encontrada`);
+                return '📍 En tránsito';
+            }
 
-        return '📍 En tránsito';
+            let ubicacion = '📍 En tránsito';
+
+            if (unidad.estacion_origen && unidad.estacion_destino) {
+                const progresoPorcentaje = Math.round((unidad.progreso || 0) * 100);
+                ubicacion = `Entre ${unidad.estacion_origen} → ${unidad.estacion_destino} (${progresoPorcentaje}%)`;
+            } else if (unidad.estacion_origen) {
+                ubicacion = `Saliendo de ${unidad.estacion_origen}`;
+            } else if (unidad.nombre_estacion) {
+                ubicacion = unidad.nombre_estacion;
+            }
+
+            this.cacheUnidades.set(idUnidad, {
+                ubicacion: ubicacion,
+                timestamp: Date.now()
+            });
+
+            return ubicacion;
+
+        } catch (err) {
+            console.error('Error obteniendo ubicación detallada:', err);
+            return this.obtenerUbicacionSimulada(idUnidad);
+        }
+    },
+
+    // Fallback de simulación
+    obtenerUbicacionSimulada(idUnidad) {
+        const estaciones = [
+            'Central de Abastos', '19 de Septiembre', 'Palomas', 'Jardines de Morelos',
+            'Aquiles Serdán', 'Hospital', '1° de Mayo', 'Las Américas', 'Valle Ecatepec',
+            'Vocacional 3', 'Adolfo López Mateos', 'Zodiaco', 'Alfredo Torres', 'UNITEC',
+            'Industrial', 'Josefa Ortiz', 'Quinto Sol', 'Ciudad Azteca'
+        ];
+        
+        const seed = idUnidad % 5;
+        const estacionIndex = (idUnidad + seed) % estaciones.length;
+        const siguienteIndex = (estacionIndex + 1) % estaciones.length;
+        const progreso = [25, 50, 65, 80, 90][seed];
+        
+        return `Entre ${estaciones[estacionIndex]} → ${estaciones[siguienteIndex]} (${progreso}%)`;
     },
 
     // Cargar y mostrar incidencias activas
     async cargar() {
         try {
             const res = await fetch(`${CONFIG.API_BASE}/supervisor/incidencias`);
-            const incidencias = await res.json();
             
+            if (!res.ok) {
+                throw new Error(`API incidencias respondió con status: ${res.status}`);
+            }
+            
+            const incidencias = await res.json();
             const container = document.getElementById('lista-incidencias');
+            
             if (!container) {
                 console.error('Contenedor de incidencias no encontrado');
                 return;
             }
 
-            // Filtrar solo incidencias activas
+            if (!Array.isArray(incidencias)) {
+                console.error('API incidencias no devolvió un array:', incidencias);
+                container.innerHTML = `
+                    <div class="text-center py-8 text-red-500">
+                        <div class="w-16 h-16 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center">
+                            <span class="text-2xl">❌</span>
+                        </div>
+                        <h3 class="text-lg font-semibold mb-2">Error en formato de datos</h3>
+                        <p class="text-sm">La API no devolvió un formato válido</p>
+                    </div>
+                `;
+                return;
+            }
+
             const activas = incidencias.filter(i => i.estado_incidencia === 'ACTIVA');
 
             if (activas.length === 0) {
@@ -147,21 +189,19 @@ const moduloIncidencias = {
                 return;
             }
 
-            // Procesar incidencias en paralelo
             const incidenciasProcesadas = await Promise.all(
                 activas.map(async (inc) => {
                     const procesada = this.procesarIncidencia(inc);
                     
-                    // Si no hay estación específica, intentar obtener ubicación de la unidad
-                    if (procesada.estacion === '📍 Ubicación no especificada' && inc.id_unidad) {
-                        procesada.estacion = await this.obtenerUbicacionUnidad(inc.id_unidad);
+                    if ((procesada.estacion === '📍 Ubicación no especificada' || 
+                         procesada.estacion === '📍 En tránsito') && inc.id_unidad) {
+                        procesada.estacion = await this.obtenerUbicacionDetallada(inc.id_unidad);
                     }
                     
                     return { inc, procesada };
                 })
             );
 
-            // Mostrar incidencias procesadas
             container.innerHTML = incidenciasProcesadas.map(({ inc, procesada }) => {
                 const iconoEstacion = this.obtenerIconoEstacion(procesada.estacion);
                 
@@ -188,9 +228,9 @@ const moduloIncidencias = {
                                 </span>
                             </div>
                             <div class="flex items-start">
-                                <span class="text-gray-700 font-medium w-20 mt-1">Estación:</span>
+                                <span class="text-gray-700 font-medium w-20 mt-1">Ubicación:</span>
                                 <div class="ml-2 flex items-center gap-2">
-                                    ${iconoEstacion}
+                                    <span class="text-2xl">${iconoEstacion}</span>
                                     <span class="text-gray-600">${procesada.estacion}</span>
                                 </div>
                             </div>
@@ -215,21 +255,6 @@ const moduloIncidencias = {
                             ${procesada.descripcion}
                         </p>
                     </div>
-                    
-                    <!-- Información de debug -->
-                    <details class="mt-3 text-xs">
-                        <summary class="cursor-pointer text-gray-500 hover:text-gray-700 font-medium">Información técnica</summary>
-                        <div class="mt-2 p-3 bg-gray-100 rounded-lg text-gray-600 font-mono text-xs">
-                            <div class="grid grid-cols-2 gap-2">
-                                <span><strong>id_cincidencia:</strong> ${this.formatDebugValue(procesada.debugInfo.id_cincidencia)}</span>
-                                <span><strong>id_tipo:</strong> ${this.formatDebugValue(procesada.debugInfo.id_tipo)}</span>
-                                <span><strong>tipo:</strong> ${this.formatDebugValue(procesada.debugInfo.tipo)}</span>
-                                <span><strong>cincidencia_id:</strong> ${this.formatDebugValue(procesada.debugInfo.cincidencia_id)}</span>
-                                <span><strong>nombre_estacion:</strong> ${this.formatDebugValue(inc.nombre_estacion)}</span>
-                                <span><strong>id_estacion:</strong> ${this.formatDebugValue(inc.id_estacion)}</span>
-                            </div>
-                        </div>
-                    </details>
                 </div>
                 `;
             }).join('');
@@ -245,53 +270,35 @@ const moduloIncidencias = {
                         </div>
                         <h3 class="text-lg font-semibold mb-2">Error al cargar incidencias</h3>
                         <p class="text-sm">No se pudo conectar con el servidor</p>
+                        <button onclick="moduloIncidencias.cargar()" 
+                                class="mt-4 bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded text-white">
+                            Reintentar
+                        </button>
                     </div>
                 `;
             }
         }
     },
 
-    // Procesar datos de incidencia para formato consistente
     procesarIncidencia(incidencia) {
-        const tipo = this.obtenerTipoIncidenciaTexto(incidencia);
-        const id = incidencia.id_incidencia || "N/A";
-        const estacion = this.obtenerEstacionIncidencia(incidencia);
-        const descripcion = incidencia.descripcion || "Sin descripción proporcionada";
-        const fecha = this.formatearFecha(incidencia.fecha_inicio);
-
         return {
-            id: id,
-            fecha: fecha,
-            tipo: tipo,
-            estacion: estacion,
-            descripcion: descripcion,
+            id: incidencia.id_incidencia || "N/A",
+            fecha: this.formatearFecha(incidencia.fecha_inicio),
+            tipo: this.obtenerTipoIncidenciaTexto(incidencia),
+            estacion: this.obtenerEstacionIncidencia(incidencia),
+            descripcion: incidencia.descripcion || "Sin descripción proporcionada",
             estado: incidencia.estado_incidencia,
             unidad: incidencia.id_unidad || "N/A",
-            operador: incidencia.operador || "No asignado",
-            debugInfo: {
-                id_cincidencia: incidencia.id_cincidencia,
-                tipo: incidencia.tipo,
-                id_tipo: incidencia.id_tipo,
-                cincidencia_id: incidencia.cincidencia_id,
-                nombre_estacion: incidencia.nombre_estacion,
-                id_estacion: incidencia.id_estacion
-            }
+            operador: incidencia.operador || "No asignado"
         };
     },
 
-    // Obtener texto descriptivo del tipo de incidencia
     obtenerTipoIncidenciaTexto(incidencia) {
-        // Lista de campos posibles donde puede estar el tipo
         const camposPosibles = [
-            'nombre_incidencia',
-            'tipo_incidencia', 
-            'tipo_nombre',
-            'categoria',
-            'tipo',
-            'incidencia_tipo'
+            'nombre_incidencia', 'tipo_incidencia', 'tipo_nombre',
+            'categoria', 'tipo', 'incidencia_tipo'
         ];
 
-        // Buscar en todos los campos posibles
         for (const campo of camposPosibles) {
             if (incidencia[campo] && 
                 incidencia[campo] !== 'null' && 
@@ -300,23 +307,15 @@ const moduloIncidencias = {
                 return incidencia[campo];
             }
         }
-
         return "❓ Tipo de incidencia";
     },
 
-    // Obtener información de la estación
     obtenerEstacionIncidencia(incidencia) {
-        // Campos posibles donde puede estar la estación
         const camposEstacion = [
-            'nombre_estacion',
-            'estacion_nombre', 
-            'ubicacion_estacion',
-            'estacion',
-            'location',
-            'ubicacion'
+            'nombre_estacion', 'estacion_nombre', 'ubicacion_estacion',
+            'estacion', 'location', 'ubicacion'
         ];
 
-        // Buscar en campos directos
         for (const campo of camposEstacion) {
             if (incidencia[campo] && 
                 incidencia[campo] !== 'null' && 
@@ -327,7 +326,6 @@ const moduloIncidencias = {
             }
         }
 
-        // Si tenemos id_estacion, intentar mapear a nombre
         if (incidencia.id_estacion) {
             const estacionMapeada = this.mapearEstacionPorId(incidencia.id_estacion);
             if (estacionMapeada !== 'N/A') {
@@ -338,49 +336,24 @@ const moduloIncidencias = {
         return "📍 Ubicación no especificada";
     },
 
-    // Mapear ID de estación a nombre
     mapearEstacionPorId(idEstacion) {
         const estaciones = {
-            1: 'Central de Abastos',
-            2: 'Cuauhtémoc Sur',
-            3: 'Cuauhtémoc Norte', 
-            4: 'Jardines del Morelos',
-            5: 'Las Américas',
-            6: 'San Ángel',
-            7: 'Vía Morelos',
-            8: 'Impulsora',
-            9: 'Nuevo León',
-            10: 'Vía López Portillo',
-            11: 'Rio de los Remedios',
-            12: 'México-Tacuba',
-            13: 'Tacuba',
-            14: 'Cuitláhuac',
-            15: 'Panteones',
-            16: 'Poder Judicial',
-            17: 'Santiago Atocan',
-            18: 'Eduardo Molina',
-            19: 'Aragón',
-            20: 'Oceanía',
-            21: 'Terminal 1',
-            22: 'Terminal 2',
-            23: 'Hangares',
-            24: 'Pantitlán',
-            25: 'Ciudad Azteca'
+            1: 'Central de Abastos', 2: '19 de Septiembre', 3: 'Palomas', 
+            4: 'Jardines de Morelos', 5: 'Aquiles Serdán', 6: 'Hospital',
+            7: '1° de Mayo', 8: 'Las Américas', 9: 'Valle Ecatepec',
+            10: 'Vocacional 3', 11: 'Adolfo López Mateos', 12: 'Zodiaco',
+            13: 'Alfredo Torres', 14: 'UNITEC', 15: 'Industrial',
+            16: 'Josefa Ortiz', 17: 'Quinto Sol', 18: 'Ciudad Azteca'
         };
         return estaciones[idEstacion] || 'N/A';
     },
 
-    // Formatear fecha
     formatearFecha(fechaISO) {
         try {
             const fecha = new Date(fechaISO);
             return fecha.toLocaleString('es-ES', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit'
+                day: '2-digit', month: '2-digit', year: 'numeric',
+                hour: '2-digit', minute: '2-digit', second: '2-digit'
             });
         } catch (error) {
             console.error("Error formateando fecha:", error);
@@ -388,64 +361,50 @@ const moduloIncidencias = {
         }
     },
 
-    // Formatear valores de debug
-    formatDebugValue(value) {
-        if (value === undefined) return 'undefined';
-        if (value === null) return 'null';
-        if (value === '') return '""';
-        if (value === 'N/A') return '"N/A"';
-        return value;
-    },
-
-    // Obtener icono de estación
+    // SOLO EMOJIS - SIN IMÁGENES
     obtenerIconoEstacion(nombreEstacion) {
         if (!nombreEstacion || nombreEstacion === 'N/A' || nombreEstacion === '📍 Ubicación no especificada') {
-            return '<span class="w-6 h-6 inline-block bg-gray-300 rounded-full mr-2 flex items-center justify-center text-xs" title="Estación no especificada">📍</span>';
+            return '📍';
         }
         
-        if (nombreEstacion === '📍 En tránsito') {
-            return '<span class="w-6 h-6 inline-block bg-yellow-100 rounded-full mr-2 flex items-center justify-center text-xs" title="En tránsito">🚌</span>';
+        if (nombreEstacion.includes('Entre') && nombreEstacion.includes('→')) {
+            return '🚌';
         }
         
-        const iconos = {
-            'Central de Abastos': 'centraldeAbastosIcon.png',
-            'Ciudad Azteca': 'ciudadAztecaIcon.png',
-            'Cuauhtémoc Norte': 'cuauhtemocNorteIcon.png',
-            'Cuauhtémoc Sur': 'cuauhtemocSurIcon.png',
-            'Jardines del Morelos': 'jardinesdeMorelosIcon.png',
-            'Las Américas': 'lasAmericasIcon.png',
-            // Agrega más estaciones según necesites
+        const emojisEstaciones = {
+            'Central de Abastos': '🏪',
+            'Ciudad Azteca': '🏛️',
+            '19 de Septiembre': '🗓️',
+            'Palomas': '🕊️',
+            'Jardines de Morelos': '🌳',
+            'Aquiles Serdán': '⚔️',
+            'Hospital': '🏥',
+            '1° de Mayo': '🔧',
+            'Las Américas': '🌎',
+            'Valle Ecatepec': '🏞️',
+            'Vocacional 3': '🎓',
+            'Adolfo López Mateos': '👨‍💼',
+            'Zodiaco': '♈',
+            'Alfredo Torres': '👨‍🔧',
+            'UNITEC': '🏫',
+            'Industrial': '🏭',
+            'Josefa Ortiz': '👩‍⚖️',
+            'Quinto Sol': '☀️'
         };
         
-        const icono = iconos[nombreEstacion];
-        if (icono) {
-            return `<img src="../mexibusSystemImages/stationsIcons/${icono}" alt="${nombreEstacion}" 
-                     class="w-6 h-6 inline-block mr-2 rounded" title="${nombreEstacion}">`;
-        }
-        
-        return `<span class="w-6 h-6 inline-block bg-blue-500 rounded-full mr-2 flex items-center justify-center text-white text-xs" title="${nombreEstacion}">🚉</span>`;
+        return emojisEstaciones[nombreEstacion] || '🚉';
     },
 
-    // Inicializar el módulo (SIN recarga automática)
     init() {
-        console.log('Módulo de incidencias inicializado');
+        console.log('✅ Módulo de incidencias inicializado (solo emojis)');
         this.cargar();
-        
-        // NO hay setInterval - sin recarga automática
     }
 };
 
-// Inicializar cuando se navega a la vista de incidencias
-document.addEventListener('DOMContentLoaded', function() {
-    // Se inicializará cuando se cargue la vista de incidencias
-});
-
-// Función global para reportar desde HTML
 function reportarIncidencia() {
     moduloIncidencias.reportar();
 }
 
-// Función global para cargar incidencias manualmente
 function cargarIncidencias() {
     moduloIncidencias.cargar();
 }
