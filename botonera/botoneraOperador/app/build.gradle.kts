@@ -59,4 +59,5 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     implementation("androidx.constraintlayout:constraintlayout:2.1.4")
     implementation("com.android.volley:volley:1.2.1")
+    implementation("androidx.datastore:datastore-preferences:1.1.1")
 }

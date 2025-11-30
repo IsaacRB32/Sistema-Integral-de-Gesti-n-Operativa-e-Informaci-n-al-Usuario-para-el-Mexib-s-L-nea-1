@@ -1,5 +1,4 @@
 package com.example.botoneraoperador.ui.login
-
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
