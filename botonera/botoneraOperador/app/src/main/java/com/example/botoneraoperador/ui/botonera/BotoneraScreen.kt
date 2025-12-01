@@ -44,6 +44,8 @@ import java.time.format.DateTimeFormatter
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.runtime.collectAsState
+import com.example.botoneraoperador.data.session.SessionManager
 
 
 val AppTealColor = Color(0xFF3D6D7A)
@@ -114,6 +116,9 @@ fun TopBar() {
 fun IconGrid() {
     val context=LocalContext.current;
     val repo=IncidenciasRepository(context)
+    val sessionManager = SessionManager(context)
+    val idUsuario by sessionManager.userId.collectAsState(initial = -1)
+    val idUnidad by sessionManager.userUnidad.collectAsState(initial = -1)
     var mostrarDialogo by remember {mutableStateOf(false)}
     var tipoIncidencia by remember { mutableStateOf("") }
     var descripcionIncidencia by remember { mutableStateOf("") }
@@ -134,43 +139,41 @@ fun IconGrid() {
             InfoButton(
                 drawableId = R.drawable.bloqueo_manif, description = "Bloqueos"
             ){
-                tipoIncidencia="Bloqueo"
+                tipoIncidencia="Bloqueo por manifestación"
                 descripcionIncidencia="Se presenta un bloqueo en el recorrido debido a una manifestación"
                 mostrarDialogo=true
             }
             InfoButton(
                 drawableId = R.drawable.colision_terceros, description = "Colisión Terceros"
             ){
-                tipoIncidencia="Colisión de Terceros"
+                tipoIncidencia="Colisión de terceros"
                 descripcionIncidencia="Se presenta una colisión entre dos autos particulares"
                 mostrarDialogo=true
             }
             InfoButton(
                 drawableId = R.drawable.colision_unidad, description = "Colisión Unidad"
             ){
-                tipoIncidencia="Colisión de Unidad"
+                tipoIncidencia="Colisión de unidad"
                 descripcionIncidencia="La unidad está involucrada en una colisión con otro vehículo"
                 mostrarDialogo=true
             }
             InfoButton(
                 drawableId = R.drawable.fallas_tecnicas, description = "Fallas Técnicas"
             ){
-                tipoIncidencia="Fallas Técnicas"
+                tipoIncidencia="Fallas Técnicas de la unidad"
                 descripcionIncidencia="La unidad presenta fallas técnicas"
                 mostrarDialogo=true
             }
         }
 
-
         Row(
-
             modifier = Modifier.fillMaxWidth(0.75f),
             horizontalArrangement = Arrangement.SpaceEvenly // Distribuye los 3 botones
         ) {
             InfoButton(
                 drawableId = R.drawable.incidente_estacion, description = "Inc. Estación"
             ){
-                tipoIncidencia="Incidencia en Estación"
+                tipoIncidencia="Incidente en la estación"
                 descripcionIncidencia="Se ha presentado un incidente dentro de una estación"
                 mostrarDialogo=true
             }
@@ -184,26 +187,49 @@ fun IconGrid() {
             InfoButton(
                 drawableId = R.drawable.unidad_detenida, description = "Unidad Detenida"
             ){
-                tipoIncidencia="Unidad Detenida"
+                tipoIncidencia="Unidad detenida en el carril"
                 descripcionIncidencia="La unidad se encuentra detenida en un tramo del recorrido"
                 mostrarDialogo=true
             }
+            InfoButton(
+                drawableId = R.drawable.unidad_detenida, description = "Otro"
+            ){
+                tipoIncidencia="Otro"
+                descripcionIncidencia="La incidencia cae fuera de la clasificación predeterminada"
+                mostrarDialogo=true
+            }
+
         }
     }
+
     ConfirmDialog(
         mostrar=mostrarDialogo,
         tipo=tipoIncidencia,
         descripcion=descripcionIncidencia,
-        unidad=1258,
-        operador=3,
+        unidad=idUnidad,
+        operador=idUsuario,
         onCorfirm = {
             mostrarDialogo=false
-            reportar(descripcionIncidencia, repo, context)
+            reportar(descripcionIncidencia, tipoIncidencia, idUsuario, idUnidad, repo, context)
         },
         onCancel = {
             mostrarDialogo=false
         }
     )
+}
+
+fun obtenerIdIncidencia(tipo: String): Int {
+    return when(tipo){
+        "Bloqueo por manifestación" -> 1
+        "Inundación" -> 2
+        "Colisión de unidad" -> 3
+        "Colisión de terceros" -> 4
+        "Fallas técnicas de la unidad" -> 5
+        "Unidad detenida en el carril" -> 6
+        "Incidente en la estación" -> 7
+        "Otro" -> 8
+        else -> 0
+    }
 }
 
 @Composable
@@ -242,12 +268,12 @@ fun ConfirmDialog(
         )
     }
 }
-fun reportar(descripcion: String, repo: IncidenciasRepository, context: Context){
+fun reportar(descripcion: String, tipoIncidencia: String, idUsuario: Int, idUnidad: Int, repo: IncidenciasRepository, context: Context){
     val data= JSONObject().apply {
         put("descripcion", descripcion)
-        put("id_cincidencia", 1)
+        put("id_cincidencia", obtenerIdIncidencia(tipoIncidencia))
         put("id_estacion", 1)
-        put("id_usuario_reporta", 3)
+        put("id_usuario_reporta", idUsuario)
     }
 
     val url="http://192.168.100.207:3000/api/operador/incidencias"

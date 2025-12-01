@@ -22,14 +22,14 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
                 when(user.rol.uppercase()){
                     "SUPERVISOR" -> {
                         viewModelScope.launch {
-                            sessionManager.saveSession(user.id, user.email)
+                            sessionManager.saveSession(user.id, user.email, -1)
                         }
                         onResult(true, "SUPERVISOR_OK", user)
                     }
                     "OPERADOR" -> {
                         if(user.unidadAsignada!=null) {
                             viewModelScope.launch {
-                                sessionManager.saveSession(user.id, user.email)
+                                sessionManager.saveSession(user.id, user.email, user.unidadAsignada)
                             }
                             onResult(true, "OPERADOR_OK", user)
                         }
