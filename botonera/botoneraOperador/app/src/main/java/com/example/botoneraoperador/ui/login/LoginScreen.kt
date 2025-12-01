@@ -27,6 +27,7 @@ fun LoginScreen(
 
     var showEmptyFieldsDialog by remember { mutableStateOf(false) }
     var showLoginFailedDialog by remember { mutableStateOf(false) }
+    var showNoUnitDialog by remember { mutableStateOf(false) }
 
     Box(
         modifier = Modifier
@@ -51,11 +52,26 @@ fun LoginScreen(
                             showEmptyFieldsDialog = true
                         }
                         else -> {
-                            loginViewModel.login(email, password) { success, _ ->
-                                if (success) {
-                                    navController.navigate("botonera")
-                                } else {
-                                    showLoginFailedDialog = true
+                            loginViewModel.login(email, password) { success, codeOrMsg, usuario ->
+                                if(success){
+                                    navController.navigate("botonera"){
+                                        popUpTo("login"){
+                                            inclusive=true
+                                        }
+                                    }
+                                }
+                                else{
+                                    when(codeOrMsg){
+                                        "OPERADOR_SIN_UNIDAD" ->{
+                                            showNoUnitDialog=true
+                                        }
+                                        "ROL_INVALIDO" ->{
+                                            showLoginFailedDialog=true
+                                        }
+                                        else ->{
+                                            showLoginFailedDialog=true
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -98,6 +114,18 @@ fun LoginScreen(
             text = { Text("El nombre de usuario o la contraseña son incorrectos. Por favor, verifica tus credenciales y vuelve a intentarlo.") }
         )
     }
+
+    if (showNoUnitDialog) {
+        AlertDialog(
+            onDismissRequest = { showNoUnitDialog = false },
+            title = { Text("Sin unidad asignada") },
+            text = { Text("Aún no tiene unidad asignada, consulte a su supervisor.") },
+            confirmButton = {
+                TextButton(onClick = { showNoUnitDialog = false }) { Text("Aceptar") }
+            }
+        )
+    }
+
 }
 
 @Composable
@@ -158,7 +186,6 @@ fun LoginForm(
         }
     }
 }
-
 // Previews
 @Preview(showBackground = true)
 @Composable

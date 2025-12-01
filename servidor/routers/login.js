@@ -13,9 +13,21 @@ router.post("/login", async (req, res) => {
         }
 
         const sql = `
-            SELECT id_usuario, nombre, primer_apellido, segundo_apellido, email
-            FROM usuarios
-            WHERE email = $1 AND password = $2
+            SELECT 
+                u.id_usuario,
+                u.nombre,
+                u.primer_apellido,
+                u.segundo_apellido,
+                u.email,
+                r.rol,
+                au.id_unidad AS unidad_asignada
+            FROM usuarios u
+            INNER JOIN roles r ON r.id_rol = u.id_rol
+            LEFT JOIN asignacionesunidad au 
+                ON au.id_usuario = u.id_usuario
+                AND au.activo = TRUE
+            WHERE u.email = $1 
+              AND u.password = $2;
         `;
 
         const result = await pool.query(sql, [email, password]);

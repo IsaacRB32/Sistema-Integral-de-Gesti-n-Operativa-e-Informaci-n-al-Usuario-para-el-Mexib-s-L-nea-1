@@ -14,18 +14,36 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
     var usuario: Usuario? = null
         private set
 
-    fun login(email: String, password: String, onResult: (success: Boolean, message: String) -> Unit) {
+    fun login(email: String, password: String, onResult: (Boolean, String, Usuario?) -> Unit) {
         val context = getApplication<Application>().applicationContext
         repository.login(context, email, password,
-            onSuccess = {
-                usuario=it
-                viewModelScope.launch{
-                    sessionManager.saveSession(it.id, it.email)
+            onSuccess = { user ->
+                usuario=user
+                when(user.rol.uppercase()){
+                    "SUPERVISOR" -> {
+                        viewModelScope.launch {
+                            sessionManager.saveSession(user.id, user.email)
+                        }
+                        onResult(true, "SUPERVISOR_OK", user)
+                    }
+                    "OPERADOR" -> {
+                        if(user.unidadAsignada!=null) {
+                            viewModelScope.launch {
+                                sessionManager.saveSession(user.id, user.email)
+                            }
+                            onResult(true, "OPERADOR_OK", user)
+                        }
+                        else{
+                            onResult(false, "OPERADOR_SIN_UNIDAD", user)
+                        }
+                    }
+                    else -> {
+                        onResult(false, "ROL_INVALIDO", user)
+                    }
                 }
-                onResult(true, "Login exitoso")
             },
             onError = { error ->
-                onResult(false, error)
+                onResult(false, error, null)
             }
         )
     }

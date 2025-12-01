@@ -29,7 +29,6 @@ class LoginRepository {
             body,
             { response ->
                 try {
-                    // El backend responde con { message, usuario }
                     if (response.has("usuario")) {
                         val usuarioJson = response.getJSONObject("usuario")
                         val usuario = Usuario(
@@ -37,7 +36,9 @@ class LoginRepository {
                             nombre = usuarioJson.getString("nombre"),
                             primerApellido = usuarioJson.getString("primer_apellido"),
                             segundoApellido = usuarioJson.optString("segundo_apellido", null),
-                            email = usuarioJson.getString("email")
+                            email = usuarioJson.getString("email"),
+                            rol = usuarioJson.getString("rol"),
+                            unidadAsignada = if (usuarioJson.isNull("unidad_asignada")) null else usuarioJson.getInt("unidad_asignada")
                         )
                         onSuccess(usuario)
                     } else {
