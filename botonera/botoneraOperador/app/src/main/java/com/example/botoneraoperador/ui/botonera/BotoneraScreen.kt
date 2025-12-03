@@ -1,5 +1,12 @@
 package com.example.botoneraoperador.ui.botonera
 
+import android.app.Activity
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.ui.platform.LocalView
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
+
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.ui.res.painterResource
@@ -45,7 +52,33 @@ import kotlinx.coroutines.delay
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
-val AppTealColor = Color(0xFF378EA6)
+val AppTealColor = Color(0xFF009CCB)
+
+//0xFF378EA6
+//Ocultar barra de navegacion y de noitificaciones
+@Composable
+fun HideSystemBars() {
+    val view = LocalView.current
+    if (!view.isInEditMode) {
+        DisposableEffect(Unit) {
+            val window = (view.context as? Activity)?.window
+            if (window != null) {
+                val insetsController = WindowCompat.getInsetsController(window, view)
+                // Ocultar barras
+                insetsController.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+                insetsController.hide(WindowInsetsCompat.Type.systemBars())
+            }
+            onDispose {
+                // Volver a mostrar barras al salir de esta pantalla
+                val window = (view.context as? Activity)?.window
+                if (window != null) {
+                    val insetsController = WindowCompat.getInsetsController(window, view)
+                    insetsController.show(WindowInsetsCompat.Type.systemBars())
+                }
+            }
+        }
+    }
+}
 
 // Botonera
 @RequiresApi(Build.VERSION_CODES.O)
@@ -54,6 +87,8 @@ fun BotoneraScreen(
     navController: NavHostController,
     viewModel: IncidenciasViewModel = viewModel()
 ) {
+    HideSystemBars()
+
     val context = LocalContext.current
 
     Column(
@@ -310,15 +345,28 @@ fun ConfirmDialog(
 @Composable
 fun InfoButton(drawableId: Int, description: String, isTablet: Boolean, onClick: () -> Unit) {
 
-    val iconPadding = if (isTablet) 30.dp else 16.dp
-    val fontSize = if (isTablet) 20.sp else 13.sp
-    val cornerRadius = if (isTablet) 24.dp else 16.dp
+    // --- DIMENSIONES REDUCIDAS A LA MITAD ---
+    // Antes Tableta: 180dp -> Ahora: 90dp
+    // Antes Celular: 110dp -> Ahora: 65dp
+    val buttonSize = if (isTablet) 90.dp else 65.dp
 
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+    // Ajustamos padding interno para que el ícono no se salga
+    val iconPadding = if (isTablet) 12.dp else 8.dp
+
+    // Reducimos la fuente
+    val fontSize = if (isTablet) 11.sp else 9.sp
+
+    // Redondeo proporcional
+    val cornerRadius = if (isTablet) 12.dp else 8.dp
+
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        // Centramos el contenido en la celda del Grid
+        modifier = Modifier.wrapContentSize()
+    ) {
         Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(1f)
+                .size(buttonSize) // Usamos tamaño fijo reducido
                 .background(AppTealColor, RoundedCornerShape(cornerRadius))
                 .clickable { onClick() },
             contentAlignment = Alignment.Center
@@ -328,12 +376,12 @@ fun InfoButton(drawableId: Int, description: String, isTablet: Boolean, onClick:
                 contentDescription = description,
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(iconPadding),
+                    .padding(iconPadding), // Padding ajustado
                 contentScale = ContentScale.Fit
             )
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(4.dp)) // Menos espacio
 
         Text(
             text = description,
@@ -342,7 +390,9 @@ fun InfoButton(drawableId: Int, description: String, isTablet: Boolean, onClick:
             fontWeight = FontWeight.Medium,
             textAlign = TextAlign.Center,
             maxLines = 2,
-            overflow = TextOverflow.Ellipsis
+            overflow = TextOverflow.Ellipsis,
+            lineHeight = if(isTablet) 12.sp else 10.sp, // Ajuste de interlineado
+            modifier = Modifier.width(buttonSize + 10.dp) // Permitimos que el texto sea un poquito mas ancho que el boton
         )
     }
 }
