@@ -135,6 +135,7 @@ fun TopBar() {
             .padding(horizontal = paddingH, vertical = paddingV),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        //Logo
         Image(
             painter = painterResource(id = R.drawable.mexibusicon),
             contentDescription = "Logo Mexibus",
@@ -142,14 +143,17 @@ fun TopBar() {
             contentScale = ContentScale.Fit
         )
 
-        Spacer(modifier = Modifier.weight(1f))
-
+        //Fecha
         Text(
             text = dateString,
             color = Color.White,
             fontSize = dateSize,
-            modifier = Modifier.padding(end = if (isTablet) 24.dp else 12.dp)
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(start = if (isTablet) 24.dp else 12.dp)
         )
+        Spacer(modifier = Modifier.weight(1f))
+
+        //Hora
         Text(
             text = timeString,
             color = Color.White,
@@ -173,7 +177,9 @@ fun IconGrid(viewModel: IncidenciasViewModel) {
     val isTablet = configuration.screenWidthDp > 600
     val columnCount = if (isTablet) 4 else 2
     val gridPadding = if (isTablet) 32.dp else 16.dp
-    val itemSpacing = if (isTablet) 24.dp else 12.dp
+    val itemSpacing = if (isTablet) 40.dp else 12.dp
+    val topMargin = if (isTablet) 120.dp else 24.dp
+
 
     // Mnesajes de IncidenciasViewModel
     val loading by viewModel.loading.collectAsState()
@@ -205,9 +211,15 @@ fun IconGrid(viewModel: IncidenciasViewModel) {
 
     LazyVerticalGrid(
         columns = GridCells.Fixed(columnCount),
-        contentPadding = PaddingValues(gridPadding),
-        verticalArrangement = Arrangement.spacedBy(itemSpacing),
-        horizontalArrangement = Arrangement.spacedBy(itemSpacing),
+        contentPadding = PaddingValues(
+            start = gridPadding,
+            end = gridPadding,
+            top = topMargin,
+            bottom = gridPadding
+
+        ),
+        verticalArrangement = Arrangement.spacedBy(itemSpacing), //Espacio vertical
+        horizontalArrangement = Arrangement.spacedBy(itemSpacing), //Espacio Horizontal
         modifier = Modifier.fillMaxSize()
     ) {
 
@@ -348,7 +360,7 @@ fun InfoButton(drawableId: Int, description: String, isTablet: Boolean, onClick:
     // --- DIMENSIONES REDUCIDAS A LA MITAD ---
     // Antes Tableta: 180dp -> Ahora: 90dp
     // Antes Celular: 110dp -> Ahora: 65dp
-    val buttonSize = if (isTablet) 90.dp else 65.dp
+    val buttonSize = if (isTablet) 160.dp else 65.dp
 
     // Ajustamos padding interno para que el ícono no se salga
     val iconPadding = if (isTablet) 12.dp else 8.dp
@@ -381,7 +393,7 @@ fun InfoButton(drawableId: Int, description: String, isTablet: Boolean, onClick:
             )
         }
 
-        Spacer(modifier = Modifier.height(4.dp)) // Menos espacio
+        Spacer(modifier = Modifier.height(10.dp)) // Menos espacio
 
         Text(
             text = description,
