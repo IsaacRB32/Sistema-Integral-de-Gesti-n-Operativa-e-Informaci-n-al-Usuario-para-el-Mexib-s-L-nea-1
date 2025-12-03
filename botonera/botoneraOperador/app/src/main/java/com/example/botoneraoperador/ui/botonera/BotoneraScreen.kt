@@ -1,8 +1,6 @@
 package com.example.botoneraoperador.ui.botonera
 
-import android.content.Context
 import android.os.Build
-import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.compose.ui.res.painterResource
 import androidx.compose.foundation.background
@@ -25,52 +23,54 @@ import androidx.compose.foundation.clickable
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
-
-
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
-import com.example.botoneraoperador.data.repository.IncidenciasRepository
-import kotlinx.coroutines.delay
-import org.json.JSONObject
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 
-//Importaciones para que sea Responsive
+// Responsive
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.runtime.collectAsState
 import com.example.botoneraoperador.data.session.SessionManager
-
+import com.example.botoneraoperador.ui.incidencias.IncidenciasViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.delay
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 val AppTealColor = Color(0xFF378EA6)
 
+// Botonera
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun BotoneraScreen(navController: NavHostController) {
+fun BotoneraScreen(
+    navController: NavHostController,
+    viewModel: IncidenciasViewModel = viewModel()
+) {
+    val context = LocalContext.current
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.White)
     ) {
         TopBar()
-        IconGrid()
+        IconGrid(viewModel)
     }
 }
 
-
+// Barra superior
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun TopBar() {
     val configuration = LocalConfiguration.current
-    // Consideramos "Tableta" si el ancho es mayor a 600dp
     val isTablet = configuration.screenWidthDp > 600
 
     val timeFormatter = remember { DateTimeFormatter.ofPattern("HH:mm") }
@@ -87,7 +87,6 @@ fun TopBar() {
         }
     }
 
-    // Tamaños dinámicos
     val logoHeight = if (isTablet) 70.dp else 45.dp
     val dateSize = if (isTablet) 28.sp else 18.sp
     val timeSize = if (isTablet) 50.sp else 32.sp
@@ -104,9 +103,7 @@ fun TopBar() {
         Image(
             painter = painterResource(id = R.drawable.mexibusicon),
             contentDescription = "Logo Mexibus",
-            modifier = Modifier
-                .height(logoHeight)
-                .wrapContentWidth(Alignment.Start),
+            modifier = Modifier.height(logoHeight),
             contentScale = ContentScale.Fit
         )
 
@@ -116,10 +113,8 @@ fun TopBar() {
             text = dateString,
             color = Color.White,
             fontSize = dateSize,
-            fontWeight = FontWeight.Normal,
             modifier = Modifier.padding(end = if (isTablet) 24.dp else 12.dp)
         )
-
         Text(
             text = timeString,
             color = Color.White,
@@ -129,31 +124,50 @@ fun TopBar() {
     }
 }
 
-
+// Grid de botonera
 @Composable
-fun IconGrid() {
-    val context=LocalContext.current;
-    val repo=IncidenciasRepository(context)
+fun IconGrid(viewModel: IncidenciasViewModel) {
+    val context = LocalContext.current
     val sessionManager = SessionManager(context)
     val idUsuario by sessionManager.userId.collectAsState(initial = -1)
     val idUnidad by sessionManager.userUnidad.collectAsState(initial = -1)
-    var mostrarDialogo by remember {mutableStateOf(false)}
+    var mostrarDialogo by remember { mutableStateOf(false) }
     var tipoIncidencia by remember { mutableStateOf("") }
     var descripcionIncidencia by remember { mutableStateOf("") }
-
-    // DETECCIÓN INTELIGENTE
     val configuration = LocalConfiguration.current
-    val screenWidth = configuration.screenWidthDp
-    val isTablet = screenWidth > 600
-
-    // Si es tableta -> 4 columnas. Si es celular -> 2 columnas.
+    val isTablet = configuration.screenWidthDp > 600
     val columnCount = if (isTablet) 4 else 2
-
-    // Espaciado dinámico
     val gridPadding = if (isTablet) 32.dp else 16.dp
     val itemSpacing = if (isTablet) 24.dp else 12.dp
 
-    // Usamos LazyVerticalGrid para que se acomode solo
+    // Mnesajes de IncidenciasViewModel
+    val loading by viewModel.loading.collectAsState()
+    val mensaje by viewModel.mensaje.collectAsState()
+
+    // Loader
+    if (loading) {
+        AlertDialog(
+            onDismissRequest = {},
+            title = { Text("Enviando...") },
+            text = { Text("Espere por favor") },
+            confirmButton = {}
+        )
+    }
+
+    // Mensaje del servidor
+    mensaje?.let {
+        AlertDialog(
+            onDismissRequest = { viewModel.limpiarMensaje() },
+            title = { Text("Información") },
+            text = { Text(it) },
+            confirmButton = {
+                TextButton(onClick = { viewModel.limpiarMensaje() }) {
+                    Text("Aceptar")
+                }
+            }
+        )
+    }
+
     LazyVerticalGrid(
         columns = GridCells.Fixed(columnCount),
         contentPadding = PaddingValues(gridPadding),
@@ -161,60 +175,91 @@ fun IconGrid() {
         horizontalArrangement = Arrangement.spacedBy(itemSpacing),
         modifier = Modifier.fillMaxSize()
     ) {
-        // Aquí definimos los botones como items del grid
-        item { InfoButton(R.drawable.bloqueo_manif, "Bloqueos", isTablet) {
-            tipoIncidencia = "Bloqueo"; descripcionIncidencia = "Bloqueo en recorrido"; mostrarDialogo = true
-        } }
 
-        item { InfoButton(R.drawable.colision_terceros, "Colisión\nTerceros", isTablet) {
-            tipoIncidencia = "Colisión Terceros"; descripcionIncidencia = "Choque de particulares"; mostrarDialogo = true
-        } }
-
-        item { InfoButton(R.drawable.colision_unidad, "Colisión\nUnidad", isTablet) {
-            tipoIncidencia = "Colisión Unidad"; descripcionIncidencia = "Unidad chocada"; mostrarDialogo = true
-        } }
-
-        item { InfoButton(R.drawable.fallas_tecnicas, "Fallas\nTécnicas", isTablet) {
-            tipoIncidencia = "Fallas Técnicas"; descripcionIncidencia = "Falla mecánica"; mostrarDialogo = true
-        } }
-
-        item { InfoButton(R.drawable.incidente_estacion, "Incidente\nEstación", isTablet) {
-            tipoIncidencia = "Incidente Estación"; descripcionIncidencia = "Incidente en estación"; mostrarDialogo = true
-        } }
-
-        item { InfoButton(R.drawable.inundacion, "Inundación", isTablet) {
-            tipoIncidencia = "Inundación"; descripcionIncidencia = "Tramo inundado"; mostrarDialogo = true
-        } }
-
-        item { InfoButton(R.drawable.unidad_detenida, "Unidad\nDetenida", isTablet) {
-            tipoIncidencia = "Unidad Detenida"; descripcionIncidencia = "Unidad parada"; mostrarDialogo = true
-        } }
-
-        item { InfoButton(R.drawable.otra_incidencia, "Otra\nIncidencia", isTablet) {
-            tipoIncidencia = "Otra Incidencia"; descripcionIncidencia = "Incidencia no listada"; mostrarDialogo = true
-        } }
+        item {
+            InfoButton(R.drawable.bloqueo_manif, "Bloqueos", isTablet) {
+                tipoIncidencia = "Bloqueo por manifestación"
+                descripcionIncidencia = "Se presenta un bloqueo en el recorrido debido a una manifestación"
+                mostrarDialogo = true
+            }
+        }
+        item {
+            InfoButton(R.drawable.colision_terceros, "Colisión\nTerceros", isTablet) {
+                tipoIncidencia = "Colisión de terceros"
+                descripcionIncidencia = "Se presenta una colisión entre dos autos particulares"
+                mostrarDialogo = true
+            }
+        }
+        item {
+            InfoButton(R.drawable.colision_unidad, "Colisión\nUnidad", isTablet) {
+                tipoIncidencia = "Colisión de unidad"
+                descripcionIncidencia = "La unidad está involucrada en una colisión con otro vehículo"
+                mostrarDialogo = true
+            }
+        }
+        item {
+            InfoButton(R.drawable.fallas_tecnicas, "Fallas\nTécnicas", isTablet) {
+                tipoIncidencia = "Fallas técnicas de la unidad"
+                descripcionIncidencia = "La unidad presenta fallas técnicas"
+                mostrarDialogo = true
+            }
+        }
+        item {
+            InfoButton(R.drawable.incidente_estacion, "Incidente\nEstación", isTablet) {
+                tipoIncidencia = "Incidente en la estación"
+                descripcionIncidencia = "Se ha presentado un incidente dentro de una estación"
+                mostrarDialogo = true
+            }
+        }
+        item {
+            InfoButton(R.drawable.inundacion, "Inundación", isTablet) {
+                tipoIncidencia = "Inundación"
+                descripcionIncidencia = "Un tramo del recorrido presenta afectaciones por inundación"
+                mostrarDialogo = true
+            }
+        }
+        item {
+            InfoButton(R.drawable.unidad_detenida, "Unidad\nDetenida", isTablet) {
+                tipoIncidencia = "Unidad detenida en el carril"
+                descripcionIncidencia = "La unidad se encuentra detenida en un tramo del recorrido"
+                mostrarDialogo = true
+            }
+        }
+        item {
+            InfoButton(R.drawable.otra_incidencia, "Otra\nIncidencia", isTablet) {
+                tipoIncidencia = "Otro"
+                descripcionIncidencia = "La incidencia cae fuera de la clasificación predeterminada"
+                mostrarDialogo = true
+            }
+        }
     }
 
-
-
+    //Confirmacion
     ConfirmDialog(
-        mostrar=mostrarDialogo,
-        tipo=tipoIncidencia,
-        descripcion=descripcionIncidencia,
-        unidad=idUnidad,
-        operador=idUsuario,
+        mostrar = mostrarDialogo,
+        tipo = tipoIncidencia,
+        descripcion = descripcionIncidencia,
+        unidad = idUnidad,
+        operador = idUsuario,
         onCorfirm = {
-            mostrarDialogo=false
-            reportar(descripcionIncidencia, tipoIncidencia, idUsuario, idUnidad, repo, context)
+            mostrarDialogo = false
+
+            viewModel.reportarIncidencia(
+                context = context,
+                idUnidad = idUnidad,
+                tipoIncidencia = tipoIncidencia,
+                descripcion = descripcionIncidencia,
+                obtenerIdIncidencia = ::obtenerIdIncidencia
+            ) {
+                // Callback éxito
+            }
         },
-        onCancel = {
-            mostrarDialogo=false
-        }
+        onCancel = { mostrarDialogo = false }
     )
 }
-
+//ID para cada incidencia
 fun obtenerIdIncidencia(tipo: String): Int {
-    return when(tipo){
+    return when (tipo) {
         "Bloqueo por manifestación" -> 1
         "Inundación" -> 2
         "Colisión de unidad" -> 3
@@ -227,6 +272,7 @@ fun obtenerIdIncidencia(tipo: String): Int {
     }
 }
 
+//Dialogo de confirmacion
 @Composable
 fun ConfirmDialog(
     mostrar: Boolean,
@@ -236,71 +282,43 @@ fun ConfirmDialog(
     operador: Int,
     onCorfirm: () -> Unit,
     onCancel: () -> Unit
-){
-    if(mostrar){
+) {
+    if (mostrar) {
         AlertDialog(
-            onDismissRequest={ onCancel() },
-            title = {Text("Confirmar incidencia")},
-            text={
+            onDismissRequest = { onCancel() },
+            title = { Text("Confirmar incidencia") },
+            text = {
                 Text(
-                    "Se enviará una la incidencia de tipo: $tipo\n\n"+
-                            "Descripción: $descripcion\n"+
-                            "Unidad: $unidad\n"+
-                            "Operador: $operador\n\n"+
+                    "Se enviará la incidencia de tipo: $tipo\n\n" +
+                            "Descripción: $descripcion\n" +
+                            "Unidad: $unidad\n" +
+                            "Operador: $operador\n\n" +
                             "¿Desea confirmar el envío?"
                 )
             },
             confirmButton = {
-                TextButton(onClick = onCorfirm){
-                    Text("Aceptar")
-                }
+                TextButton(onClick = onCorfirm) { Text("Aceptar") }
             },
             dismissButton = {
-                TextButton(onClick = onCancel){
-                    Text("Cancelar")
-                }
+                TextButton(onClick = onCancel) { Text("Cancelar") }
             }
         )
     }
 }
-fun reportar(descripcion: String, tipoIncidencia: String, idUsuario: Int, idUnidad: Int, repo: IncidenciasRepository, context: Context){
-    val data= JSONObject().apply {
-        put("descripcion", descripcion)
-        put("id_cincidencia", obtenerIdIncidencia(tipoIncidencia))
-        put("id_estacion", 1)
-        put("id_usuario_reporta", idUsuario)
-    }
 
-    val url="http://192.168.100.207:3000/api/operador/incidencias"
-
-    repo.reportarIncidencia(
-        url,
-        data,
-        onSuccess = { respuesta ->
-            Toast.makeText(context, "Incidencia enviada correctamente", Toast.LENGTH_SHORT).show()
-        },
-        onError = { error ->
-            Toast.makeText(context, "Error al enviar la incidencia. Intente más tarde", Toast.LENGTH_SHORT).show()
-        }
-    )
-}
-
+//Boton de incidencia
 @Composable
 fun InfoButton(drawableId: Int, description: String, isTablet: Boolean, onClick: () -> Unit) {
-    // Tamaños dinámicos basados en si es tableta o no
-    val cardSize = if (isTablet) 180.dp else 110.dp // Grande en tablet, normal en cel
+
     val iconPadding = if (isTablet) 30.dp else 16.dp
     val fontSize = if (isTablet) 20.sp else 13.sp
     val cornerRadius = if (isTablet) 24.dp else 16.dp
 
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        // No ponemos padding externo aquí, el Grid se encarga de eso
-    ) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Box(
             modifier = Modifier
-                .fillMaxWidth() // Ocupa el ancho de la columna del grid
-                .aspectRatio(1f) // Mantiene forma cuadrada perfecta
+                .fillMaxWidth()
+                .aspectRatio(1f)
                 .background(AppTealColor, RoundedCornerShape(cornerRadius))
                 .clickable { onClick() },
             contentAlignment = Alignment.Center
@@ -329,6 +347,7 @@ fun InfoButton(drawableId: Int, description: String, isTablet: Boolean, onClick:
     }
 }
 
+//Preview
 @RequiresApi(Build.VERSION_CODES.O)
 @Preview(showBackground = true)
 @Composable
