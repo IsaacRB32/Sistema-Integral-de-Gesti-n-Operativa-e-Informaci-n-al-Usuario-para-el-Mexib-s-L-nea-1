@@ -1,51 +1,88 @@
-// incidencias.js - Versión con SOLO EMOJIS
+// incidencias.js - Con bandeja de entrada para validar/rechazar
 
 const moduloIncidencias = {
     // Cache para ubicaciones de unidades
     cacheUnidades: new Map(),
     
-    // Reportar nueva incidencia
-    async reportar() {
-        const unidad = document.getElementById('inc-unidad').value;
-        const tipo = document.getElementById('inc-tipo').value;
-        const desc = document.getElementById('inc-desc').value.trim();
+async validar(idInc) {
+    utils.mostrarModal(
+        '¿Validar incidencia?',
+        'Esta acción aprobará la incidencia y se marcará como activa.',
+        async () => {
+            try {
+                const res = await fetch(`${CONFIG.API_BASE}/supervisor/incidencias/${idInc}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        id_estado: 1,     // Mantener por si acaso
+                        observaciones: 'Validada por supervisor'  // Cambiado de observacion
+                    })
+                });
 
-        if (!unidad) {
-            utils.mostrarMensaje('msg-incidencias', 'Ingresa ID de unidad', 'error');
-            return;
-        }
-
-        try {
-            const res = await fetch(`${CONFIG.API_BASE}/sim/incidencia`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    id_unidad: parseInt(unidad),
-                    id_cincidencia: parseInt(tipo),
-                    descripcion: desc || null
-                })
-            });
-
-            const data = await res.json();
-            if (data.ok) {
-                utils.mostrarMensaje('msg-incidencias', `Incidencia reportada (ID: ${data.id_incidencia})`, 'success');
-                document.getElementById('inc-unidad').value = '';
-                document.getElementById('inc-desc').value = '';
-                this.cargar();
-            } else {
-                utils.mostrarMensaje('msg-incidencias', data.error || 'Error al reportar incidencia', 'error');
+                if (res.ok) {
+                    utils.mostrarMensaje('msg-bandeja', 'Incidencia validada correctamente', 'success');
+                    this.cargar();
+                } else {
+                    // Mejorar el manejo de errores
+                    let errorMsg = 'Error al validar';
+                    try {
+                        const data = await res.json();
+                        errorMsg = data.message || data.error || errorMsg;
+                    } catch (e) {
+                        errorMsg = `Error ${res.status}: ${res.statusText}`;
+                    }
+                    utils.mostrarMensaje('msg-bandeja', errorMsg, 'error');
+                }
+            } catch (err) {
+                console.error('Error validando incidencia:', err);
+                utils.mostrarMensaje('msg-bandeja', 'Error de conexión', 'error');
             }
-        } catch (err) {
-            console.error('Error reportando incidencia:', err);
-            utils.mostrarMensaje('msg-incidencias', 'Error de conexión', 'error');
         }
-    },
+    );
+},
 
-    // Resolver incidencia
+// Para RECHAZAR (mover de PENDIENTE → RESUELTA)
+async rechazar(idInc) {
+    utils.mostrarModal(
+        ' ¿Rechazar incidencia?',
+        'Esta acción marcará la incidencia como rechazada.',
+        async () => {
+            try {
+                const res = await fetch(`${CONFIG.API_BASE}/supervisor/incidencias/${idInc}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        id_estado: 2,       // Mantener por si acaso
+                        observaciones: 'Rechazada por supervisor'  // Cambiado de observacion
+                    })
+                });
+
+                if (res.ok) {
+                    utils.mostrarMensaje('msg-bandeja', 'Incidencia rechazada', 'success');
+                    this.cargar();
+                } else {
+                    let errorMsg = 'Error al rechazar';
+                    try {
+                        const data = await res.json();
+                        errorMsg = data.message || data.error || errorMsg;
+                    } catch (e) {
+                        errorMsg = `Error ${res.status}: ${res.statusText}`;
+                    }
+                    utils.mostrarMensaje('msg-bandeja', errorMsg, 'error');
+                }
+            } catch (err) {
+                console.error('Error rechazando incidencia:', err);
+                utils.mostrarMensaje('msg-bandeja', 'Error de conexión', 'error');
+            }
+        }
+    );
+},
+
+    // Resolver incidencia activa
     async resolver(idInc, idUnidad) {
         utils.mostrarModal(
-            '¿Resolver incidencia?',
-            'Esta acción marcará la incidencia como resuelta.',
+            ' ¿Resolver incidencia?',
+            'Esta acción marcará la incidencia como resuelta y liberará la unidad.',
             async () => {
                 try {
                     const res = await fetch(`${CONFIG.API_BASE}/sim/resolver`, {
@@ -59,14 +96,14 @@ const moduloIncidencias = {
 
                     const data = await res.json();
                     if (data.ok) {
-                        utils.mostrarMensaje('msg-incidencias', 'Incidencia resuelta', 'success');
-                        moduloIncidencias.cargar();
+                        utils.mostrarMensaje('msg-bandeja', 'Incidencia resuelta', 'success');
+                        this.cargar();
                     } else {
-                        utils.mostrarMensaje('msg-incidencias', data.error || 'Error al resolver', 'error');
+                        utils.mostrarMensaje('msg-bandeja', data.error || 'Error al resolver', 'error');
                     }
                 } catch (err) {
                     console.error('Error resolviendo incidencia:', err);
-                    utils.mostrarMensaje('msg-incidencias', 'Error de conexión', 'error');
+                    utils.mostrarMensaje('msg-bandeja', 'Error de conexión', 'error');
                 }
             }
         );
@@ -126,7 +163,6 @@ const moduloIncidencias = {
         }
     },
 
-    // Fallback de simulación
     obtenerUbicacionSimulada(idUnidad) {
         const estaciones = [
             'Central de Abastos', '19 de Septiembre', 'Palomas', 'Jardines de Morelos',
@@ -143,7 +179,7 @@ const moduloIncidencias = {
         return `Entre ${estaciones[estacionIndex]} → ${estaciones[siguienteIndex]} (${progreso}%)`;
     },
 
-    // Cargar y mostrar incidencias activas
+    // Cargar bandeja de pendientes + incidencias activas
     async cargar() {
         try {
             const res = await fetch(`${CONFIG.API_BASE}/supervisor/incidencias`);
@@ -153,131 +189,207 @@ const moduloIncidencias = {
             }
             
             const incidencias = await res.json();
-            const container = document.getElementById('lista-incidencias');
             
-            if (!container) {
-                console.error('Contenedor de incidencias no encontrado');
-                return;
-            }
-
             if (!Array.isArray(incidencias)) {
                 console.error('API incidencias no devolvió un array:', incidencias);
-                container.innerHTML = `
-                    <div class="text-center py-8 text-red-500">
-                        <div class="w-16 h-16 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center">
-                            <span class="text-2xl">❌</span>
-                        </div>
-                        <h3 class="text-lg font-semibold mb-2">Error en formato de datos</h3>
-                        <p class="text-sm">La API no devolvió un formato válido</p>
-                    </div>
-                `;
+                this.mostrarError();
                 return;
             }
 
-            const activas = incidencias.filter(i => i.estado_incidencia === 'ACTIVA');
+            // Separar pendientes y activas
+            const pendientes = incidencias.filter(i => i.estado_incidencia === 'PENDIENTE' || i.id_estado === 3);
+            const activas = incidencias.filter(i => i.estado_incidencia === 'ACTIVA' || i.id_estado === 1);
 
-            if (activas.length === 0) {
-                container.innerHTML = `
-                    <div class="text-center py-12">
-                        <div class="w-24 h-24 mx-auto mb-4 bg-green-100 rounded-full flex items-center justify-center">
-                            <span class="text-4xl">✅</span>
-                        </div>
-                        <h3 class="text-xl font-semibold text-gray-700 mb-2">Sin incidencias activas</h3>
-                        <p class="text-gray-500">No hay incidencias reportadas en este momento</p>
-                    </div>
-                `;
-                return;
-            }
-
-            const incidenciasProcesadas = await Promise.all(
-                activas.map(async (inc) => {
-                    const procesada = this.procesarIncidencia(inc);
-                    
-                    if ((procesada.estacion === '📍 Ubicación no especificada' || 
-                         procesada.estacion === '📍 En tránsito') && inc.id_unidad) {
-                        procesada.estacion = await this.obtenerUbicacionDetallada(inc.id_unidad);
-                    }
-                    
-                    return { inc, procesada };
-                })
-            );
-
-            container.innerHTML = incidenciasProcesadas.map(({ inc, procesada }) => {
-                const iconoEstacion = this.obtenerIconoEstacion(procesada.estacion);
-                
-                return `
-                <div class="bg-white border-l-4 border-red-500 rounded-r-lg shadow-md p-5 mb-4 fade-in hover:shadow-lg transition-shadow">
-                    <div class="flex justify-between items-start mb-4">
-                        <div class="flex items-center gap-3">
-                            <span class="bg-red-500 text-white px-3 py-1 rounded-full text-sm font-bold">#${procesada.id}</span>
-                            <span class="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded">${procesada.fecha}</span>
-                        </div>
-                        <button onclick="moduloIncidencias.resolver(${inc.id_incidencia}, ${inc.id_unidad || 'null'})" 
-                                class="bg-green-500 hover:bg-green-600 px-4 py-2 rounded-lg text-white font-medium shadow transition-colors flex items-center gap-2">
-                            <span>✅</span>
-                            Resolver
-                        </button>
-                    </div>
-                    
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-                        <div class="space-y-3">
-                            <div class="flex items-start">
-                                <span class="text-gray-700 font-medium w-20 mt-1">Tipo:</span>
-                                <span class="ml-2 bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-medium">
-                                    ${procesada.tipo}
-                                </span>
-                            </div>
-                            <div class="flex items-start">
-                                <span class="text-gray-700 font-medium w-20 mt-1">Ubicación:</span>
-                                <div class="ml-2 flex items-center gap-2">
-                                    <span class="text-2xl">${iconoEstacion}</span>
-                                    <span class="text-gray-600">${procesada.estacion}</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="space-y-3">
-                            <div class="flex items-center">
-                                <span class="text-gray-700 font-medium w-20">Unidad:</span>
-                                <span class="ml-2 bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
-                                    #${procesada.unidad}
-                                </span>
-                            </div>
-                            <div class="flex items-center">
-                                <span class="text-gray-700 font-medium w-20">Operador:</span>
-                                <span class="ml-2 text-gray-600">${procesada.operador}</span>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="mb-4">
-                        <span class="text-gray-700 font-medium block mb-2">Descripción:</span>
-                        <p class="text-gray-700 p-3 bg-gray-50 rounded-lg border text-sm">
-                            ${procesada.descripcion}
-                        </p>
-                    </div>
-                </div>
-                `;
-            }).join('');
+            await this.renderizarBandeja(pendientes);
+            await this.renderizarActivas(activas);
 
         } catch (err) {
             console.error('Error cargando incidencias:', err);
-            const container = document.getElementById('lista-incidencias');
-            if (container) {
-                container.innerHTML = `
-                    <div class="text-center py-8 text-red-500">
-                        <div class="w-16 h-16 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center">
-                            <span class="text-2xl">❌</span>
-                        </div>
-                        <h3 class="text-lg font-semibold mb-2">Error al cargar incidencias</h3>
-                        <p class="text-sm">No se pudo conectar con el servidor</p>
-                        <button onclick="moduloIncidencias.cargar()" 
-                                class="mt-4 bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded text-white">
-                            Reintentar
-                        </button>
-                    </div>
-                `;
-            }
+            this.mostrarError();
         }
+    },
+
+    // Renderizar bandeja de entrada
+    async renderizarBandeja(pendientes) {
+        const bandeja = document.getElementById('bandeja-pendientes');
+        if (!bandeja) return;
+
+        if (pendientes.length === 0) {
+            bandeja.innerHTML = `
+                <div class="text-center py-8">
+                    <div class="w-16 h-16 mx-auto mb-3 bg-green-100 rounded-full flex items-center justify-center">
+                        <span class="text-3xl">✅</span>
+                    </div>
+                    <p class="text-sm text-gray-600">No hay incidencias pendientes</p>
+                </div>
+            `;
+            return;
+        }
+
+        const incidenciasProcesadas = await Promise.all(
+            pendientes.map(async (inc) => {
+                const procesada = this.procesarIncidencia(inc);
+                
+                if ((procesada.estacion === '📍 Ubicación no especificada' || 
+                     procesada.estacion === '📍 En tránsito') && inc.id_unidad) {
+                    procesada.estacion = await this.obtenerUbicacionDetallada(inc.id_unidad);
+                }
+                
+                return { inc, procesada };
+            })
+        );
+
+        bandeja.innerHTML = incidenciasProcesadas.map(({ inc, procesada }) => {
+            const iconoEstacion = this.obtenerIconoEstacion(procesada.estacion);
+            
+            return `
+            <div class="bg-yellow-50 border-l-4 border-yellow-500 rounded-r-lg shadow p-4 fade-in">
+                <div class="flex justify-between items-start mb-3">
+                    <span class="bg-yellow-500 text-white px-2 py-1 rounded text-xs font-bold">#${procesada.id}</span>
+                    <span class="text-xs text-gray-500">${procesada.fecha}</span>
+                </div>
+                
+                <div class="space-y-2 text-sm mb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="font-medium text-gray-700">Tipo:</span>
+                        <span class="text-gray-900">${procesada.tipo}</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="font-medium text-gray-700">Ubicación:</span>
+                        ${iconoEstacion}
+                        <span class="text-gray-900">${procesada.estacion}</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="font-medium text-gray-700">Unidad:</span>
+                        <span class="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs">#${procesada.unidad}</span>
+                    </div>
+                </div>
+
+                <p class="text-xs text-gray-700 mb-3 p-2 bg-white rounded border">${procesada.descripcion}</p>
+
+                <div class="flex gap-2">
+                    <button onclick="moduloIncidencias.validar(${inc.id_incidencia})" 
+                            class="flex-1 bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded text-xs font-medium transition">
+                        ✅ Validar
+                    </button>
+                    <button onclick="moduloIncidencias.rechazar(${inc.id_incidencia})" 
+                            class="flex-1 bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded text-xs font-medium transition">
+                        ❌ Rechazar
+                    </button>
+                </div>
+            </div>
+            `;
+        }).join('');
+    },
+
+    // Renderizar incidencias activas
+    async renderizarActivas(activas) {
+        const container = document.getElementById('lista-incidencias');
+        if (!container) return;
+
+        if (activas.length === 0) {
+            container.innerHTML = `
+                <div class="text-center py-12">
+                    <div class="w-24 h-24 mx-auto mb-4 bg-green-100 rounded-full flex items-center justify-center">
+                        <span class="text-4xl">✅</span>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-700 mb-2">Sin incidencias activas</h3>
+                    <p class="text-gray-500">No hay incidencias reportadas en este momento</p>
+                </div>
+            `;
+            return;
+        }
+
+        const incidenciasProcesadas = await Promise.all(
+            activas.map(async (inc) => {
+                const procesada = this.procesarIncidencia(inc);
+                
+                if ((procesada.estacion === '📍 Ubicación no especificada' || 
+                     procesada.estacion === '📍 En tránsito') && inc.id_unidad) {
+                    procesada.estacion = await this.obtenerUbicacionDetallada(inc.id_unidad);
+                }
+                
+                return { inc, procesada };
+            })
+        );
+
+        container.innerHTML = incidenciasProcesadas.map(({ inc, procesada }) => {
+            const iconoEstacion = this.obtenerIconoEstacion(procesada.estacion);
+            
+            return `
+            <div class="bg-white border-l-4 border-red-500 rounded-r-lg shadow-md p-5 mb-4 fade-in hover:shadow-lg transition-shadow">
+                <div class="flex justify-between items-start mb-4">
+                    <div class="flex items-center gap-3">
+                        <span class="bg-red-500 text-white px-3 py-1 rounded-full text-sm font-bold">#${procesada.id}</span>
+                        <span class="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded">${procesada.fecha}</span>
+                    </div>
+                    <button onclick="moduloIncidencias.resolver(${inc.id_incidencia}, ${inc.id_unidad || 'null'})" 
+                            class="bg-green-500 hover:bg-green-600 px-4 py-2 rounded-lg text-white font-medium shadow transition-colors flex items-center gap-2">
+                        <span>✅</span>
+                        Resolver
+                    </button>
+                </div>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+                    <div class="space-y-3">
+                        <div class="flex items-start">
+                            <span class="text-gray-700 font-medium w-20 mt-1">Tipo:</span>
+                            <span class="ml-2 bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-medium">
+                                ${procesada.tipo}
+                            </span>
+                        </div>
+                        <div class="flex items-start">
+                            <span class="text-gray-700 font-medium w-20 mt-1">Ubicación:</span>
+                            <div class="ml-2 flex items-center gap-2">
+                                <span class="text-2xl">${iconoEstacion}</span>
+                                <span class="text-gray-600">${procesada.estacion}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="space-y-3">
+                        <div class="flex items-center">
+                            <span class="text-gray-700 font-medium w-20">Unidad:</span>
+                            <span class="ml-2 bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
+                                #${procesada.unidad}
+                            </span>
+                        </div>
+                        <div class="flex items-center">
+                            <span class="text-gray-700 font-medium w-20">Operador:</span>
+                            <span class="ml-2 text-gray-600">${procesada.operador}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <span class="text-gray-700 font-medium block mb-2">Descripción:</span>
+                    <p class="text-gray-700 p-3 bg-gray-50 rounded-lg border text-sm">
+                        ${procesada.descripcion}
+                    </p>
+                </div>
+            </div>
+            `;
+        }).join('');
+    },
+
+    mostrarError() {
+        const bandeja = document.getElementById('bandeja-pendientes');
+        const container = document.getElementById('lista-incidencias');
+        
+        const errorHTML = `
+            <div class="text-center py-8 text-red-500">
+                <div class="w-16 h-16 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center">
+                    <span class="text-2xl">❌</span>
+                </div>
+                <h3 class="text-lg font-semibold mb-2">Error al cargar</h3>
+                <button onclick="moduloIncidencias.cargar()" 
+                        class="mt-4 bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded text-white">
+                    Reintentar
+                </button>
+            </div>
+        `;
+        
+        if (bandeja) bandeja.innerHTML = errorHTML;
+        if (container) container.innerHTML = errorHTML;
     },
 
     procesarIncidencia(incidencia) {
@@ -361,7 +473,6 @@ const moduloIncidencias = {
         }
     },
 
-    // SOLO EMOJIS - SIN IMÁGENES
     obtenerIconoEstacion(nombreEstacion) {
         if (!nombreEstacion || nombreEstacion === 'N/A' || nombreEstacion === '📍 Ubicación no especificada') {
             return '📍';
@@ -396,14 +507,11 @@ const moduloIncidencias = {
     },
 
     init() {
-        console.log('✅ Módulo de incidencias inicializado (solo emojis)');
+        console.log(' Módulo de incidencias inicializado con bandeja de validación');
         this.cargar();
     }
 };
 
-function reportarIncidencia() {
-    moduloIncidencias.reportar();
-}
 
 function cargarIncidencias() {
     moduloIncidencias.cargar();

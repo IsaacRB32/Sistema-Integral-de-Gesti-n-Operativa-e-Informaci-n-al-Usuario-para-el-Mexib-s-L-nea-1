@@ -30,7 +30,7 @@ const app = {
     inicializarVista(vista) {
         switch(vista) {
             case 'unidades':
-                moduloUnidades.cargar();
+                moduloUnidades.init();  
                 break;
             case 'incidencias':
                 moduloIncidencias.cargar();
@@ -61,9 +61,9 @@ const app = {
             '¿Cerrar sesión?',
             'Se cerrará tu sesión actual y tendrás que volver a iniciar sesión.',
             () => {
-            localStorage.clear();
-            window.location.href = '/supervisor/login.html';
-        }
+                localStorage.clear();
+                window.location.href = '/supervisor/login.html';
+            }
         );
     }
 };
@@ -72,4 +72,13 @@ const app = {
 document.addEventListener('DOMContentLoaded', () => {
     app.init();
 });
-   
+```
+
+---
+
+## Para verificar que funciona:
+
+1. **Abre la consola del navegador** (F12)
+2. Deberías ver:
+```
+  

@@ -1,0 +1,414 @@
+// Módulo de visualización - ÓVALO CON ESTACIONES
+const moduloSimulacion = {
+    canvas: null,
+    ctx: null,
+    
+    // Dimensiones
+    ANCHO: 1000,
+    ALTO: 400,
+    ANCHO_RECTA: 350,
+    RADIO_CURVA: 80,
+    RADIO_PUNTO: 10,
+    
+    // Colores
+    colores: {
+        EN_RUTA: "#9BE645",
+        EN_ESTACION: "#FFA500",
+        EN_COLA: "#0796C2",
+        INCIDENCIA: "#FF4444"
+    },
+
+    // Tooltip
+    tooltipVisible: false,
+    tooltipData: null,
+    unidadesActuales: [],
+
+    iniciar() {
+        this.canvas = document.getElementById('canvasSim');
+        if (!this.canvas) return;
+        
+        this.canvas.width = this.ANCHO;
+        this.canvas.height = this.ALTO;
+        this.ctx = this.canvas.getContext('2d');
+        
+        // Eventos del mouse
+        this.canvas.addEventListener('mousemove', (e) => this.manejarMouseMove(e));
+        this.canvas.addEventListener('mouseout', () => {
+            this.tooltipVisible = false;
+            this.redibujar();
+        });
+        
+        this.dibujarPista();
+    },
+
+    dibujarPista() {
+        if (!this.ctx) return;
+
+        const cx = this.ANCHO / 2;  // Centro X: 500
+        const cy = this.ALTO / 2;   // Centro Y: 200
+
+        // Fondo del canvas
+        this.ctx.fillStyle = "#F9FAFB";
+        this.ctx.fillRect(0, 0, this.ANCHO, this.ALTO);
+
+        // Configuración del óvalo
+        this.ctx.strokeStyle = "#0796C2";
+        this.ctx.lineWidth = 4;
+        this.ctx.beginPath();
+
+        // Recta inferior
+        this.ctx.moveTo(cx - this.ANCHO_RECTA / 2, cy + this.RADIO_CURVA);
+        this.ctx.lineTo(cx + this.ANCHO_RECTA / 2, cy + this.RADIO_CURVA);
+
+        // Curva derecha
+        this.ctx.arcTo(
+            cx + this.ANCHO_RECTA / 2 + this.RADIO_CURVA, cy + this.RADIO_CURVA,
+            cx + this.ANCHO_RECTA / 2 + this.RADIO_CURVA, cy,
+            this.RADIO_CURVA
+        );
+        this.ctx.arcTo(
+            cx + this.ANCHO_RECTA / 2 + this.RADIO_CURVA, cy - this.RADIO_CURVA,
+            cx + this.ANCHO_RECTA / 2, cy - this.RADIO_CURVA,
+            this.RADIO_CURVA
+        );
+
+        // Recta superior
+        this.ctx.lineTo(cx - this.ANCHO_RECTA / 2, cy - this.RADIO_CURVA);
+
+        // Curva izquierda
+        this.ctx.arcTo(
+            cx - this.ANCHO_RECTA / 2 - this.RADIO_CURVA, cy - this.RADIO_CURVA,
+            cx - this.ANCHO_RECTA / 2 - this.RADIO_CURVA, cy,
+            this.RADIO_CURVA
+        );
+        this.ctx.arcTo(
+            cx - this.ANCHO_RECTA / 2 - this.RADIO_CURVA, cy + this.RADIO_CURVA,
+            cx - this.ANCHO_RECTA / 2, cy + this.RADIO_CURVA,
+            this.RADIO_CURVA
+        );
+
+        this.ctx.closePath();
+        this.ctx.stroke();
+
+        // Relleno interior del óvalo
+        this.ctx.fillStyle = "rgba(7, 150, 194, 0.05)";
+        this.ctx.fill();
+
+        // === ESTACIONES ===
+        const totalEstaciones = CONFIG.estaciones.length; // 18
+        const puntosIntermedios = 16; // 16 estaciones intermedias en cada recta
+
+        // Coordenadas de las rectas
+        const xInicio = cx - this.ANCHO_RECTA / 2;  // 325
+        const xFin = cx + this.ANCHO_RECTA / 2;     // 675
+        const yRectaInferior = cy + this.RADIO_CURVA;  // 280
+        const yRectaSuperior = cy - this.RADIO_CURVA;  // 120
+
+        // ESTACIÓN 0 - Punto AZUL en curva izquierda (INICIO)
+        this.ctx.fillStyle = "blue";
+        this.ctx.beginPath();
+        this.ctx.arc(
+            cx - this.ANCHO_RECTA/2 - this.RADIO_CURVA, // 245
+            cy,                                          // 200
+            6, 0, 2 * Math.PI
+        );
+        this.ctx.fill();
+        this.ctx.strokeStyle = "#FFFFFF";
+        this.ctx.lineWidth = 2;
+        this.ctx.stroke();
+        
+        // Número de estación
+        this.ctx.fillStyle = "#FFFFFF";
+        this.ctx.font = "bold 10px Arial";
+        this.ctx.textAlign = "center";
+        this.ctx.textBaseline = "middle";
+        this.ctx.fillText("1", cx - this.ANCHO_RECTA/2 - this.RADIO_CURVA, cy);
+
+        // ESTACIONES 1-16 (IDA) - 16 puntos VERDES en recta INFERIOR
+        for (let i = 0; i < puntosIntermedios; i++) {
+            const x = xInicio + (xFin - xInicio) * (i / (puntosIntermedios - 1));
+            
+            this.ctx.fillStyle = "green";
+            this.ctx.beginPath();
+            this.ctx.arc(x, yRectaInferior, 5, 0, 2 * Math.PI);
+            this.ctx.fill();
+            
+            this.ctx.strokeStyle = "#FFFFFF";
+            this.ctx.lineWidth = 2;
+            this.ctx.stroke();
+            
+            this.ctx.fillStyle = "#FFFFFF";
+            this.ctx.font = "bold 8px Arial";
+            this.ctx.fillText((i + 2).toString(), x, yRectaInferior);
+        }
+
+        // ESTACIÓN 17 - Punto ROJO en curva derecha (FINAL IDA)
+        this.ctx.fillStyle = "red";
+        this.ctx.beginPath();
+        this.ctx.arc(
+            cx + this.ANCHO_RECTA/2 + this.RADIO_CURVA, // 755
+            cy,                                          // 200
+            6, 0, 2 * Math.PI
+        );
+        this.ctx.fill();
+        this.ctx.strokeStyle = "#FFFFFF";
+        this.ctx.lineWidth = 2;
+        this.ctx.stroke();
+        
+        this.ctx.fillStyle = "#FFFFFF";
+        this.ctx.font = "bold 10px Arial";
+        this.ctx.fillText("18", cx + this.ANCHO_RECTA/2 + this.RADIO_CURVA, cy);
+
+        // 16 puntos NARANJAS en recta SUPERIOR (REGRESO)
+        // Numeración de izquierda a derecha: del 2 al 17
+        for (let i = 0; i < puntosIntermedios; i++) {
+            const x = xInicio + (xFin - xInicio) * (i / (puntosIntermedios - 1));
+            
+            this.ctx.fillStyle = "orange";
+            this.ctx.beginPath();
+            this.ctx.arc(x, yRectaSuperior, 5, 0, 2 * Math.PI);
+            this.ctx.fill();
+            
+            this.ctx.strokeStyle = "#FFFFFF";
+            this.ctx.lineWidth = 2;
+            this.ctx.stroke();
+            
+            this.ctx.fillStyle = "#FFFFFF";
+            this.ctx.font = "bold 8px Arial";
+            this.ctx.fillText((i + 2).toString(), x, yRectaSuperior);
+        }
+
+        // Etiquetas de terminales
+        this.ctx.fillStyle = "#1F2937";
+        this.ctx.font = "bold 14px Arial";
+        this.ctx.textAlign = "center";
+        
+        this.ctx.fillText(CONFIG.estaciones[0], cx - this.ANCHO_RECTA / 2 - 50, cy + this.RADIO_CURVA + 30);
+        this.ctx.fillText(CONFIG.estaciones[17], cx + this.ANCHO_RECTA / 2 + 50, cy + this.RADIO_CURVA + 30);
+
+        // Flechas de dirección
+        this.ctx.fillStyle = "green";
+        this.ctx.font = "bold 16px Arial";
+        this.ctx.fillText("IDA →", cx, cy + this.RADIO_CURVA + 50);
+        
+        this.ctx.fillStyle = "orange";
+        this.ctx.fillText("← REGRESO", cx, cy - this.RADIO_CURVA - 30);
+    },
+
+    // Calcula posición en el óvalo según idx de estación
+    // Calcula posición en el óvalo según idx e implícitamente sentido
+    calcularPosicionEstacion(idx, sentido = "IDA") {
+        const cx = this.ANCHO / 2;
+        const cy = this.ALTO / 2;
+        const puntosIntermedios = 16;
+        
+        const xInicio = cx - this.ANCHO_RECTA / 2;
+        const xFin = cx + this.ANCHO_RECTA / 2;
+        const yInferior = cy + this.RADIO_CURVA;  // Recta verde (IDA)
+        const ySuperior = cy - this.RADIO_CURVA;   // Recta naranja (REGRESO)
+
+        // Estación 0 - Punto azul (Central de Abastos)
+        if (idx === 0) {
+            return { x: cx - this.ANCHO_RECTA/2 - this.RADIO_CURVA, y: cy };
+        }
+        // Estaciones 1-16 - Puntos intermedios
+        else if (idx >= 1 && idx <= 16) {
+            const i = idx - 1; // 0 a 15
+            const x = xInicio + (xFin - xInicio) * (i / (puntosIntermedios - 1));
+            
+            // IDA usa recta inferior (verde), REGRESO usa recta superior (naranja)
+            const y = (sentido === "IDA") ? yInferior : ySuperior;
+            return { x, y };
+        }
+        // Estación 17 - Punto rojo (Ciudad Azteca)
+        else if (idx === 17) {
+            return { x: cx + this.ANCHO_RECTA/2 + this.RADIO_CURVA, y: cy };
+        }
+        else {
+            return { x: cx, y: cy };
+        }
+    },
+
+    // Calcula posición de unidad entre dos estaciones
+    calcularPosicionUnidad(u) {
+        const idx = Number(u.idx_tramo || 0);
+        const prog = Number(u.progreso || 0);
+        const sentido = u.sentido || "IDA";
+        
+        // IMPORTANTE: El backend YA envía los índices corregidos:
+        // - IDA: 0→1→2→...→17 (puntos verdes, recta inferior)
+        // - REGRESO: 17→16→15→...→0 (puntos naranjas, recta superior)
+        
+        // Posición actual con el sentido
+        const posActual = this.calcularPosicionEstacion(idx, sentido);
+        
+        // Calcular índice siguiente según sentido
+        let sigIdx;
+        if (sentido === "IDA") {
+            // IDA avanza: 0→1→2→...→17
+            sigIdx = Math.min(idx + 1, 17);
+        } else {
+            // REGRESO retrocede: 17→16→15→...→0
+            sigIdx = Math.max(idx - 1, 0);
+        }
+        
+        const posSiguiente = this.calcularPosicionEstacion(sigIdx, sentido);
+        
+        // Interpolación lineal
+        const x = posActual.x + (posSiguiente.x - posActual.x) * prog;
+        const y = posActual.y + (posSiguiente.y - posActual.y) * prog;
+        
+        return { x, y };
+    },
+
+    actualizar(unidades) {
+        this.unidadesActuales = unidades;
+        this.redibujar();
+    },
+
+    redibujar() {
+        this.dibujarPista();
+        if (this.unidadesActuales.length > 0) {
+            this.dibujarUnidades(this.unidadesActuales);
+        }
+        if (this.tooltipVisible && this.tooltipData) {
+            this.dibujarTooltip();
+        }
+    },
+
+    dibujarUnidades(unidades) {
+        if (!this.ctx) return;
+
+        unidades.forEach(u => {
+            const pos = this.calcularPosicionUnidad(u);
+
+            // Sombra
+            this.ctx.beginPath();
+            this.ctx.arc(pos.x, pos.y + 2, this.RADIO_PUNTO + 2, 0, 2 * Math.PI);
+            this.ctx.fillStyle = "rgba(0, 0, 0, 0.2)";
+            this.ctx.fill();
+
+            // Círculo de unidad
+            this.ctx.beginPath();
+            this.ctx.arc(pos.x, pos.y, this.RADIO_PUNTO, 0, 2 * Math.PI);
+            this.ctx.fillStyle = this.colores[u.estado_unidad] || "#6B7280";
+            this.ctx.fill();
+
+            // Borde
+            this.ctx.strokeStyle = "#FFFFFF";
+            this.ctx.lineWidth = 2;
+            this.ctx.stroke();
+
+            // ID
+            this.ctx.fillStyle = u.estado_unidad === 'EN_RUTA' ? "#000" : "#fff";
+            this.ctx.font = "bold 10px Arial";
+            this.ctx.textAlign = "center";
+            this.ctx.textBaseline = "middle";
+            this.ctx.fillText(String(u.id_unidad), pos.x, pos.y);
+
+            // Flecha de dirección
+            const esIda = u.sentido === "IDA";
+            this.ctx.fillStyle = esIda ? "green" : "orange";
+            this.ctx.font = "bold 12px Arial";
+            this.ctx.fillText(esIda ? "→" : "←", pos.x, pos.y - this.RADIO_PUNTO - 10);
+        });
+    },
+
+    manejarMouseMove(e) {
+        const rect = this.canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        if (this.unidadesActuales.length === 0) return;
+
+        // Detectar hover
+        let unidadHover = null;
+        for (const u of this.unidadesActuales) {
+            const pos = this.calcularPosicionUnidad(u);
+            const dist = Math.sqrt((x - pos.x) ** 2 + (y - pos.y) ** 2);
+            
+            if (dist < this.RADIO_PUNTO + 5) {
+                unidadHover = u;
+                break;
+            }
+        }
+
+        if (unidadHover) {
+            this.tooltipVisible = true;
+            this.tooltipData = unidadHover;
+            this.canvas.style.cursor = 'pointer';
+        } else {
+            this.tooltipVisible = false;
+            this.tooltipData = null;
+            this.canvas.style.cursor = 'default';
+        }
+
+        this.redibujar();
+    },
+
+    dibujarTooltip() {
+        if (!this.tooltipData) return;
+
+        const u = this.tooltipData;
+        const pos = this.calcularPosicionUnidad(u);
+        
+        const idx = Number(u.idx_tramo || 0);
+        const sigIdx = (idx + 1) % CONFIG.estaciones.length;
+        const progreso = Math.round(u.progreso * 100);
+        
+        const estacionActual = CONFIG.estaciones[idx];
+        const estacionSiguiente = CONFIG.estaciones[sigIdx];
+        
+        let ubicacionTexto;
+        if (u.estado_unidad === "EN_ESTACION") {
+            ubicacionTexto = estacionActual;
+        } else {
+            ubicacionTexto = `${estacionActual} → ${estacionSiguiente}`;
+        }
+
+        const lineas = [
+            `🚌 Unidad #${u.id_unidad}`,
+            `Estado: ${u.estado_unidad.replace('_', ' ')}`,
+            `Sentido: ${u.sentido}`,
+            `${ubicacionTexto}`,
+            `Progreso: ${progreso}%`
+        ];
+
+        const padding = 12;
+        const lineHeight = 18;
+        const maxWidth = 220;
+        const tooltipHeight = lineas.length * lineHeight + padding * 2;
+
+        // Posición
+        let tx = pos.x + 20;
+        let ty = pos.y - tooltipHeight / 2;
+        
+        if (tx + maxWidth > this.ANCHO - 10) tx = pos.x - maxWidth - 20;
+        if (ty < 10) ty = 10;
+        if (ty + tooltipHeight > this.ALTO - 10) ty = this.ALTO - tooltipHeight - 10;
+
+        // Fondo
+        this.ctx.fillStyle = "rgba(31, 41, 55, 0.95)";
+        this.ctx.strokeStyle = this.colores[u.estado_unidad] || "#6B7280";
+        this.ctx.lineWidth = 3;
+        this.ctx.beginPath();
+        this.ctx.roundRect(tx, ty, maxWidth, tooltipHeight, 10);
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        // Texto
+        this.ctx.textAlign = "left";
+        this.ctx.textBaseline = "top";
+
+        lineas.forEach((linea, i) => {
+            if (i === 0) {
+                this.ctx.font = "bold 14px Arial";
+                this.ctx.fillStyle = this.colores[u.estado_unidad] || "#9BE645";
+            } else {
+                this.ctx.font = "12px Arial";
+                this.ctx.fillStyle = "#E5E7EB";
+            }
+            this.ctx.fillText(linea, tx + padding, ty + padding + i * lineHeight);
+        });
+    }
+};

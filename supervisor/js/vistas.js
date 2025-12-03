@@ -23,15 +23,17 @@ const VISTAS = {
                         </select>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium mb-2 text-gray-700">Estación Inicial</label>
-                        <input type="number" id="input-estacion" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-mexibus-blue focus:outline-none text-gray-900" placeholder="0-17" value="0">
+                        <label class="block text-sm font-medium mb-2 text-gray-700">👨‍✈️ Conductor</label>
+                        <select id="input-conductor" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-mexibus-blue focus:outline-none text-gray-900">
+                            <option value="">Cargando conductores...</option>
+                        </select>
                     </div>
                     <div class="flex gap-2">
                         <button onclick="moduloUnidades.meterUnidad()" class="flex-1 bg-mexibus-green hover:bg-opacity-90 text-gray-900 font-bold py-3 rounded-lg transition shadow">
-                             Meter
+                            🚍 Meter
                         </button>
                         <button onclick="moduloUnidades.sacarUnidad()" class="flex-1 bg-red-500 hover:bg-red-600 font-bold py-3 rounded-lg transition shadow text-white">
-                             Sacar
+                            🚫 Sacar
                         </button>
                     </div>
                 </div>
@@ -48,49 +50,12 @@ const VISTAS = {
                                 <th class="text-left py-3 px-2 text-gray-700">Sentido</th>
                                 <th class="text-left py-3 px-2 text-gray-700">Estado</th>
                                 <th class="text-left py-3 px-2 text-gray-700">Ubicación</th>
+                                <th class="text-left py-3 px-2 text-gray-700">Conductor</th>
                                 <th class="text-left py-3 px-2 text-gray-700">Progreso</th>
                             </tr>
                         </thead>
                         <tbody id="tabla-unidades">
-                            <tr><td colspan="5" class="text-center py-8 text-gray-400">Cargando...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    `,
-
-    conductores: () => `
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 fade-in">
-            <div class="lg:col-span-1 bg-white rounded-lg p-6 shadow-lg border border-gray-200">
-                <h2 class="text-xl font-bold mb-4 text-mexibus-dark">Agregar Conductor</h2>
-                <div class="space-y-4">
-                    <input type="text" id="conductor-nombre" placeholder="Nombre" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-mexibus-blue focus:outline-none text-gray-900">
-                    <input type="text" id="conductor-apellido1" placeholder="Primer Apellido" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-mexibus-blue focus:outline-none text-gray-900">
-                    <input type="text" id="conductor-apellido2" placeholder="Segundo Apellido" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-mexibus-blue focus:outline-none text-gray-900">
-                    <input type="email" id="conductor-email" placeholder="Email" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-mexibus-blue focus:outline-none text-gray-900">
-                    <input type="password" id="conductor-password" placeholder="Contraseña" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-mexibus-blue focus:outline-none text-gray-900">
-                    <button onclick="moduloConductores.agregar()" class="w-full bg-mexibus-green hover:bg-opacity-90 text-gray-900 font-bold py-3 rounded-lg transition shadow">
-                         Agregar Conductor
-                    </button>
-                </div>
-                <div id="msg-conductores" class="mt-4 p-3 rounded-lg text-sm font-medium hidden"></div>
-            </div>
-
-            <div class="lg:col-span-2 bg-white rounded-lg p-6 shadow-lg border border-gray-200">
-                <h2 class="text-xl font-bold mb-4 text-gray-900">Conductores Registrados</h2>
-                <div class="overflow-x-auto scrollbar-custom">
-                    <table class="w-full text-sm">
-                        <thead>
-                            <tr class="border-b-2 border-gray-300">
-                                <th class="text-left py-3 px-2 text-gray-700">ID</th>
-                                <th class="text-left py-3 px-2 text-gray-700">Nombre</th>
-                                <th class="text-left py-3 px-2 text-gray-700">Email</th>
-                                <th class="text-left py-3 px-2 text-gray-700">Rol</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tabla-conductores">
-                            <tr><td colspan="4" class="text-center py-8 text-gray-400">Pendiente de implementar</td></tr>
+                            <tr><td colspan="6" class="text-center py-8 text-gray-400">Cargando...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -100,30 +65,21 @@ const VISTAS = {
 
     incidencias: () => `
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 fade-in">
+            <!-- BANDEJA DE ENTRADA (Reemplaza al formulario) -->
             <div class="lg:col-span-1 bg-white rounded-lg p-6 shadow-lg border border-gray-200">
-                <h2 class="text-xl font-bold mb-4 text-mexibus-dark">Reportar Incidencia</h2>
-                <div class="space-y-4">
-                    <input type="number" id="inc-unidad" placeholder="ID Unidad" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-mexibus-blue focus:outline-none text-gray-900">
-                    <select id="inc-tipo" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-mexibus-blue focus:outline-none text-gray-900">
-                        <option value="1">Bloqueo por Manifestación</option>
-                        <option value="2">Inundación</option>
-                        <option value="3">Colisión de Unidad</option>
-                        <option value="4">Colisión de Terceros</option>
-                        <option value="5">Fallas Técnicas de la Unidad</option>
-                        <option value="6">Unidad Detenida en el Carril</option>
-                        <option value="7">Incidente en la Estación</option>
-                        <option value="8">Otro</option>
-                    </select>
-                    <textarea id="inc-desc" rows="3" placeholder="Descripción" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-mexibus-blue focus:outline-none text-gray-900"></textarea>
-                    <button onclick="moduloIncidencias.reportar()" class="w-full bg-red-500 hover:bg-red-600 font-bold py-3 rounded-lg transition shadow text-white">
-                        ⚠️ Reportar
-                    </button>
+                <h2 class="text-xl font-bold mb-4 text-mexibus-dark">📥 Bandeja de Entrada</h2>
+                <p class="text-sm text-gray-600 mb-4">Incidencias pendientes de validación</p>
+                
+                <div id="bandeja-pendientes" class="space-y-3 overflow-y-auto max-h-[500px] scrollbar-custom">
+                    <div class="text-center py-8 text-gray-400">Cargando...</div>
                 </div>
-                <div id="msg-incidencias" class="mt-4 p-3 rounded-lg text-sm font-medium hidden"></div>
+
+                <div id="msg-bandeja" class="mt-4 p-3 rounded-lg text-sm font-medium hidden"></div>
             </div>
 
+            <!-- LISTA DE INCIDENCIAS ACTIVAS (Se mantiene igual) -->
             <div class="lg:col-span-2 bg-white rounded-lg p-6 shadow-lg border border-gray-200">
-                <h2 class="text-xl font-bold mb-4 text-gray-900">Incidencias Activas</h2>
+                <h2 class="text-xl font-bold mb-4 text-gray-900">⚠️ Incidencias Activas</h2>
                 <div class="space-y-3 overflow-y-auto max-h-[600px] scrollbar-custom" id="lista-incidencias">
                     <div class="text-center py-8 text-gray-400">Cargando...</div>
                 </div>
@@ -131,7 +87,7 @@ const VISTAS = {
         </div>
     `,
 
-simulacion: () => `
+    simulacion: () => `
         <div class="bg-white rounded-lg p-6 shadow-lg border border-gray-200 fade-in">
             <h2 class="text-xl font-bold mb-4 text-gray-900">Simulación en Tiempo Real</h2>
             

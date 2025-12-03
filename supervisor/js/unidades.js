@@ -1,43 +1,137 @@
-// unidades.js - Módulo de gestión de unidades CON ICONOS
+// unidades.js - Módulo de gestión de unidades CON ASIGNACIÓN DE CONDUCTORES
 
 const moduloUnidades = {
+    conductoresDisponibles: [],
+
+    async cargarConductores() {
+        try {
+            const res = await fetch(`${CONFIG.API_BASE}/supervisor/conductores`);
+            
+            if (!res.ok) {
+                console.error('Error cargando conductores:', res.status);
+                return;
+            }
+
+            this.conductoresDisponibles = await res.json();
+            this.renderizarSelectConductores();
+
+        } catch (err) {
+            console.error('Error obteniendo conductores:', err);
+            const select = document.getElementById('input-conductor');
+            if (select) {
+                select.innerHTML = '<option value="">❌ Error al cargar conductores</option>';
+            }
+        }
+    },
+
+    renderizarSelectConductores() {
+        const select = document.getElementById('input-conductor');
+        if (!select) return;
+
+        const disponibles = this.conductoresDisponibles.filter(c => c.estado === 'DISPONIBLE');
+        const ocupados = this.conductoresDisponibles.filter(c => c.estado === 'OCUPADO');
+
+        if (disponibles.length === 0 && ocupados.length === 0) {
+            select.innerHTML = '<option value="">⚠️ No hay conductores registrados</option>';
+            return;
+        }
+
+        let html = '<option value="">-- Sin asignar --</option>';
+
+        if (disponibles.length > 0) {
+            html += '<optgroup label="✅ Disponibles">';
+            disponibles.forEach(c => {
+                html += `<option value="${c.id_usuario}">${c.nombre_completo}</option>`;
+            });
+            html += '</optgroup>';
+        }
+
+        if (ocupados.length > 0) {
+            html += '<optgroup label="🚫 Ocupados" disabled>';
+            ocupados.forEach(c => {
+                html += `<option value="${c.id_usuario}" disabled>${c.nombre_completo} (Unidad #${c.unidad_asignada})</option>`;
+            });
+            html += '</optgroup>';
+        }
+
+        select.innerHTML = html;
+    },
+
     async meterUnidad() {
         const id = document.getElementById('input-unidad-id').value;
         const ruta = document.getElementById('input-ruta').value;
         const sentido = document.getElementById('input-sentido').value;
-        const estacion = document.getElementById('input-estacion').value;
+        const conductorId = document.getElementById('input-conductor').value;
 
-        if (!id) return utils.mostrarMensaje('msg-unidades', 'Ingresa el ID', 'error');
+        if (!id) return utils.mostrarMensaje('msg-unidades', 'Ingresa el ID de la unidad', 'error');
 
         try {
-            const res = await fetch(`${CONFIG.API_BASE}/sim/entrar`, {
+            // 1. Meter unidad al circuito
+            const resUnidad = await fetch(`${CONFIG.API_BASE}/sim/entrar`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     id_unidad: parseInt(id),
                     id_ruta: parseInt(ruta),
                     sentido,
-                    idx_tramo: parseInt(estacion)
+                    idx_tramo: 0 // Siempre inicia en estación 0
                 })
             });
 
-            const data = await res.json();
-            if (data.ok) {
-                utils.mostrarMensaje('msg-unidades', `Unidad ${id} ingresada`, 'success');
-                setTimeout(() => this.cargar(), 500);
-            } else {
-                utils.mostrarMensaje('msg-unidades', data.error, 'error');
+            const dataUnidad = await resUnidad.json();
+            
+            if (!dataUnidad.ok) {
+                return utils.mostrarMensaje('msg-unidades', dataUnidad.error || 'Error al ingresar unidad', 'error');
             }
+
+            // 2. Asignar conductor si se seleccionó uno
+            if (conductorId) {
+                const resConductor = await fetch(`${CONFIG.API_BASE}/supervisor/asignar-conductor`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        id_usuario: parseInt(conductorId),
+                        id_unidad: parseInt(id)
+                    })
+                });
+
+                const dataConductor = await resConductor.json();
+
+                if (!resConductor.ok) {
+                    console.warn('Advertencia al asignar conductor:', dataConductor.error);
+                    utils.mostrarMensaje('msg-unidades', `Unidad ${id} ingresada pero no se pudo asignar conductor`, 'warning');
+                } else {
+                    utils.mostrarMensaje('msg-unidades', `Unidad ${id} ingresada con conductor asignado`, 'success');
+                }
+            } else {
+                utils.mostrarMensaje('msg-unidades', `Unidad ${id} ingresada sin conductor`, 'success');
+            }
+
+            // 3. Recargar todo
+            setTimeout(() => {
+                this.cargar();
+                this.cargarConductores();
+            }, 500);
+
         } catch (err) {
+            console.error('Error:', err);
             utils.mostrarMensaje('msg-unidades', 'Error de conexión', 'error');
         }
     },
 
     async sacarUnidad() {
         const id = document.getElementById('input-unidad-id').value;
-        if (!id) return utils.mostrarMensaje('msg-unidades', 'Ingresa el ID', 'error');
+        if (!id) return utils.mostrarMensaje('msg-unidades', 'Ingresa el ID de la unidad', 'error');
 
         try {
+            // 1. Desasignar conductor primero
+            await fetch(`${CONFIG.API_BASE}/supervisor/desasignar-conductor`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id_unidad: parseInt(id) })
+            });
+
+            // 2. Sacar unidad del circuito
             const res = await fetch(`${CONFIG.API_BASE}/sim/salir`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -46,8 +140,11 @@ const moduloUnidades = {
 
             const data = await res.json();
             if (data.ok) {
-                utils.mostrarMensaje('msg-unidades', `Unidad ${id} sacada`, 'success');
-                setTimeout(() => this.cargar(), 500);
+                utils.mostrarMensaje('msg-unidades', `Unidad ${id} sacada del servicio`, 'success');
+                setTimeout(() => {
+                    this.cargar();
+                    this.cargarConductores();
+                }, 500);
             } else {
                 utils.mostrarMensaje('msg-unidades', data.error, 'error');
             }
@@ -62,11 +159,9 @@ const moduloUnidades = {
             return '<span class="text-xl">📍</span>';
         }
         
-        // Construir ruta absoluta con window.location.origin
-        const baseUrl = window.location.origin; // http://localhost:3000
+        const baseUrl = window.location.origin;
         const rutaBase = `${baseUrl}/supervisor/mexibusSystemImages/stationsIcons/`;
         
-        // Mapeo de nombres de estaciones a archivos de iconos
         const iconos = {
             'Central de Abastos': 'centraldeAbastosIcon.png',
             'Ciudad Azteca': 'ciudadAztecaIcon.png',
@@ -92,7 +187,6 @@ const moduloUnidades = {
             'Quinto Sol': 'quintoSolIcon.png'
         };
         
-        // Emojis como fallback
         const emojisEstaciones = {
             'Central de Abastos': '🏪',
             'Ciudad Azteca': '🏛️',
@@ -123,12 +217,11 @@ const moduloUnidades = {
         
         if (icono) {
             const rutaCompleta = `${rutaBase}${icono}`;
-            console.log(`🖼️ Cargando icono: ${rutaCompleta}`);
             return `<img src="${rutaCompleta}" 
                      alt="${nombreEstacion}" 
                      class="w-5 h-5 inline-block rounded" 
                      title="${nombreEstacion}"
-                     onerror="console.error('❌ Error cargando:', this.src); this.style.display='none'; this.nextElementSibling.style.display='inline';">
+                     onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';">
                     <span class="text-xl" style="display: none;">${emoji}</span>`;
         }
         
@@ -144,7 +237,7 @@ const moduloUnidades = {
             if (!tbody) return;
 
             if (unidades.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-gray-400">No hay unidades en el sistema</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-gray-400">No hay unidades en el sistema</td></tr>';
                 return;
             }
 
@@ -160,6 +253,10 @@ const moduloUnidades = {
                 const estacion = CONFIG.estaciones[u.idx_tramo] || 'Desconocida';
                 const progreso = Math.round(u.progreso * 100);
                 const iconoEstacion = this.obtenerIconoEstacion(estacion);
+
+                // Buscar conductor asignado
+                const conductor = this.conductoresDisponibles.find(c => c.unidad_asignada === u.id_unidad);
+                const nombreConductor = conductor ? conductor.nombre_completo : '👤 Sin asignar';
 
                 return `
                     <tr class="border-b border-gray-200 hover:bg-gray-50 transition-colors">
@@ -180,6 +277,9 @@ const moduloUnidades = {
                                 <span>${estacion}</span>
                             </div>
                         </td>
+                        <td class="py-3 px-4 text-sm text-gray-700">
+                            ${nombreConductor}
+                        </td>
                         <td class="py-3 px-4">
                             <div class="flex items-center gap-2">
                                 <div class="flex-1 bg-gray-200 rounded-full h-2 overflow-hidden">
@@ -198,7 +298,7 @@ const moduloUnidades = {
             if (tbody) {
                 tbody.innerHTML = `
                     <tr>
-                        <td colspan="5" class="text-center py-8">
+                        <td colspan="6" class="text-center py-8">
                             <div class="text-red-500">
                                 <div class="text-4xl mb-2">❌</div>
                                 <p class="font-semibold">Error al cargar unidades</p>
@@ -215,7 +315,8 @@ const moduloUnidades = {
     },
 
     init() {
-        console.log('✅ Módulo de unidades inicializado (con iconos PNG)');
+        console.log('✅ Módulo de unidades inicializado (con asignación de conductores)');
+        this.cargarConductores();
         this.cargar();
     }
 };

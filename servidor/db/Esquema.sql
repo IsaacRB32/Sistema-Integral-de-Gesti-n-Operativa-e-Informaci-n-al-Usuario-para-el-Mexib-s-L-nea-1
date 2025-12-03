@@ -153,8 +153,8 @@ CREATE TABLE IF NOT EXISTS AsignacionesUnidad (
     DEFERRABLE INITIALLY DEFERRED
 );
 
-ALTER TABLE Usuarios
-ADD CONSTRAINT uq_usuarios_email UNIQUE (email);
+--ALTER TABLE Usuarios
+--ADD CONSTRAINT IF NOT EXISTS uq_usuarios_email UNIQUE (email);
 
 -- =========================
 -- 5) SEMILLA / CATALOGOS
@@ -284,5 +284,3 @@ ON CONFLICT (email) DO NOTHING;
 -- ===========================================================
 --  FIN DEL ESQUEMA COMPLETO (Simulación Circular)
 -- ===========================================================
-
-

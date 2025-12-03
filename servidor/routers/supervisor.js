@@ -68,6 +68,7 @@ router.get("/incidencias/:id", async (req, res) => {
 
 //   3. Validar / actualizar estado de una incidencia (PUT /api/supervisor/incidencias/:id)
 
+// En supervisor.js - CORREGIR el endpoint PUT
 router.put("/incidencias/:id", async (req, res) => {
   try {
     const { id } = req.params;
@@ -186,6 +187,114 @@ router.get("/unidades/todas", async (req, res) => {
   } catch (error) {
     console.error("Error al consultar todas las unidades:", error);
     res.status(500).json({ error: "Error al obtener todas las unidades" });
+  }
+});
+
+//   7. NUEVO: Obtener conductores/operadores disponibles
+router.get("/conductores", async (req, res) => {
+  try {
+    const query = `
+      SELECT 
+        u.id_usuario,
+        u.nombre || ' ' || u.primer_apellido || COALESCE(' ' || u.segundo_apellido, '') AS nombre_completo,
+        u.email,
+        r.rol,
+        CASE 
+          WHEN au.id_asignacion IS NOT NULL THEN 'OCUPADO'
+          ELSE 'DISPONIBLE'
+        END AS estado,
+        au.id_unidad AS unidad_asignada
+      FROM Usuarios u
+      INNER JOIN Roles r ON u.id_rol = r.id_rol
+      LEFT JOIN AsignacionesUnidad au ON u.id_usuario = au.id_usuario AND au.activo = true
+      WHERE r.rol = 'OPERADOR'
+      ORDER BY u.nombre ASC;
+    `;
+    const result = await pool.query(query);
+    res.status(200).json(result.rows);
+  } catch (error) {
+    console.error("Error al consultar conductores:", error);
+    res.status(500).json({ error: "Error al obtener conductores" });
+  }
+});
+
+//   8. NUEVO: Asignar conductor a unidad
+router.post("/asignar-conductor", async (req, res) => {
+  const client = await pool.connect();
+  try {
+    const { id_usuario, id_unidad } = req.body;
+
+    if (!id_usuario || !id_unidad) {
+      return res.status(400).json({ error: "id_usuario e id_unidad son obligatorios" });
+    }
+
+    await client.query("BEGIN");
+
+    // Verificar que el conductor no tenga otra unidad asignada
+    const checkConductor = await client.query(
+      `SELECT id_asignacion FROM AsignacionesUnidad 
+       WHERE id_usuario = $1 AND activo = true`,
+      [id_usuario]
+    );
+
+    if (checkConductor.rows.length > 0) {
+      await client.query("ROLLBACK");
+      client.release();
+      return res.status(400).json({ error: "El conductor ya tiene una unidad asignada" });
+    }
+
+    // Verificar que la unidad no tenga otro conductor
+    const checkUnidad = await client.query(
+      `SELECT id_asignacion FROM AsignacionesUnidad 
+       WHERE id_unidad = $1 AND activo = true`,
+      [id_unidad]
+    );
+
+    if (checkUnidad.rows.length > 0) {
+      await client.query("ROLLBACK");
+      client.release();
+      return res.status(400).json({ error: "La unidad ya tiene un conductor asignado" });
+    }
+
+    // Crear asignación
+    await client.query(
+      `INSERT INTO AsignacionesUnidad (id_usuario, id_unidad, activo)
+       VALUES ($1, $2, true)`,
+      [id_usuario, id_unidad]
+    );
+
+    await client.query("COMMIT");
+    client.release();
+
+    res.status(200).json({ message: "Conductor asignado correctamente" });
+  } catch (error) {
+    await client.query("ROLLBACK");
+    client.release();
+    console.error("Error al asignar conductor:", error);
+    res.status(500).json({ error: "Error al asignar conductor" });
+  }
+});
+
+//   9. NUEVO: Desasignar conductor de unidad
+router.post("/desasignar-conductor", async (req, res) => {
+  try {
+    const { id_unidad } = req.body;
+
+    if (!id_unidad) {
+      return res.status(400).json({ error: "id_unidad es obligatorio" });
+    }
+
+    await pool.query(
+      `UPDATE AsignacionesUnidad 
+       SET activo = false, fecha_fin = NOW()
+       WHERE id_unidad = $1 AND activo = true`,
+      [id_unidad]
+    );
+
+    res.status(200).json({ message: "Conductor desasignado correctamente" });
+  } catch (error) {
+    console.error("Error al desasignar conductor:", error);
+    res.status(500).json({ error: "Error al desasignar conductor" });
   }
 });
 
