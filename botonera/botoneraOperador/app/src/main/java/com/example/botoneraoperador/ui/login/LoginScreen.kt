@@ -1,14 +1,19 @@
 package com.example.botoneraoperador.ui.login
 
+import android.app.Activity
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -16,20 +21,24 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.example.botoneraoperador.R
 import com.example.botoneraoperador.ui.theme.Blue40
 import com.example.botoneraoperador.ui.theme.Blue41
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
 
 @Composable
 fun LoginScreen(
     navController: NavController,
     loginViewModel: LoginViewModel = viewModel()
 ) {
+    // 1. OCULTAR BARRAS DE SISTEMA (Pantalla Completa)
+    HideSystemBarsLogin()
+
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
 
@@ -37,17 +46,32 @@ fun LoginScreen(
     var showLoginFailedDialog by remember { mutableStateOf(false) }
     var showNoUnitDialog by remember { mutableStateOf(false) }
 
+    // 2. DETECCIÓN DE TABLETA
+    val configuration = LocalConfiguration.current
+    val isTablet = configuration.screenWidthDp > 600
+
+    // Lógica Responsive:
+    // Si es tableta, el contenido tendrá un ancho fijo de 450dp para que se vea como una "tarjeta" centrada.
+    // Si es celular, usará el ancho máximo disponible (fillMaxWidth).
+    val contentModifier = if (isTablet) {
+        Modifier.width(450.dp)
+    } else {
+        Modifier.fillMaxWidth()
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .padding(24.dp),
         contentAlignment = Alignment.Center
     ) {
+        // Aplicamos el modificador responsive a la Columna principal
         Column(
+            modifier = contentModifier,
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(32.dp)
         ) {
-            LoginHeader()
+            LoginHeader(isTablet)
 
             LoginForm(
                 usuario = email,
@@ -63,22 +87,13 @@ fun LoginScreen(
                             loginViewModel.login(email, password) { success, codeOrMsg, usuario ->
                                 if(success){
                                     navController.navigate("botonera"){
-                                        popUpTo("login"){
-                                            inclusive=true
-                                        }
+                                        popUpTo("login"){ inclusive=true }
                                     }
                                 }
                                 else{
                                     when(codeOrMsg){
-                                        "OPERADOR_SIN_UNIDAD" ->{
-                                            showNoUnitDialog=true
-                                        }
-                                        "ROL_INVALIDO" ->{
-                                            showLoginFailedDialog=true
-                                        }
-                                        else ->{
-                                            showLoginFailedDialog=true
-                                        }
+                                        "OPERADOR_SIN_UNIDAD" -> showNoUnitDialog=true
+                                        else -> showLoginFailedDialog=true
                                     }
                                 }
                             }
@@ -89,7 +104,7 @@ fun LoginScreen(
         }
     }
 
-    // Diálogo campos vacíos
+    // --- DIÁLOGOS ---
     if (showEmptyFieldsDialog) {
         AlertDialog(
             onDismissRequest = { showEmptyFieldsDialog = false },
@@ -97,16 +112,13 @@ fun LoginScreen(
                 TextButton(
                     onClick = { showEmptyFieldsDialog = false },
                     colors = ButtonDefaults.textButtonColors(contentColor = Blue41)
-                ) {
-                    Text("Aceptar")
-                }
+                ) { Text("Aceptar") }
             },
             title = { Text("Campos Vacíos") },
             text = { Text("Por favor, completa todos los campos.") }
         )
     }
 
-    // Diálogo login fallido
     if (showLoginFailedDialog) {
         AlertDialog(
             onDismissRequest = { showLoginFailedDialog = false },
@@ -114,9 +126,7 @@ fun LoginScreen(
                 TextButton(
                     onClick = { showLoginFailedDialog = false },
                     colors = ButtonDefaults.textButtonColors(contentColor = Blue41)
-                ) {
-                    Text("Cerrar")
-                }
+                ) { Text("Cerrar") }
             },
             title = { Text("Error de Acceso") },
             text = { Text("El correo o la contraseña son incorrectos. Por favor, verifica tus credenciales.") }
@@ -136,7 +146,10 @@ fun LoginScreen(
 }
 
 @Composable
-fun LoginHeader() {
+fun LoginHeader(isTablet: Boolean = false) {
+    // Logo más grande en tableta
+    val logoSize = if (isTablet) 150.dp else 100.dp
+
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(18.dp)
@@ -144,7 +157,7 @@ fun LoginHeader() {
         Image(
             painter = painterResource(id = R.drawable.mexibusicon),
             contentDescription = "Logo de Mexibús",
-            modifier = Modifier.size(100.dp)
+            modifier = Modifier.size(logoSize)
         )
         Text(
             text = "Acceso para Operadores",
@@ -167,13 +180,10 @@ fun LoginForm(
 
     // Configuración de colores
     val misColores = OutlinedTextFieldDefaults.colors(
-        // Bordes y Etiquetas (AZUL)
         focusedBorderColor = miAzul,
         focusedLabelColor = miAzul,
         cursorColor = miAzul,
         focusedTrailingIconColor = miAzul,
-
-        // Texto de los campos (NEGRO)
         focusedTextColor = Color.Black,
         unfocusedTextColor = Color.Black
     )
@@ -192,7 +202,7 @@ fun LoginForm(
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-            colors = misColores // Aplica negro al texto y azul al borde
+            colors = misColores
         )
 
         // Campo Contraseña
@@ -204,13 +214,13 @@ fun LoginForm(
             singleLine = true,
             visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-            colors = misColores, // Aplica negro al texto y azul al borde
+            colors = misColores,
             trailingIcon = {
-
                 val image = if (passwordVisible)
                     Icons.Filled.Visibility
                 else
                     Icons.Filled.VisibilityOff
+
                 val description = if (passwordVisible) "Ocultar contraseña" else "Mostrar contraseña"
 
                 IconButton(onClick = { passwordVisible = !passwordVisible }) {
@@ -229,6 +239,30 @@ fun LoginForm(
             )
         ) {
             Text("Ingresar")
+        }
+    }
+}
+
+// Función auxiliar para pantalla completa
+@Composable
+fun HideSystemBarsLogin() {
+    val view = LocalView.current
+    if (!view.isInEditMode) {
+        DisposableEffect(Unit) {
+            val window = (view.context as? Activity)?.window
+            if (window != null) {
+                val insetsController = WindowCompat.getInsetsController(window, view)
+                insetsController.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+                insetsController.hide(WindowInsetsCompat.Type.systemBars())
+            }
+            onDispose {
+                // Al salir del Login, decidimos qué hacer.
+                val window = (view.context as? Activity)?.window
+                if (window != null) {
+                    val insetsController = WindowCompat.getInsetsController(window, view)
+                    insetsController.show(WindowInsetsCompat.Type.systemBars())
+                }
+            }
         }
     }
 }
