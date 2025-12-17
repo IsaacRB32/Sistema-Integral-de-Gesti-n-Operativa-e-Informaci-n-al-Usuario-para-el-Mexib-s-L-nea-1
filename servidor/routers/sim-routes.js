@@ -131,6 +131,44 @@ router.post("/sim/incidencia", async (req, res) => {
 });
 
 /**
+ * GET /sim/incidencias/activas
+ * Devuelve todas las incidencias ACTIVAS ordenadas por fecha (más reciente primero)
+ * Usado por la app de usuario
+ */
+router.get("/sim/incidencias/activas", async (_req, res) => {
+  try {
+    const { rows } = await pool.query(`
+      SELECT
+        i.id_incidencia,
+        i.fecha_inicio,
+        i.descripcion,
+        ci.nombre_incidencia,
+        e.estado_incidencia,
+        est.nombre_estacion,
+        i.id_unidad
+      FROM Incidencias i
+      JOIN EstadosIncidencias e ON i.id_estado = e.id_estado
+      JOIN CatalogoIncidencias ci ON i.id_cincidencia = ci.id_cincidencia
+      LEFT JOIN Estaciones est ON i.id_estacion = est.id_estacion
+      WHERE e.estado_incidencia = 'ACTIVA'
+      ORDER BY i.fecha_inicio DESC
+    `);
+
+    res.json({
+      ok: true,
+      total: rows.length,
+      incidencias: rows
+    });
+  } catch (e) {
+    console.error("incidencias activas:", e);
+    res.status(500).json({
+      ok: false,
+      error: "Error al obtener incidencias activas"
+    });
+  }
+});
+
+/**
  * POST /sim/resolver
  * body: { id_incidencia?:number, id_unidad?:number }
  * Cierra incidencia (si hay) y vuelve la unidad a EN_RUTA.

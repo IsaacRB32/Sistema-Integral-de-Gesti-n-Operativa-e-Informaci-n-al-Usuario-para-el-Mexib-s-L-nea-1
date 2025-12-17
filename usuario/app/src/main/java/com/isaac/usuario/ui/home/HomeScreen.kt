@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalMaterialApi::class)
+
 package com.isaac.usuario.ui.home
 
 import androidx.compose.foundation.BorderStroke
@@ -11,6 +13,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -27,6 +30,11 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.isaac.usuario.R
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.isaac.usuario.ui.utils.tiempoTranscurrido
+import kotlinx.coroutines.delay
+import com.isaac.usuario.ui.home.HomeViewModel
 
 // COLOR PRINCIPAL (El azul de la botonera)
 val AppTealColor = Color(0xFF00a1d3)
@@ -44,6 +52,7 @@ data class IncidenciaData(
 fun HomeScreen() {
     // 0: Inicio, 1: Incidencias, 2: Mapa, 3: Ajustes
     var selectedTab by remember { mutableIntStateOf(0) }
+    val homeViewModel: HomeViewModel = viewModel()
 
     Scaffold(
         bottomBar = {
@@ -55,7 +64,7 @@ fun HomeScreen() {
     ) { innerPadding ->
         Box(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
             when (selectedTab) {
-                0 -> InicioTabContent()
+                0 -> InicioTabContent(homeViewModel)
                 1 -> IncidenciasListTabContent()
                 2 -> MapaFullTabContent()
                 3 -> AjustesTabContent()
@@ -66,15 +75,18 @@ fun HomeScreen() {
 
 // PESTAÑA 1: INICIO
 @Composable
-fun InicioTabContent() {
-    // Dato para la tarjeta destacada
-    val ultimaIncidencia = IncidenciaData(
-        titulo = "Bloqueo por manifestación",
-        tiempo = "Hace 5 minutos",
-        estacion = "Zodiaco",
-        descripcion = "Tome vías alternas, servicio suspendido temporalmente.",
-        icono = Icons.Default.Groups // ICONO DE GENTE REUNIDA
-    )
+fun InicioTabContent(homeViewModel: HomeViewModel = viewModel()) {
+
+    val context = LocalContext.current
+    val ultimaIncidencia by homeViewModel.ultimaIncidencia
+    val cargando by homeViewModel.cargando
+
+    LaunchedEffect(Unit) {
+        while (true) {
+            homeViewModel.cargarUltimaIncidencia(context)
+            delay(10_000)
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -110,7 +122,29 @@ fun InicioTabContent() {
             modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
         )
 
-        IncidentCard(data = ultimaIncidencia, esDestacada = true)
+        when {
+            cargando -> {
+                CircularProgressIndicator()
+            }
+
+            ultimaIncidencia == null -> {
+                Text(
+                    text = "No hay incidencias activas",
+                    color = Color.Gray
+                )
+            }
+            else -> {
+                val incidenciaUi = IncidenciaData(
+                    titulo = ultimaIncidencia!!.nombre_incidencia,
+                    tiempo = "Unidad ${ultimaIncidencia!!.id_unidad}",
+                    estacion = tiempoTranscurrido(ultimaIncidencia!!.fecha_inicio),
+                    descripcion = ultimaIncidencia!!.descripcion,
+                    icono = Icons.Default.Warning
+                )
+
+                IncidentCard(data = incidenciaUi, esDestacada = true, limitarDescripcion = true)
+            }
+        }
 
         Spacer(modifier = Modifier.height(32.dp))
 
@@ -139,39 +173,72 @@ fun InicioTabContent() {
 
 // PESTAÑA 2: LISTA DE INCIDENCIAS
 @Composable
-fun IncidenciasListTabContent() {
-    // Lista simulada de reportes
-    val listaIncidencias = listOf(
-        // Groups = Icono de gente (Manifestación)
-        IncidenciaData("Bloqueo", "Hace 10 min", "Zodiaco", "Manifestación en ambos sentidos.", Icons.Default.Groups),
-        // BusAlert = Autobús con alerta (Avería)
-        IncidenciaData("Unidad Detenida", "Hace 25 min", "Adolfo López Mateos", "Falla mecánica en unidad 34.", Icons.Default.BusAlert),
-        // Schedule = Reloj (Retraso)
-        IncidenciaData("Retraso", "Hace 40 min", "Central de Abastos", "Alta afluencia de usuarios.", Icons.Default.Schedule),
-        // Warning = Triángulo (genérico para incidente)
-        IncidenciaData("Incidente", "Hace 1 hora", "Jardines de Morelos", "Obstrucción de carril.", Icons.Default.Warning)
-    )
+fun IncidenciasListTabContent(homeViewModel: HomeViewModel = viewModel()) {
 
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+    val context = LocalContext.current
+    val incidencias by homeViewModel.incidencias
+    val cargando by homeViewModel.cargando
+
+    LaunchedEffect(Unit) {
+        while (true) {
+            homeViewModel.cargarIncidencias(context)
+            delay(10_000)
+        }
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
         Text(
             text = "Reportes en Tiempo Real",
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
             color = AppTealColor,
-            modifier = Modifier.padding(bottom = 16.dp, top = 8.dp)
+            modifier = Modifier.padding(bottom = 16.dp)
         )
 
-        LazyColumn(
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            contentPadding = PaddingValues(bottom = 16.dp)
-        ) {
-            items(listaIncidencias) { incidencia ->
-                IncidentCard(data = incidencia, esDestacada = false)
+        when {
+            cargando -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+            }
+
+            incidencias.isEmpty() -> {
+                Text(
+                    text = "No hay incidencias registradas",
+                    color = Color.Gray
+                )
+            }
+
+            else -> {
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    contentPadding = PaddingValues(bottom = 16.dp)
+                ) {
+                    items(incidencias) { incidencia ->
+                        IncidentCard(
+                            data = IncidenciaData(
+                                titulo = incidencia.nombre_incidencia,
+                                tiempo = "Unidad ${incidencia.id_unidad}",
+                                estacion = tiempoTranscurrido(incidencia.fecha_inicio),
+                                descripcion = incidencia.descripcion,
+                                icono = Icons.Default.Warning
+                            ),
+                            esDestacada = false,
+                            limitarDescripcion = false
+                        )
+                    }
+                }
             }
         }
     }
 }
-
 
 // PESTAÑA 3: MAPA COMPLETO
 @Composable
@@ -253,7 +320,7 @@ fun AjustesTabContent() {
 
 // COMPONENTE REUTILIZABLE: TARJETA DE INCIDENCIA
 @Composable
-fun IncidentCard(data: IncidenciaData, esDestacada: Boolean) {
+fun IncidentCard(data: IncidenciaData, esDestacada: Boolean, limitarDescripcion: Boolean=false) {
     val containerColor = if (esDestacada) Color.White else Color.White
     val borderColor = if (esDestacada) AppTealColor else Color.Transparent
     val borderWidth = if (esDestacada) 2.dp else 0.dp
@@ -302,7 +369,7 @@ fun IncidentCard(data: IncidenciaData, esDestacada: Boolean) {
                     Icon(Icons.Default.Place, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(14.dp))
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = "Estación: ${data.estacion}",
+                        text = data.estacion,
                         style = MaterialTheme.typography.bodySmall,
                         fontWeight = FontWeight.SemiBold,
                         color = Color.DarkGray
@@ -313,7 +380,7 @@ fun IncidentCard(data: IncidenciaData, esDestacada: Boolean) {
                     text = data.descripcion,
                     style = MaterialTheme.typography.bodySmall,
                     color = Color.Gray,
-                    maxLines = 2
+                    maxLines = if (limitarDescripcion) 2 else Int.MAX_VALUE
                 )
             }
 
