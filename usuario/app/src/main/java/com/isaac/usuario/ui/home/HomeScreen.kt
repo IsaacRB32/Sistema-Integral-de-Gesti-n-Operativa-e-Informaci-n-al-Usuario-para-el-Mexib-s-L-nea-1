@@ -6,6 +6,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -21,8 +22,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -34,12 +38,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.isaac.usuario.ui.utils.tiempoTranscurrido
 import kotlinx.coroutines.delay
-import com.isaac.usuario.ui.home.HomeViewModel
+// Asegúrate de tener tu ViewModel importado correctamente
+// import com.isaac.usuario.ui.home.HomeViewModel
 
-// COLOR PRINCIPAL (El azul de la botonera)
+// COLOR PRINCIPAL
 val AppTealColor = Color(0xFF00a1d3)
 
-// Modelo de datos para las incidencias
+// Modelo de datos
 data class IncidenciaData(
     val titulo: String,
     val tiempo: String,
@@ -50,8 +55,8 @@ data class IncidenciaData(
 
 @Composable
 fun HomeScreen() {
-    // 0: Inicio, 1: Incidencias, 2: Mapa, 3: Ajustes
     var selectedTab by remember { mutableIntStateOf(0) }
+    // Asumiendo que inyectas o creas el VM aquí. Si usas Hilt sería hiltViewModel()
     val homeViewModel: HomeViewModel = viewModel()
 
     Scaffold(
@@ -60,12 +65,12 @@ fun HomeScreen() {
                 selectedTab = index
             }
         },
-        containerColor = Color(0xFFF5F5F5) // Fondo gris muy claro
+        containerColor = Color(0xFFF5F5F5)
     ) { innerPadding ->
         Box(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
             when (selectedTab) {
                 0 -> InicioTabContent(homeViewModel)
-                1 -> IncidenciasListTabContent()
+                1 -> IncidenciasListTabContent(homeViewModel)
                 2 -> MapaFullTabContent()
                 3 -> AjustesTabContent()
             }
@@ -76,7 +81,6 @@ fun HomeScreen() {
 // PESTAÑA 1: INICIO
 @Composable
 fun InicioTabContent(homeViewModel: HomeViewModel = viewModel()) {
-
     val context = LocalContext.current
     val ultimaIncidencia by homeViewModel.ultimaIncidencia
     val cargando by homeViewModel.cargando
@@ -97,7 +101,6 @@ fun InicioTabContent(homeViewModel: HomeViewModel = viewModel()) {
     ) {
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Encabezado
         Text(
             text = "¡Hola viajero!",
             style = MaterialTheme.typography.headlineSmall,
@@ -114,7 +117,6 @@ fun InicioTabContent(homeViewModel: HomeViewModel = viewModel()) {
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Tarjeta de Alerta Principal
         Text(
             text = "⚠️ Última incidencia reportada:",
             style = MaterialTheme.typography.labelLarge,
@@ -123,16 +125,8 @@ fun InicioTabContent(homeViewModel: HomeViewModel = viewModel()) {
         )
 
         when {
-            cargando -> {
-                CircularProgressIndicator()
-            }
-
-            ultimaIncidencia == null -> {
-                Text(
-                    text = "No hay incidencias activas",
-                    color = Color.Gray
-                )
-            }
+            cargando -> CircularProgressIndicator()
+            ultimaIncidencia == null -> Text(text = "No hay incidencias activas", color = Color.Gray)
             else -> {
                 val incidenciaUi = IncidenciaData(
                     titulo = ultimaIncidencia!!.nombre_incidencia,
@@ -141,14 +135,13 @@ fun InicioTabContent(homeViewModel: HomeViewModel = viewModel()) {
                     descripcion = ultimaIncidencia!!.descripcion,
                     icono = Icons.Default.Warning
                 )
-
+                // Aquí limitamos la descripción porque es la pantalla de resumen
                 IncidentCard(data = incidenciaUi, esDestacada = true, limitarDescripcion = true)
             }
         }
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        // Sección de Ubicación (Mini Mapa)
         Text(
             text = "Tu ubicación actual:",
             style = MaterialTheme.typography.titleMedium,
@@ -156,11 +149,10 @@ fun InicioTabContent(homeViewModel: HomeViewModel = viewModel()) {
             modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)
         )
 
-        //En esta parte estaria bueno poner el logo de cada estación
         Image(
             painter = painterResource(id = R.drawable.mapa),
             contentDescription = "Mini mapa",
-            contentScale = ContentScale.Crop, // Recorta para llenar el cuadro bonito
+            contentScale = ContentScale.Crop,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(200.dp)
@@ -174,7 +166,6 @@ fun InicioTabContent(homeViewModel: HomeViewModel = viewModel()) {
 // PESTAÑA 2: LISTA DE INCIDENCIAS
 @Composable
 fun IncidenciasListTabContent(homeViewModel: HomeViewModel = viewModel()) {
-
     val context = LocalContext.current
     val incidencias by homeViewModel.incidencias
     val cargando by homeViewModel.cargando
@@ -201,21 +192,13 @@ fun IncidenciasListTabContent(homeViewModel: HomeViewModel = viewModel()) {
 
         when {
             cargando -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator()
                 }
             }
-
             incidencias.isEmpty() -> {
-                Text(
-                    text = "No hay incidencias registradas",
-                    color = Color.Gray
-                )
+                Text(text = "No hay incidencias registradas", color = Color.Gray)
             }
-
             else -> {
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -231,6 +214,7 @@ fun IncidenciasListTabContent(homeViewModel: HomeViewModel = viewModel()) {
                                 icono = Icons.Default.Warning
                             ),
                             esDestacada = false,
+                            // Aquí NO limitamos la descripción para que sea responsive
                             limitarDescripcion = false
                         )
                     }
@@ -240,36 +224,71 @@ fun IncidenciasListTabContent(homeViewModel: HomeViewModel = viewModel()) {
     }
 }
 
-// PESTAÑA 3: MAPA COMPLETO
+// PESTAÑA 3: MAPA COMPLETO CON ZOOM
 @Composable
 fun MapaFullTabContent() {
+    // Variables de estado para el Zoom y el Pan (Movimiento)
+    var scale by remember { mutableFloatStateOf(1f) }
+    var offset by remember { mutableStateOf(Offset.Zero) }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFEFEFEF)), // Fondo gris para enmarcar el mapa
+            .background(Color(0xFFEFEFEF))
+            // Detectar gestos en toda la caja
+            .pointerInput(Unit) {
+                detectTransformGestures { _, pan, zoom, _ ->
+                    // Actualizamos el zoom (limitamos para que no se haga microscópico ni gigante)
+                    scale = maxOf(1f, minOf(scale * zoom, 5f))
+                    // Actualizamos la posición (pan)
+                    // Si el zoom es 1 (original), no dejamos mover para que no se pierda la imagen
+                    val newOffset = if (scale == 1f) Offset.Zero else offset + pan
+                    offset = newOffset
+                }
+            },
         contentAlignment = Alignment.Center
     ) {
-        // Imagen centrada y ajustada (Fit) para ver todo el mapa sin recortes
         Image(
             painter = painterResource(id = R.drawable.mapa),
             contentDescription = "Mapa Completo",
             contentScale = ContentScale.Fit,
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier
+                .fillMaxSize()
+                // Aquí aplicamos la transformación gráfica
+                .graphicsLayer(
+                    scaleX = scale,
+                    scaleY = scale,
+                    translationX = offset.x,
+                    translationY = offset.y
+                )
         )
+
+        // Botón para resetear el zoom si el usuario se pierde
+        if (scale > 1f) {
+            FloatingActionButton(
+                onClick = {
+                    scale = 1f
+                    offset = Offset.Zero
+                },
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(16.dp),
+                containerColor = AppTealColor
+            ) {
+                Icon(Icons.Default.ZoomOutMap, contentDescription = "Reset Zoom", tint = Color.White)
+            }
+        }
     }
 }
 
 
-// PESTAÑA 4: AJUSTES
+// PESTAÑA 4: AJUSTES (Sin cambios mayores)
 @Composable
 fun AjustesTabContent() {
-    // Estado del Switch (Por defecto true)
     var notificacionesEnabled by remember { mutableStateOf(true) }
 
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp)
+        modifier = Modifier.fillMaxSize().padding(24.dp)
     ) {
         Text(
             text = "Configuración",
@@ -277,8 +296,6 @@ fun AjustesTabContent() {
             fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(bottom = 32.dp)
         )
-
-        // Opción de Notificaciones
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -304,7 +321,6 @@ fun AjustesTabContent() {
                     )
                 }
             }
-
             Switch(
                 checked = notificacionesEnabled,
                 onCheckedChange = { notificacionesEnabled = it },
@@ -318,9 +334,9 @@ fun AjustesTabContent() {
 }
 
 
-// COMPONENTE REUTILIZABLE: TARJETA DE INCIDENCIA
+// COMPONENTE REUTILIZABLE: TARJETA DE INCIDENCIA RESPONSIVE
 @Composable
-fun IncidentCard(data: IncidenciaData, esDestacada: Boolean, limitarDescripcion: Boolean=false) {
+fun IncidentCard(data: IncidenciaData, esDestacada: Boolean, limitarDescripcion: Boolean = false) {
     val containerColor = if (esDestacada) Color.White else Color.White
     val borderColor = if (esDestacada) AppTealColor else Color.Transparent
     val borderWidth = if (esDestacada) 2.dp else 0.dp
@@ -337,7 +353,9 @@ fun IncidentCard(data: IncidenciaData, esDestacada: Boolean, limitarDescripcion:
             modifier = Modifier
                 .padding(16.dp)
                 .fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
+            // CAMBIO CLAVE: Alineación 'Top' en lugar de 'CenterVertically'
+            // Esto permite que si el texto es largo, el icono se quede arriba y no flote en medio.
+            verticalAlignment = Alignment.Top
         ) {
             // Icono Circular
             Box(
@@ -356,17 +374,24 @@ fun IncidentCard(data: IncidenciaData, esDestacada: Boolean, limitarDescripcion:
 
             Spacer(modifier = Modifier.width(16.dp))
 
-            // Textos
+            // Columna Central (Textos)
             Column(modifier = Modifier.weight(1f)) {
+                // Título
                 Text(
                     text = data.titulo,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = Color.Black
                 )
-                // Estación destacada
+
+                // Estación (Ubicación)
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.Place, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(14.dp))
+                    Icon(
+                        Icons.Default.Place,
+                        contentDescription = null,
+                        tint = Color.Gray,
+                        modifier = Modifier.size(14.dp)
+                    )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
                         text = data.estacion,
@@ -375,29 +400,38 @@ fun IncidentCard(data: IncidenciaData, esDestacada: Boolean, limitarDescripcion:
                         color = Color.DarkGray
                     )
                 }
-                Spacer(modifier = Modifier.height(4.dp))
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                // Descripción (El texto largo)
                 Text(
                     text = data.descripcion,
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.bodyMedium, // Aumenté un poco el tamaño para legibilidad
                     color = Color.Gray,
-                    maxLines = if (limitarDescripcion) 2 else Int.MAX_VALUE
+                    // Si limitarDescripcion es false, usa MAX_VALUE, permitiendo múltiples líneas
+                    maxLines = if (limitarDescripcion) 2 else Int.MAX_VALUE,
+                    // Si se corta, pone "...", si no, se ajusta
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                 )
             }
 
-            // Tiempo
+            Spacer(modifier = Modifier.width(8.dp))
+
+            // Tiempo (Alineado arriba a la derecha)
             Text(
                 text = data.tiempo,
                 style = MaterialTheme.typography.labelSmall,
                 color = AppTealColor,
                 fontWeight = FontWeight.Bold,
-                modifier = Modifier.align(Alignment.Top)
+                // Modifier para asegurar que no se aplaste si el título es largo
+                modifier = Modifier.padding(top = 4.dp)
             )
         }
     }
 }
 
 
-// BARRA DE NAVEGACIÓN INFERIOR
+// BARRA DE NAVEGACIÓN (Sin cambios)
 @Composable
 fun UsuarioBottomBar(selectedTab: Int, onTabSelected: (Int) -> Unit) {
     NavigationBar(
@@ -412,14 +446,14 @@ fun UsuarioBottomBar(selectedTab: Int, onTabSelected: (Int) -> Unit) {
             colors = NavigationBarItemDefaults.colors(selectedIconColor = AppTealColor, selectedTextColor = AppTealColor, indicatorColor = AppTealColor.copy(alpha = 0.1f))
         )
         NavigationBarItem(
-            icon = { Icon(Icons.Default.Warning, contentDescription = "Incidencias") }, // Icono Warning para lista de incidencias
+            icon = { Icon(Icons.Default.Warning, contentDescription = "Incidencias") },
             label = { Text("Alertas") },
             selected = selectedTab == 1,
             onClick = { onTabSelected(1) },
             colors = NavigationBarItemDefaults.colors(selectedIconColor = AppTealColor, selectedTextColor = AppTealColor, indicatorColor = AppTealColor.copy(alpha = 0.1f))
         )
         NavigationBarItem(
-            icon = { Icon(Icons.Default.Map, contentDescription = "Mapa") }, // ICONO DE MAPA DOBLADO
+            icon = { Icon(Icons.Default.Map, contentDescription = "Mapa") },
             label = { Text("Mapa") },
             selected = selectedTab == 2,
             onClick = { onTabSelected(2) },
