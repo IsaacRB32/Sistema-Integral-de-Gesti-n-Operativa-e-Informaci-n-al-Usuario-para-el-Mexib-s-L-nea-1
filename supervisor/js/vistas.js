@@ -1,13 +1,131 @@
 // Templates HTML de cada vista
 const VISTAS = {
     unidades: () => `
+        <!-- Sub-tabs internos -->
+        <div class="flex gap-2 mb-4">
+            <button id="tab-cat-unidades"
+                    class="px-4 py-2 rounded bg-mexibus-blue text-white"
+                    onclick="moduloUnidades.mostrarSeccion('catalogo')">
+                Todas las unidades
+            </button>
+            <button id="tab-op-unidades"
+                    class="px-4 py-2 rounded bg-gray-200"
+                    onclick="moduloUnidades.mostrarSeccion('operaciones')">
+                Operaciones
+            </button>   
+
+            </div>
+
+            <!-- 1) Catálogo -->
+            <div id="seccion-unidades-catalogo">
+            <div id="msg-catalogo-unidades" class="hidden border p-3 rounded mb-3"></div>
+
+            <!-- Form simple (crear/editar) -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+                <select id="cat-ruta" class="border rounded px-3 py-2">
+                <option value="1">L1 - Abastos ↔ Azteca</option>
+                </select>
+
+                <select id="cat-sentido" class="border rounded px-3 py-2">
+                <option value="IDA">IDA</option>
+                <option value="REGRESO">REGRESO</option>
+                </select>
+
+                <div class="flex gap-2">
+                <button class="bg-green-600 text-white px-4 py-2 rounded"
+                        onclick="moduloUnidades.guardarUnidadCatalogo()">
+                    Guardar
+                </button>
+                <button class="bg-gray-300 px-4 py-2 rounded"
+                        onclick="moduloUnidades.cancelarEdicionUnidad()">
+                    Cancelar
+                </button>
+                </div>
+            </div>
+
+            <!-- Tabla catálogo -->
+            <div class="bg-white rounded shadow border">
+                <table class="w-full">
+                <thead>
+                    <tr class="border-b">
+                    <th class="text-left p-2">Unidad</th>
+                    <th class="text-left p-2">Ruta</th>
+                    <th class="text-left p-2">Sentido</th>
+                    <th class="text-left p-2">En circuito</th>
+                    <th class="text-left p-2">Estado</th>
+                    <th class="text-left p-2">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="tbody-catalogo-unidades">
+                    <tr><td colspan="6" class="p-4 text-gray-400 text-center">Cargando...</td></tr>
+                </tbody>
+                </table>
+            </div>
+            </div>
+
+            <!-- 2) Operaciones -->
+            <div id="seccion-unidades-operaciones" class="hidden">
+
+            <div class="bg-white rounded shadow border p-4">
+                <h3 class="font-semibold mb-4">Control de Unidades</h3>
+
+                <div id="msg-unidades" class="hidden border p-3 rounded mb-3"></div>
+
+                <!-- Unidad ID ahora es SELECT -->
+                <label class="block text-sm font-medium mb-1">Unidad ID</label>
+                <select id="input-unidad-id" class="border rounded px-3 py-2 w-full mb-4">
+                <option value="">Cargando unidades...</option>
+                </select>
+
+                <label class="block text-sm font-medium mb-1">Ruta</label>
+                <select id="input-ruta" class="border rounded px-3 py-2 w-full mb-4">
+                <option value="1">L1 - Abastos ↔ Azteca</option>
+                </select>
+
+                <label class="block text-sm font-medium mb-1">Sentido</label>
+                <select id="input-sentido" class="border rounded px-3 py-2 w-full mb-4">
+                <option value="IDA">IDA (Abastos → Azteca)</option>
+                <option value="REGRESO">REGRESO (Azteca → Abastos)</option>
+                </select>
+
+                <label class="block text-sm font-medium mb-1">Operador</label>
+                <select id="input-operador" class="border rounded px-3 py-2 w-full mb-4">
+                <option value="">-- Sin asignar --</option>
+                </select>
+
+                <div class="grid grid-cols-2 gap-3">
+                <button class="bg-green-500 text-white px-4 py-2 rounded" onclick="meterUnidad()">
+                    🚌 Meter
+                </button>
+                <button class="bg-red-500 text-white px-4 py-2 rounded" onclick="sacarUnidad()">
+                    ⛔ Sacar
+                </button>
+                </div>
+            </div>
+
+            <!-- Simulación en vivo dentro de Operaciones -->
+            <div class="mt-6">
+                <h3 class="font-semibold mb-2">Simulación en vivo</h3>
+                <div id="simulacion-viva" class="border rounded bg-white shadow p-4 h-96 overflow-auto">
+                Cargando simulación...
+                </div>
+            </div>
+
+            </div>
+
+    `,
+
+    /*
+    `
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 fade-in">
             <div class="lg:col-span-1 bg-white rounded-lg p-6 shadow-lg border border-gray-200">
                 <h2 class="text-xl font-bold mb-4 text-mexibus-dark">Control de Unidades</h2>
                 <div class="space-y-4">
                     <div>
-                        <label class="block text-sm font-medium mb-2 text-gray-700">Unidad ID</label>
-                        <input type="number" id="input-unidad-id" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-mexibus-blue focus:outline-none text-gray-900" placeholder="Ej: 1">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Unidad ID</label>
+                        <select id="input-unidad-id" class="w-full border rounded-md px-3 py-2">
+                        <option value="">-- Selecciona una unidad --</option>
+                        </select>
                     </div>
                     <div>
                         <label class="block text-sm font-medium mb-2 text-gray-700">Ruta</label>
@@ -61,7 +179,8 @@ const VISTAS = {
                 </div>
             </div>
         </div>
-    `,
+    `
+    */
 
     incidencias: () => `
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 fade-in">
