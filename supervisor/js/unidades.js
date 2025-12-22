@@ -25,7 +25,7 @@ const moduloUnidades = {
     },
 
     renderizarSelectConductores() {
-        const select = document.getElementById('input-conductor');
+        const select = document.getElementById('input-operador');
         if (!select) return;
 
         const disponibles = this.conductoresDisponibles.filter(c => c.estado === 'DISPONIBLE');
@@ -61,7 +61,7 @@ const moduloUnidades = {
         const id = document.getElementById('input-unidad-id').value;
         const ruta = document.getElementById('input-ruta').value;
         const sentido = document.getElementById('input-sentido').value;
-        const conductorId = document.getElementById('input-conductor').value;
+        const conductorId = document.getElementById('input-operador').value;
 
         if (!id) return utils.mostrarMensaje('msg-unidades', 'Ingresa el ID de la unidad', 'error');
 

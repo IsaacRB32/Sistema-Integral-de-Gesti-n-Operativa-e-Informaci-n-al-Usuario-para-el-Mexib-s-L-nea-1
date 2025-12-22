@@ -38,6 +38,10 @@ const app = {
             case 'simulacion':
                 moduloSimulacion.iniciar();
                 break;
+            case 'operadores':
+                moduloOperadores.init();
+                break;
+
         }
     },
 
@@ -53,6 +57,7 @@ const app = {
         setInterval(() => {
             if (this.vistaActual === 'unidades') moduloUnidades.cargar();
             if (this.vistaActual === 'incidencias') moduloIncidencias.cargar();
+            if (this.vistaActual === 'operadores') moduloOperadores.cargar();
         }, 5000);
     },
 
@@ -72,13 +77,3 @@ const app = {
 document.addEventListener('DOMContentLoaded', () => {
     app.init();
 });
-```
-
----
-
-## Para verificar que funciona:
-
-1. **Abre la consola del navegador** (F12)
-2. Deberías ver:
-```
-  

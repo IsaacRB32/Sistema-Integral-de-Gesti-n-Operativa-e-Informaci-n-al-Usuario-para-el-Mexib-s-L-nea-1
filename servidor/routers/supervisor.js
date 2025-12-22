@@ -207,7 +207,7 @@ router.get("/conductores", async (req, res) => {
       FROM Usuarios u
       INNER JOIN Roles r ON u.id_rol = r.id_rol
       LEFT JOIN AsignacionesUnidad au ON u.id_usuario = au.id_usuario AND au.activo = true
-      WHERE r.rol = 'OPERADOR'
+      WHERE r.rol = 'OPERADOR' AND u.activo = true
       ORDER BY u.nombre ASC;
     `;
     const result = await pool.query(query);
@@ -297,5 +297,197 @@ router.post("/desasignar-conductor", async (req, res) => {
     res.status(500).json({ error: "Error al desasignar conductor" });
   }
 });
+
+// ===============================
+// 10) CRUD de OPERADORES
+// ===============================
+
+// Listar operadores
+router.get("/operadores", async (req, res) => {
+  try {
+    const query = `
+      SELECT 
+        u.id_usuario,
+        u.nombre,
+        u.primer_apellido,
+        u.segundo_apellido,
+        u.contacto,
+        u.email,
+        r.rol,
+        CASE 
+          WHEN au.id_asignacion IS NOT NULL THEN 'OCUPADO'
+          ELSE 'DISPONIBLE'
+        END AS estado,
+        au.id_unidad AS unidad_asignada
+      FROM Usuarios u
+      INNER JOIN Roles r ON u.id_rol = r.id_rol
+      LEFT JOIN AsignacionesUnidad au 
+        ON u.id_usuario = au.id_usuario AND au.activo = true
+      WHERE r.rol = 'OPERADOR'
+        AND (u.activo IS NULL OR u.activo = true)
+      ORDER BY u.nombre ASC;
+    `;
+
+    const result = await pool.query(query);
+    res.status(200).json(result.rows);
+  } catch (error) {
+    console.error("Error al consultar operadores:", error);
+    res.status(500).json({ error: "Error al obtener operadores" });
+  }
+});
+
+// Crear operador
+router.post("/operadores", async (req, res) => {
+  try {
+    const {
+      nombre,
+      primer_apellido,
+      segundo_apellido = null,
+      contacto = null,
+      email,
+      password
+    } = req.body;
+
+    if (!nombre || !primer_apellido || !email || !password) {
+      return res.status(400).json({ error: "Faltan datos obligatorios" });
+    }
+
+    const rolRes = await pool.query(
+      `SELECT id_rol FROM Roles WHERE rol = 'OPERADOR' LIMIT 1`
+    );
+    if (rolRes.rows.length === 0) {
+      return res.status(500).json({ error: "No existe el rol OPERADOR en Roles" });
+    }
+    const id_rol = rolRes.rows[0].id_rol;
+
+    const insert = `
+      INSERT INTO Usuarios (nombre, primer_apellido, segundo_apellido, contacto, email, password, id_rol, activo)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,true)
+      RETURNING id_usuario, nombre, primer_apellido, segundo_apellido, contacto, email;
+    `;
+
+    const result = await pool.query(insert, [
+      nombre, primer_apellido, segundo_apellido, contacto, email, password, id_rol
+    ]);
+
+    res.status(201).json({ message: "Operador creado", operador: result.rows[0] });
+  } catch (error) {
+    // Duplicado por unique email
+    if (error.code === "23505") {
+      return res.status(409).json({ error: "El email ya está registrado" });
+    }
+    console.error("Error al crear operador:", error);
+    res.status(500).json({ error: "Error al crear operador" });
+  }
+});
+
+// Actualizar operador
+router.put("/operadores/:id_usuario", async (req, res) => {
+  try {
+    const { id_usuario } = req.params;
+    const {
+      nombre,
+      primer_apellido,
+      segundo_apellido,
+      contacto,
+      email,
+      password
+    } = req.body;
+
+    const sets = [];
+    const values = [];
+    let i = 1;
+
+    const addSet = (field, value) => {
+      sets.push(`${field} = $${i++}`);
+      values.push(value);
+    };
+
+    if (nombre !== undefined) addSet("nombre", nombre);
+    if (primer_apellido !== undefined) addSet("primer_apellido", primer_apellido);
+    if (segundo_apellido !== undefined) addSet("segundo_apellido", segundo_apellido);
+    if (contacto !== undefined) addSet("contacto", contacto);
+    if (email !== undefined) addSet("email", email);
+
+    // Password: solo actualizar si viene y no está vacío
+    if (password !== undefined && String(password).trim() !== "") {
+      addSet("password", password);
+    }
+
+    if (sets.length === 0) {
+      return res.status(400).json({ error: "No hay campos para actualizar" });
+    }
+
+    values.push(id_usuario);
+    const update = `
+      UPDATE Usuarios
+      SET ${sets.join(", ")}
+      WHERE id_usuario = $${i}
+        AND id_rol = (SELECT id_rol FROM Roles WHERE rol = 'OPERADOR' LIMIT 1)
+      RETURNING id_usuario, nombre, primer_apellido, segundo_apellido, contacto, email;
+    `;
+
+    const result = await pool.query(update, values);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Operador no encontrado" });
+    }
+
+    res.status(200).json({ message: "Operador actualizado", operador: result.rows[0] });
+  } catch (error) {
+    if (error.code === "23505") {
+      return res.status(409).json({ error: "El email ya está registrado" });
+    }
+    console.error("Error al actualizar operador:", error);
+    res.status(500).json({ error: "Error al actualizar operador" });
+  }
+});
+
+// Eliminar operador (baja lógica)
+router.delete("/operadores/:id_usuario", async (req, res) => {
+  const client = await pool.connect();
+  try {
+    const { id_usuario } = req.params;
+
+    // 1) Validar si está OCUPADO (asignación activa)
+    const busy = await client.query(
+      `SELECT au.id_unidad
+       FROM AsignacionesUnidad au
+       WHERE au.id_usuario = $1 AND au.activo = true
+       LIMIT 1`,
+      [id_usuario]
+    );
+
+    if (busy.rows.length > 0) {
+      return res.status(409).json({
+        error: "No se puede eliminar: el operador está OCUPADO",
+        unidad_asignada: busy.rows[0].id_unidad
+      });
+    }
+
+    // 2) Baja lógica (permitida solo si no está ocupado)
+    const del = await client.query(
+      `UPDATE Usuarios
+       SET activo = false
+       WHERE id_usuario = $1
+         AND id_rol = (SELECT id_rol FROM Roles WHERE rol='OPERADOR' LIMIT 1)
+       RETURNING id_usuario`,
+      [id_usuario]
+    );
+
+    if (del.rows.length === 0) {
+      return res.status(404).json({ error: "Operador no encontrado" });
+    }
+
+    return res.status(200).json({ message: "Operador eliminado (baja lógica) correctamente" });
+
+  } catch (error) {
+    console.error("Error al eliminar operador:", error);
+    return res.status(500).json({ error: "Error al eliminar operador" });
+  } finally {
+    client.release();
+  }
+});
+
 
 export default router;

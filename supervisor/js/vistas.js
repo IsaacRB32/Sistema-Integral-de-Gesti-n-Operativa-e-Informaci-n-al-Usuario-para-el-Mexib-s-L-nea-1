@@ -23,9 +23,9 @@ const VISTAS = {
                         </select>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium mb-2 text-gray-700">👨‍✈️ Conductor</label>
-                        <select id="input-conductor" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-mexibus-blue focus:outline-none text-gray-900">
-                            <option value="">Cargando conductores...</option>
+                        <label class="block text-sm font-medium mb-2 text-gray-700">Operador</label>
+                        <select id="input-operador" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-mexibus-blue focus:outline-none text-gray-900">
+                            <option value="">Cargando Operadores...</option>
                         </select>
                     </div>
                     <div class="flex gap-2">
@@ -50,7 +50,7 @@ const VISTAS = {
                                 <th class="text-left py-3 px-2 text-gray-700">Sentido</th>
                                 <th class="text-left py-3 px-2 text-gray-700">Estado</th>
                                 <th class="text-left py-3 px-2 text-gray-700">Ubicación</th>
-                                <th class="text-left py-3 px-2 text-gray-700">Conductor</th>
+                                <th class="text-left py-3 px-2 text-gray-700">Operador</th>
                                 <th class="text-left py-3 px-2 text-gray-700">Progreso</th>
                             </tr>
                         </thead>
@@ -118,5 +118,87 @@ const VISTAS = {
                 </div>
             </div>
         </div>
+    `,
+
+    operadores: () => `
+    <div class="fade-in">
+        <div class="bg-white rounded-lg p-6 shadow-lg border border-gray-200">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-xl font-bold text-mexibus-dark">Operadores</h2>
+            <button onclick="moduloOperadores.mostrarFormularioNuevo()"
+            class="bg-mexibus-blue text-white px-4 py-2 rounded-lg font-medium hover:opacity-90 transition">
+            ➕ Nuevo
+            </button>
+        </div>
+
+        <div id="msg-operadores" class="hidden mb-4 border rounded-lg p-3"></div>
+
+        <div id="form-operador" class="hidden mb-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
+            <div class="flex items-center justify-between mb-3">
+            <h3 id="form-operador-titulo" class="font-bold text-gray-900">Nuevo Operador</h3>
+            <button onclick="moduloOperadores.cancelar()" class="text-gray-600 hover:text-gray-900">✖</button>
+            </div>
+
+            <input type="hidden" id="op-id" />
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-sm font-medium mb-1 text-gray-700">Nombre</label>
+                <input id="op-nombre" class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2" />
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1 text-gray-700">Primer apellido</label>
+                <input id="op-primer-apellido" class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2" />
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1 text-gray-700">Segundo apellido</label>
+                <input id="op-segundo-apellido" class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2" />
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1 text-gray-700">Contacto</label>
+                <input id="op-contacto" class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2" />
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1 text-gray-700">Email</label>
+                <input id="op-email" type="email" class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2" />
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1 text-gray-700">Password</label>
+                <input id="op-password" type="password" class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2"
+                placeholder="En edición: dejar vacío para no cambiar" />
+            </div>
+            </div>
+
+            <div class="flex gap-2 mt-4">
+            <button onclick="moduloOperadores.guardar()"
+                class="bg-green-600 text-white px-4 py-2 rounded-lg font-medium hover:opacity-90 transition">
+                Guardar
+            </button>
+            <button onclick="moduloOperadores.cancelar()"
+                class="bg-gray-300 text-gray-900 px-4 py-2 rounded-lg font-medium hover:bg-gray-400 transition">
+                Cancelar
+            </button>
+            </div>
+        </div>
+
+        <div class="overflow-x-auto scrollbar-custom">
+            <table class="w-full text-sm">
+            <thead>
+                <tr class="border-b-2 border-gray-200">
+                <th class="text-left py-2 px-2 text-gray-700">Nombre</th>
+                <th class="text-left py-2 px-2 text-gray-700">Email</th>
+                <th class="text-left py-2 px-2 text-gray-700">Contacto</th>
+                <th class="text-left py-2 px-2 text-gray-700">Estado</th>
+                <th class="text-left py-2 px-2 text-gray-700">Unidad</th>
+                <th class="text-left py-2 px-2 text-gray-700">Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="tabla-operadores">
+                <tr><td colspan="6" class="text-center py-4 text-gray-400">Cargando...</td></tr>
+            </tbody>
+            </table>
+        </div>
+        </div>
+    </div>
     `
 };
