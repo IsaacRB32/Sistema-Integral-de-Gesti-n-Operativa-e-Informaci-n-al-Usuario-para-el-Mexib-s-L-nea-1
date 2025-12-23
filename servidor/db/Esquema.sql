@@ -284,6 +284,87 @@ ON CONFLICT (email) DO NOTHING;
 -- ===========================================================
 --  FIN DEL ESQUEMA COMPLETO (Simulación Circular)
 -- ===========================================================
+-- Email único
+CREATE UNIQUE INDEX IF NOT EXISTS uq_usuarios_email ON Usuarios(email);
 
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_constraint
+    WHERE conname = 'uq_usuarios_email'
+  ) THEN
+    ALTER TABLE Usuarios
+      ADD CONSTRAINT uq_usuarios_email UNIQUE USING INDEX uq_usuarios_email;
+  END IF;
+END$$;
+
+-- Password requerido para login
+ALTER TABLE Usuarios
+ADD COLUMN IF NOT EXISTS password VARCHAR(255) NOT NULL DEFAULT '1234';
+
+-- Baja lógica
+ALTER TABLE Usuarios
+ADD COLUMN IF NOT EXISTS activo BOOLEAN NOT NULL DEFAULT TRUE;
+
+-- ===========================================================
+--Creación nueva de tabla:
+-- ===========================================================
+CREATE TABLE IF NOT EXISTS AsignacionesUnidad (
+  id_asignacion SERIAL PRIMARY KEY,
+  id_usuario INTEGER NOT NULL,
+  id_unidad INTEGER NOT NULL,
+  fecha_inicio TIMESTAMP NOT NULL DEFAULT NOW(),
+  fecha_fin TIMESTAMP NULL,
+  activo BOOLEAN NOT NULL DEFAULT TRUE,
+
+  CONSTRAINT fk_asig_usuario
+    FOREIGN KEY (id_usuario) REFERENCES Usuarios(id_usuario),
+
+  CONSTRAINT fk_asig_unidad
+    FOREIGN KEY (id_unidad) REFERENCES UnidadesMB(id_unidad)
+);
+
+SELECT * FROM AsignacionesUnidad;
+
+INSERT INTO Usuarios (nombre, primer_apellido, email, password, id_rol, activo)
+VALUES (
+  'Juan', 'Pérez', 'juan.operador@mexibus.com', '1234',
+  (SELECT id_rol FROM Roles WHERE rol = 'OPERADOR' LIMIT 1),
+  TRUE
+);
+
+
+-- ===========================================================
+--Refuerzo impedir eliminar operador en estatus "Ocupado"
+-- ===========================================================
+CREATE OR REPLACE FUNCTION bloquear_baja_operador_ocupado()
+RETURNS trigger AS $$
+BEGIN
+  IF NEW.activo = FALSE AND OLD.activo = TRUE THEN
+    IF EXISTS (
+      SELECT 1 FROM AsignacionesUnidad
+      WHERE id_usuario = OLD.id_usuario AND activo = TRUE
+    ) THEN
+      RAISE EXCEPTION 'No se puede dar de baja: operador % tiene asignación activa', OLD.id_usuario;
+    END IF;
+  END IF;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_baja_operador_ocupado ON Usuarios;
+
+CREATE TRIGGER trg_baja_operador_ocupado
+BEFORE UPDATE OF activo ON Usuarios
+FOR EACH ROW
+EXECUTE FUNCTION bloquear_baja_operador_ocupado();
+
+-- ===========================================================
+--Baja lógica también en UnidadesMB
+-- ===========================================================
+ALTER TABLE UnidadesMB
+ADD COLUMN IF NOT EXISTS activo BOOLEAN NOT NULL DEFAULT TRUE;
 
 
