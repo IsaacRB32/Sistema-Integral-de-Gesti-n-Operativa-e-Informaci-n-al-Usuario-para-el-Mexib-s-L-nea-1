@@ -1,3 +1,4 @@
+/* supervisor/css/style.css */
 * {
     margin: 0;
     padding: 0;
@@ -5,8 +6,8 @@
 }
 
 body {
-    font-family: 'Arial', sans-serif;
-    background-color: #f5f5f5;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #378EA6 0%, #0796C2 100%);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -17,57 +18,83 @@ body {
 #login-box {
     background-color: white;
     padding: 40px;
-    border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    border-radius: 16px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
     width: 100%;
     max-width: 400px;
     text-align: center;
 }
 
 #login-box h2 {
-    color: #333;
+    color: #378EA6;
     margin-bottom: 30px;
-    font-size: 24px;
-    font-weight: 600;
+    font-size: 28px;
+    font-weight: 700;
 }
 
 input[type="text"],
 input[type="password"] {
     width: 100%;
-    padding: 12px 15px;
+    padding: 14px 16px;
     margin-bottom: 20px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
     font-size: 14px;
-    transition: border-color 0.3s ease;
+    transition: all 0.3s ease;
 }
 
 input[type="text"]:focus,
 input[type="password"]:focus {
     outline: none;
-    border-color: #007bff;
-    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1);
+    border-color: #0796C2;
+    box-shadow: 0 0 0 3px rgba(7, 150, 194, 0.1);
 }
 
 #btnLogin {
     width: 100%;
-    padding: 12px;
-    background-color: #007bff;
+    padding: 14px;
+    background: linear-gradient(135deg, #378EA6, #0796C2);
     color: white;
     border: none;
-    border-radius: 4px;
+    border-radius: 8px;
     font-size: 16px;
+    font-weight: 600;
     cursor: pointer;
-    transition: background-color 0.3s ease;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(7, 150, 194, 0.3);
 }
 
 #btnLogin:hover {
-    background-color: #0056b3;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(7, 150, 194, 0.4);
+}
+
+#btnLogin:active {
+    transform: translateY(0);
 }
 
 #msg {
-    margin-top: 15px;
-    color: #666;
+    margin-top: 20px;
+    color: #e74c3c;
     font-size: 14px;
+    font-weight: 500;
     min-height: 20px;
+}
+
+#msg.success {
+    color: #9BE645;
+}
+
+/* Animación de carga */
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+.loading {
+    animation: pulse 1.5s ease-in-out infinite;
 }

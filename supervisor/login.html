@@ -2,20 +2,92 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Supervisor - Login</title>
-    <link rel="stylesheet" href="./css/style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supervisor - Login | Mexibús L1</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'mexibus-dark': '#378EA6',
+                        'mexibus-blue': '#0796C2',
+                        'mexibus-green': '#9BE645'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @keyframes pulse-soft {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .loading {
+            animation: pulse-soft 1.5s ease-in-out infinite;
+        }
+    </style>
 </head>
-<body>
+<body class="bg-gradient-to-br from-mexibus-dark to-mexibus-blue min-h-screen flex items-center justify-center p-5">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-10 transform transition-all hover:scale-[1.01]">
+        <!-- Logo -->
+        <div class="flex justify-center mb-6">
+            <img 
+                src="./mexibusSystemImages/mexibusIcon.png" 
+                alt="Mexibús" 
+                class="w-20 h-20 drop-shadow-lg"
+            >
+        </div>
 
-    <div id="login-box">
-        <h2>Acceso Supervisor</h2>
+        <!-- Título -->
+        <h2 class="text-3xl font-bold text-mexibus-dark text-center mb-2">
+            Acceso Supervisor
+        </h2>
+        <p class="text-gray-600 text-center mb-8 text-sm">
+            Panel de Control Mexibús L1
+        </p>
 
-        <input type="text" id="email" placeholder="Correo">
-        <input type="password" id="password" placeholder="Contraseña">
+        <!-- Formulario -->
+        <div class="space-y-5">
+            <div>
+        <input 
+                    type="email" 
+            id="email" 
+                    placeholder=" Correo electrónico"
+            autocomplete="email"
+                    class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-mexibus-blue focus:ring-2 focus:ring-mexibus-blue focus:ring-opacity-20 transition-all text-gray-900 placeholder-gray-400"
+        >
+            </div>
+        
+            <div>
+        <input 
+            type="password" 
+            id="password" 
+                    placeholder=" Contraseña"
+            autocomplete="current-password"
+                    class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-mexibus-blue focus:ring-2 focus:ring-mexibus-blue focus:ring-opacity-20 transition-all text-gray-900 placeholder-gray-400"
+                >
+            </div>
 
-        <button id="btnLogin">Ingresar</button>
+            <button 
+                id="btnLogin"
+                class="w-full bg-gradient-to-r from-mexibus-dark to-mexibus-blue text-white py-3 rounded-lg font-semibold text-base shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200"
+            >
+                Ingresar
+            </button>
+        </div>
 
-        <p id="msg"></p>
+        <!-- Mensaje -->
+        <p id="msg" class="mt-5 text-center text-sm font-medium min-h-[20px]"></p>
+
+        <!-- Info de prueba -->
+        <div class="mt-8 pt-8 border-t border-gray-200">
+            <p class="text-gray-400 text-xs text-center leading-relaxed">
+                Usuario de prueba:<br>
+                <span class="text-gray-700 font-semibold">admin@mexibus.com</span> / 
+                <span class="text-gray-700 font-semibold">1234</span>
+            </p>
+        </div>
     </div>
 
     <script src="./js/login.js"></script>
