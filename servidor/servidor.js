@@ -22,7 +22,11 @@ const PORT = Number(process.env.PORT || 3000);
 const app = express();
 
 // Middleware base
-app.use(cors({ origin: "*" }));
+app.use(cors({ 
+  origin: true,
+  credentials: true 
+}));
+
 app.use(express.json({ limit: "1mb" }));
 
 // Healthcheck
@@ -73,8 +77,8 @@ io.on("connection", (socket) => {
 (async () => {
   await runMigrations();
 
-  server.listen(PORT, () => {
-    console.log(`Servidor unificado corriendo en puerto ${PORT}`);
+  server.listen(PORT, "0.0.0.0", () => {
+    console.log(`Servidor unificado corriendo en http://0.0.0.0:${PORT}`);
     iniciarSimulacion(io);
   });
 })();
