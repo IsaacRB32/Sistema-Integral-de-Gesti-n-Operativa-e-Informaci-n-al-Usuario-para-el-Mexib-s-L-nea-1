@@ -218,9 +218,28 @@ router.get("/unidades/todas", async (req, res) => {
   }
 });
 
-//6.1  Catálogo de unidades (todas las registradas)
+// 6.1  Catálogo de unidades (con filtro por activo)
 router.get("/unidades/catalogo", async (req, res) => {
   try {
+    const activoRaw = String(req.query.activo ?? "true").toLowerCase().trim();
+
+    // true | false | all
+    let where = "";
+    const params = [];
+
+    const isAll = ["all", "todos", "*"].includes(activoRaw);
+    const isTrue = ["true", "1", "activo", "activa"].includes(activoRaw);
+    const isFalse = ["false", "0", "inactivo", "inactiva"].includes(activoRaw);
+
+    if (!isAll && !isTrue && !isFalse) {
+      return res.status(400).json({ error: "Parámetro activo inválido. Usa: true | false | all" });
+    }
+
+    if (!isAll) {
+      params.push(isTrue); // true si pidió activos, false si pidió inactivos
+      where = `WHERE u.activo = $${params.length}`;
+    }
+
     const query = `
       SELECT
         u.id_unidad,
@@ -231,27 +250,33 @@ router.get("/unidades/catalogo", async (req, res) => {
         u.velocidad,
         u.idx_tramo,
         u.progreso,
+        u.activo,
+
         -- operador asignado (si existe asignación activa)
         COALESCE(
           op.nombre || ' ' || op.primer_apellido || COALESCE(' ' || op.segundo_apellido, ''),
           NULL
         ) AS operador_nombre,
-        op.id_usuario AS operador_id
+        op.id_usuario AS operador_id,
+
+        CASE WHEN au.id_asignacion IS NOT NULL THEN true ELSE false END AS tiene_operador
       FROM UnidadesMB u
       LEFT JOIN AsignacionesUnidad au
         ON au.id_unidad = u.id_unidad AND au.activo = true
       LEFT JOIN Usuarios op
         ON op.id_usuario = au.id_usuario
-      WHERE u.activo = true
+      ${where}
       ORDER BY u.id_unidad ASC;
     `;
-    const result = await pool.query(query);
+
+    const result = await pool.query(query, params);
     return res.status(200).json(result.rows);
   } catch (error) {
     console.error("Error catálogo unidades:", error);
     return res.status(500).json({ error: "Error al obtener unidades (catálogo)" });
   }
 });
+
 
 //  6.2 POST crear unidad
 router.post("/unidades/catalogo", async (req, res) => {
@@ -278,42 +303,116 @@ router.post("/unidades/catalogo", async (req, res) => {
   }
 });
 
-//  6.3 PUT editar unidad
+// 6.3 PUT editar unidad (ruta/sentido) + cambiar activo (baja/reingreso)
 router.put("/unidades/catalogo/:id_unidad", async (req, res) => {
+  const client = await pool.connect();
   try {
     const { id_unidad } = req.params;
-    const { id_ruta, sentido } = req.body;
 
-    if (!id_ruta || !sentido) {
-      return res.status(400).json({ error: "id_ruta y sentido son obligatorios" });
+    const body = req.body || {};
+    const id_ruta = (body.id_ruta !== undefined && body.id_ruta !== null) ? parseInt(body.id_ruta) : undefined;
+    const sentido = (body.sentido !== undefined && body.sentido !== null) ? String(body.sentido) : undefined;
+    const activo = (typeof body.activo === "boolean") ? body.activo : undefined;
+
+    const wantsRuta = id_ruta !== undefined;
+    const wantsSentido = sentido !== undefined;
+    const wantsActivo = activo !== undefined;
+
+    if (!wantsRuta && !wantsSentido && !wantsActivo) {
+      return res.status(400).json({ error: "Envía al menos un campo a actualizar: id_ruta, sentido o activo" });
     }
-    if (!["IDA", "REGRESO"].includes(sentido)) {
+    if (wantsRuta && Number.isNaN(id_ruta)) {
+      return res.status(400).json({ error: "id_ruta inválido" });
+    }
+    if (wantsSentido && !["IDA", "REGRESO"].includes(sentido)) {
       return res.status(400).json({ error: "sentido inválido (IDA | REGRESO)" });
     }
 
-    // Regla: no editar si está en circuito
-    const check = await pool.query(
-      "SELECT en_circuito FROM UnidadesMB WHERE id_unidad = $1 AND activo = true",
-      [id_unidad]
-    );
-    if (check.rowCount === 0) return res.status(404).json({ error: "Unidad no encontrada" });
-    if (check.rows[0].en_circuito) {
-      return res.status(409).json({ error: "No se puede editar: la unidad está en circuito" });
+    await client.query("BEGIN");
+
+    // Bloqueo para consistencia
+    const checkQ = `
+      SELECT
+        u.activo,
+        u.en_circuito,
+        CASE WHEN au.id_asignacion IS NOT NULL THEN true ELSE false END AS tiene_operador
+      FROM UnidadesMB u
+      LEFT JOIN AsignacionesUnidad au ON au.id_unidad = u.id_unidad AND au.activo = true
+      WHERE u.id_unidad = $1
+      FOR UPDATE;
+    `;
+    const check = await client.query(checkQ, [id_unidad]);
+    if (check.rowCount === 0) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ error: "Unidad no encontrada" });
     }
 
-    const query = `
+    const estado = check.rows[0];
+
+    // Regla principal: nunca tocar si está en circuito
+    if (estado.en_circuito) {
+      await client.query("ROLLBACK");
+      return res.status(409).json({ error: "No se puede modificar: la unidad está en circuito" });
+    }
+
+    // Si tiene operador asignado, no permitas bajas ni cambios de ruta/sentido (evita inconsistencias)
+    if (estado.tiene_operador && (wantsRuta || wantsSentido || (wantsActivo && activo === false))) {
+      await client.query("ROLLBACK");
+      return res.status(409).json({ error: "No se puede modificar: la unidad tiene operador asignado" });
+    }
+
+    // Armado dinámico
+    const sets = [];
+    const params = [];
+    let idx = 1;
+
+    // Cambios ruta/sentido (opcionales)
+    if (wantsRuta) {
+      params.push(id_ruta);
+      sets.push(`id_ruta = $${++idx - 1}`);
+    }
+    if (wantsSentido) {
+      params.push(sentido);
+      sets.push(`sentido = $${++idx - 1}`);
+    }
+
+    // Cambio de activo (baja / reingreso)
+    if (wantsActivo) {
+      params.push(activo);
+      sets.push(`activo = $${++idx - 1}`);
+
+      // Si reingresa, resetea campos operativos para evitar “revivir” estados viejos
+      if (activo === true) {
+        sets.push(`estado_unidad = 'FUERA_DE_SERVICIO'`);
+        sets.push(`en_circuito = false`);
+        sets.push(`idx_tramo = 0`);
+        sets.push(`progreso = 0`);
+        sets.push(`velocidad = 0`);
+        sets.push(`dwell_hasta = NULL`);
+      }
+    }
+
+    // Ejecuta update
+    params.push(parseInt(id_unidad));
+    const updateQ = `
       UPDATE UnidadesMB
-      SET id_ruta = $1, sentido = $2
-      WHERE id_unidad = $3 AND activo = true
+      SET ${sets.join(", ")}
+      WHERE id_unidad = $${++idx - 1}
       RETURNING *;
     `;
-    const result = await pool.query(query, [id_ruta, sentido, id_unidad]);
-    return res.status(200).json(result.rows[0]);
+    const updated = await client.query(updateQ, params);
+
+    await client.query("COMMIT");
+    return res.status(200).json({ ok: true, unidad: updated.rows[0] });
   } catch (error) {
+    await client.query("ROLLBACK");
     console.error("Error editando unidad:", error);
     return res.status(500).json({ error: "Error al editar unidad" });
+  } finally {
+    client.release();
   }
 });
+
 
 //  6.4 DELETE baja lógica (no permitir si está en circuito o tiene operador asignado)
 router.delete("/unidades/catalogo/:id_unidad", async (req, res) => {

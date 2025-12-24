@@ -17,51 +17,125 @@ const VISTAS = {
             </div>
 
             <!-- 1) Catálogo -->
-            <div id="seccion-unidades-catalogo">
-            <div id="msg-catalogo-unidades" class="hidden border p-3 rounded mb-3"></div>
+                <div id="seccion-unidades-catalogo">
+                    <div class="flex items-center justify-between mb-3">
+                    <div>
+                        <h2 class="text-xl font-bold text-gray-800">Catálogo de unidades</h2>
+                        <p class="text-sm text-gray-500">Administra altas, bajas y reingresos de unidades. No se permite modificar si está en circuito.</p>
+                    </div>
 
-            <!-- Form simple (crear/editar) -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
-                <select id="cat-ruta" class="border rounded px-3 py-2">
-                <option value="1">L1 - Abastos ↔ Azteca</option>
-                </select>
+                    <button
+                        class="bg-mexibus-blue text-white px-4 py-2 rounded-lg hover:opacity-90 transition"
+                        onclick="moduloUnidades.mostrarFormularioNuevoUnidad()"
+                    >
+                        Agregar
+                    </button>
+                    </div>
+                <div id="msg-catalogo-unidades" class="hidden border p-3 rounded mb-3"></div>
 
-                <select id="cat-sentido" class="border rounded px-3 py-2">
-                <option value="IDA">IDA</option>
-                <option value="REGRESO">REGRESO</option>
-                </select>
+                <!-- Filtros -->
+                <div class="bg-white rounded shadow border p-4 mb-4">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Buscar</label>
+                        <input id="unidades-search"
+                            class="border rounded px-3 py-2 w-full"
+                            placeholder="Ej: 12, IDA, FUERA_DE_SERVICIO..."
+                            oninput="moduloUnidades.aplicarFiltrosCatalogo()">
+                    </div>
 
-                <div class="flex gap-2">
-                <button class="bg-green-600 text-white px-4 py-2 rounded"
-                        onclick="moduloUnidades.guardarUnidadCatalogo()">
-                    Guardar
-                </button>
-                <button class="bg-gray-300 px-4 py-2 rounded"
-                        onclick="moduloUnidades.cancelarEdicionUnidad()">
-                    Cancelar
-                </button>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Estatus (activo)</label>
+                        <select id="unidades-filtro-activo"
+                                class="border rounded px-3 py-2 w-full"
+                                onchange="moduloUnidades.setFiltroActivoCatalogo(this.value)">
+                        <option value="ALL">Todas</option>
+                        <option value="true">Activas</option>
+                        <option value="false">Inactivas</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Circuito</label>
+                        <select id="unidades-filtro-circuito"
+                                class="border rounded px-3 py-2 w-full"
+                                onchange="moduloUnidades.setFiltroCircuitoCatalogo(this.value)">
+                        <option value="ALL">Todas</option>
+                        <option value="true">En circuito</option>
+                        <option value="false">Fuera de circuito</option>
+                        </select>
+                    </div>
+                    </div>
                 </div>
-            </div>
 
-            <!-- Tabla catálogo -->
-            <div class="bg-white rounded shadow border">
-                <table class="w-full">
-                <thead>
-                    <tr class="border-b">
-                    <th class="text-left p-2">Unidad</th>
-                    <th class="text-left p-2">Ruta</th>
-                    <th class="text-left p-2">Sentido</th>
-                    <th class="text-left p-2">En circuito</th>
-                    <th class="text-left p-2">Estado</th>
-                    <th class="text-left p-2">Acciones</th>
-                    </tr>
-                </thead>
-                <tbody id="tbody-catalogo-unidades">
-                    <tr><td colspan="6" class="p-4 text-gray-400 text-center">Cargando...</td></tr>
-                </tbody>
-                </table>
-            </div>
-            </div>
+                <!-- Form (crear/editar) - OCULTO por defecto -->
+                    <div id="form-unidad-catalogo" class="hidden bg-white rounded shadow border p-4 mb-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 id="form-unidad-titulo" class="text-lg font-bold text-gray-800">Nueva unidad</h3>
+                        <button class="text-gray-500 hover:text-gray-800" onclick="moduloUnidades.cancelarEdicionUnidad()">✕</button>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+                        <div>
+                        <label class="block text-sm font-medium mb-1">Ruta</label>
+                        <select id="cat-ruta" class="border rounded px-3 py-2 w-full">
+                            <option value="1">L1 - Abastos ↔ Azteca</option>
+                        </select>
+                        </div>
+
+                        <div>
+                        <label class="block text-sm font-medium mb-1">Sentido</label>
+                        <select id="cat-sentido" class="border rounded px-3 py-2 w-full">
+                            <option value="IDA">IDA</option>
+                            <option value="REGRESO">REGRESO</option>
+                        </select>
+                        </div>
+
+                        <div>
+                        <label class="block text-sm font-medium mb-1">Estatus (reingreso)</label>
+                        <select id="cat-activo" class="border rounded px-3 py-2 w-full">
+                            <option value="true">ACTIVA</option>
+                            <option value="false">INACTIVA</option>
+                        </select>
+                        <p class="text-xs text-gray-500 mt-1">Para reingresar: selecciona ACTIVA y guarda.</p>
+                        </div>
+
+                        <div class="flex gap-2 items-end">
+                        <button class="bg-green-600 text-white px-4 py-2 rounded w-full hover:opacity-90"
+                                onclick="moduloUnidades.guardarUnidadCatalogo()">
+                            Guardar
+                        </button>
+                        <button class="bg-gray-300 px-4 py-2 rounded w-full hover:bg-gray-200"
+                                onclick="moduloUnidades.cancelarEdicionUnidad()">
+                            Cancelar
+                        </button>
+                        </div>
+                    </div>
+                    </div>
+
+
+                <!-- Tabla catálogo -->
+                <div class="bg-white rounded shadow border overflow-x-auto">
+                    <table class="w-full">
+                    <thead>
+                        <tr class="border-b bg-gray-50">
+                        <th class="text-left p-2">Unidad</th>
+                        <th class="text-left p-2">Ruta</th>
+                        <th class="text-left p-2">Sentido</th>
+                        <th class="text-left p-2">Circuito</th>
+                        <th class="text-left p-2">Estado</th>
+                        <th class="text-left p-2">Operador</th>
+                        <th class="text-left p-2">Estatus</th>
+                        <th class="text-left p-2">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-catalogo-unidades">
+                        <tr><td colspan="8" class="p-4 text-gray-400 text-center">Cargando...</td></tr>
+                    </tbody>
+                    </table>
+                </div>
+                </div>
+
 
             <!-- 2) Operaciones -->
             <div id="seccion-unidades-operaciones" class="hidden">

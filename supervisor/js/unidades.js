@@ -346,20 +346,63 @@ const moduloUnidades = {
             }
         }
     },
+    mostrarFormularioNuevoUnidad() {
+    this.unidadEditandoId = null;
 
-    async cargarCatalogoUnidades() {
+    const titulo = document.getElementById("form-unidad-titulo");
+    if (titulo) titulo.textContent = `Editar unidad #${id_unidad}`; // NUEVO
+    if (titulo) titulo.textContent = "Agregar unidad";
+
+    // Defaults
+    const ruta = document.getElementById("cat-ruta");
+    const sentido = document.getElementById("cat-sentido");
+    const activoSel = document.getElementById("cat-activo");
+
+    if (ruta) ruta.value = "1";
+    if (sentido) sentido.value = "IDA";
+    if (activoSel) activoSel.value = "true";
+
+    this.mostrarFormUnidad(true);
+    },
+
+    mostrarFormUnidad(show) {
+    const form = document.getElementById("form-unidad-catalogo");
+    if (!form) return;
+    form.classList.toggle("hidden", !show);
+    },
+
+    cancelarEdicionUnidad() {
+    this.unidadEditandoId = null;
+
+    // Opcional: reset defaults
+    const activoSel = document.getElementById("cat-activo");
+    if (activoSel) activoSel.value = "true";
+
+    this.mostrarFormUnidad(false);
+    },
+
+
+    async cargarCatalogoUnidades(opts = {}) {
         try {
-            const res = await fetch(`${CONFIG.API_BASE}/supervisor/unidades/catalogo`);
+            const params = new URLSearchParams();
+            if (opts.activo !== undefined && opts.activo !== null) {
+            params.set("activo", String(opts.activo));
+            }
+
+            const qs = params.toString() ? `?${params.toString()}` : "";
+            const res = await fetch(`${CONFIG.API_BASE}/supervisor/unidades/catalogo${qs}`);
+
             if (!res.ok) {
-                console.error('Error cargando catálogo de unidades');
-                return [];
+            console.error("Error cargando catálogo de unidades");
+            return [];
             }
             return await res.json();
         } catch (err) {
-            console.error('Error obteniendo catálogo de unidades:', err);
+            console.error("Error obteniendo catálogo de unidades:", err);
             return [];
         }
     },
+
 
     async renderizarSelectUnidades() {
         const select = document.getElementById('input-unidad-id');
@@ -367,7 +410,7 @@ const moduloUnidades = {
 
         select.innerHTML = '<option value="">-- Selecciona una unidad --</option>';
 
-        const unidades = await this.cargarCatalogoUnidades();
+        const unidades = await this.cargarCatalogoUnidades({ activo: "true" });
 
         if (!unidades || unidades.length === 0) {
             select.innerHTML = '<option value="">⚠️ No hay unidades registradas</option>';
@@ -399,7 +442,41 @@ const moduloUnidades = {
     },
 
     seccionActual: 'catalogo',
+    filtroActivoCatalogo: "ALL",     // ALL | true | false
+    filtroCircuitoCatalogo: "ALL",   // ALL | true | false
     unidadEditandoId: null,
+
+    setFiltroActivoCatalogo(valor) {
+    this.filtroActivoCatalogo = String(valor || "ALL");
+    this.renderizarTablaCatalogo();
+    },
+
+    setFiltroCircuitoCatalogo(valor) {
+    this.filtroCircuitoCatalogo = String(valor || "ALL");
+    this.renderizarTablaCatalogo();
+    },
+
+    aplicarFiltrosCatalogo() {
+    this.renderizarTablaCatalogo();
+    },
+
+    getFiltroTextoCatalogo() {
+    const el = document.getElementById("unidades-search");
+    return String(el?.value ?? "").trim().toLowerCase();
+    },
+
+    badgeActivo(activo) {
+    return activo
+        ? `<span class="inline-flex px-2 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">ACTIVA</span>`
+        : `<span class="inline-flex px-2 py-1 rounded-full text-xs font-semibold bg-gray-200 text-gray-800">INACTIVA</span>`;
+    },
+
+    badgeCircuito(enCircuito) {
+    return enCircuito
+        ? `<span class="inline-flex px-2 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">EN CIRCUITO</span>`
+        : `<span class="inline-flex px-2 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700">FUERA</span>`;
+    },
+
 
     async mostrarSeccion(seccion) {
         this.seccionActual = seccion;
@@ -443,42 +520,101 @@ const moduloUnidades = {
 
     tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-gray-400 text-center">Cargando...</td></tr>';
 
-    this.catalogoUnidades = await this.cargarCatalogoUnidades();
+    this.catalogoUnidades = await this.cargarCatalogoUnidades({ activo: "all" });
+
     this.renderizarTablaCatalogo();
     },
 
     renderizarTablaCatalogo() {
-    const tbody = document.getElementById('tbody-catalogo-unidades');
-    if (!tbody) return;
+        const tbody = document.getElementById("tbody-catalogo-unidades");
+        if (!tbody) return;
 
-    if (!this.catalogoUnidades || this.catalogoUnidades.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-gray-400 text-center">No hay unidades registradas</td></tr>';
-        return;
-    }
+        const q = this.getFiltroTextoCatalogo();
+        let data = Array.isArray(this.catalogoUnidades) ? [...this.catalogoUnidades] : [];
 
-    tbody.innerHTML = this.catalogoUnidades.map(u => `
-        <tr class="border-b">
-        <td class="p-2 font-semibold">#${u.id_unidad}</td>
-        <td class="p-2">${u.id_ruta}</td>
-        <td class="p-2">${u.sentido}</td>
-        <td class="p-2">${u.en_circuito ? 'Sí' : 'No'}</td>
-        <td class="p-2">${u.estado_unidad}</td>
-        <td class="p-2">
-            <button class="bg-yellow-500 text-white px-3 py-1 rounded"
-                    onclick="moduloUnidades.editarUnidadCatalogo(${u.id_unidad})">
-            Editar
-            </button>
-            <button class="bg-red-600 text-white px-3 py-1 rounded ml-2"
-                    onclick="moduloUnidades.eliminarUnidadCatalogo(${u.id_unidad})">
-            Eliminar
-            </button>
-        </td>
-        </tr>
-    `).join('');
+        // Filtro activo
+        if (this.filtroActivoCatalogo !== "ALL") {
+            const want = this.filtroActivoCatalogo === "true";
+            data = data.filter(u => Boolean(u.activo) === want);
+        }
+
+        // Filtro circuito
+        if (this.filtroCircuitoCatalogo !== "ALL") {
+            const want = this.filtroCircuitoCatalogo === "true";
+            data = data.filter(u => Boolean(u.en_circuito) === want);
+        }
+
+        // Búsqueda
+        if (q) {
+            data = data.filter(u => {
+            const txt = [
+                u.id_unidad,
+                u.id_ruta,
+                u.sentido,
+                u.estado_unidad,
+                u.operador_nombre,
+                u.activo ? "activa" : "inactiva",
+                u.en_circuito ? "circuito" : "fuera",
+            ].join(" ").toLowerCase();
+            return txt.includes(q);
+            });
+        }
+
+        if (!data.length) {
+            tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-gray-400 text-center">Sin unidades</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = data.map(u => {
+            const enCircuito = Boolean(u.en_circuito);
+            const activa = Boolean(u.activo);
+            const tieneOperador = Boolean(u.tiene_operador || u.operador_id);
+
+            const disableEditar = enCircuito;
+            const disableBaja = enCircuito || tieneOperador || !activa;
+
+            return `
+            <tr class="border-b hover:bg-gray-50">
+                <td class="p-2 font-semibold">#${u.id_unidad}</td>
+                <td class="p-2">${u.id_ruta ?? "-"}</td>
+                <td class="p-2">${u.sentido ?? "-"}</td>
+                <td class="p-2">${this.badgeCircuito(enCircuito)}</td>
+                <td class="p-2">${u.estado_unidad ?? "-"}</td>
+                <td class="p-2">${u.operador_nombre ?? "-"}</td>
+                <td class="p-2">${this.badgeActivo(activa)}</td>
+                <td class="p-2">
+                <div class="flex gap-2">
+                    <button
+                    class="bg-yellow-500 text-white px-3 py-1 rounded disabled:opacity-40 disabled:cursor-not-allowed"
+                    ${disableEditar ? "disabled" : ""}
+                    onclick="moduloUnidades.editarUnidadCatalogo(${u.id_unidad})"
+                    title="${disableEditar ? "No editable: en circuito" : "Editar"}"
+                    >Editar</button>
+
+                    ${
+                    activa
+                        ? `<button
+                            class="bg-red-600 text-white px-3 py-1 rounded disabled:opacity-40 disabled:cursor-not-allowed"
+                            ${disableBaja ? "disabled" : ""}
+                            onclick="${disableBaja ? "" : `moduloUnidades.darBajaUnidadCatalogo(${u.id_unidad})`}"
+                            title="${disableBaja ? "No permitido: en circuito o con operador" : "Dar de baja"}"
+                        >Dar de baja</button>`
+                        : `<button
+                            class="bg-green-600 text-white px-3 py-1 rounded hover:opacity-90"
+                            onclick="moduloUnidades.reingresarUnidadCatalogo(${u.id_unidad})"
+                        >Reingresar</button>`
+                    }
+                </div>
+                </td>
+            </tr>
+            `;
+        }).join("");
     },
+
 
     editarUnidadCatalogo(id_unidad) {
         const u = this.catalogoUnidades.find(x => x.id_unidad === id_unidad);
+
         if (!u) return;
 
         // regla: no editar en circuito (si tu backend ya lo bloquea, esto es UX)
@@ -489,8 +625,11 @@ const moduloUnidades = {
         this.unidadEditandoId = id_unidad;
         const ruta = document.getElementById('cat-ruta');
         const sentido = document.getElementById('cat-sentido');
+        const activoSel = document.getElementById("cat-activo");
         if (ruta) ruta.value = String(u.id_ruta);
         if (sentido) sentido.value = u.sentido;
+        if (activoSel) activoSel.value = String(Boolean(u.activo)); // NUEVO
+        this.mostrarFormUnidad(true); // NUEVO
 
         utils.mostrarMensaje('msg-catalogo-unidades', `Editando unidad #${id_unidad}`, 'warning');
         },
@@ -499,45 +638,82 @@ const moduloUnidades = {
         this.unidadEditandoId = null;
         const ruta = document.getElementById('cat-ruta');
         const sentido = document.getElementById('cat-sentido');
+        const activoSel = document.getElementById("cat-activo");
         if (ruta) ruta.value = '1';
         if (sentido) sentido.value = 'IDA';
+        if (activoSel) activoSel.value = "true";
         utils.mostrarMensaje('msg-catalogo-unidades', 'Edición cancelada', 'success');
         },
 
     async guardarUnidadCatalogo() {
-        const ruta = document.getElementById('cat-ruta')?.value;
-        const sentido = document.getElementById('cat-sentido')?.value;
+        const ruta = document.getElementById("cat-ruta")?.value;
+        const sentido = document.getElementById("cat-sentido")?.value;
+        const activoStr = document.getElementById("cat-activo")?.value ?? "true";
+        const activo = (String(activoStr) === "true");
 
         if (!ruta || !sentido) {
-            return utils.mostrarMensaje('msg-catalogo-unidades', 'Ruta y sentido son obligatorios', 'error');
+            return utils.mostrarMensaje("msg-catalogo-unidades", "Ruta y sentido son obligatorios", "error");
         }
 
-        const payload = { id_ruta: parseInt(ruta), sentido };
+        const payload = { id_ruta: parseInt(ruta), sentido, activo };
 
         const esEdicion = this.unidadEditandoId !== null;
         const url = esEdicion
             ? `${CONFIG.API_BASE}/supervisor/unidades/catalogo/${this.unidadEditandoId}`
             : `${CONFIG.API_BASE}/supervisor/unidades/catalogo`;
 
-        const method = esEdicion ? 'PUT' : 'POST';
+        const method = esEdicion ? "PUT" : "POST";
 
         const res = await fetch(url, {
             method,
-            headers: { 'Content-Type': 'application/json' },
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload)
         });
 
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
-            return utils.mostrarMensaje('msg-catalogo-unidades', data.error || 'Error al guardar', 'error');
+            return utils.mostrarMensaje("msg-catalogo-unidades", data.error || "Error al guardar", "error");
         }
 
-        utils.mostrarMensaje('msg-catalogo-unidades', esEdicion ? 'Unidad actualizada' : 'Unidad creada', 'success');
+        utils.mostrarMensaje("msg-catalogo-unidades", esEdicion ? "Unidad actualizada" : "Unidad creada", "success");
         this.unidadEditandoId = null;
+        this.mostrarFormUnidad(false);
 
         await this.cargarTablaCatalogo();
-        await this.renderizarSelectUnidades(); // para que Operaciones vea el nuevo catálogo
-        },
+        await this.renderizarSelectUnidades();
+    },
+
+    darBajaUnidadCatalogo(id_unidad) {
+    utils.mostrarModal(
+        "¿Dar de baja unidad?",
+        "La unidad quedará INACTIVA (baja lógica). No se permite si está en circuito o con operador asignado.",
+        async () => {
+        await this.eliminarUnidadCatalogo(id_unidad);
+        }
+    );
+    },
+
+    async reingresarUnidadCatalogo(id_unidad) {
+    try {
+        const res = await fetch(`${CONFIG.API_BASE}/supervisor/unidades/catalogo/${id_unidad}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ activo: true })
+        });
+
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+        return utils.mostrarMensaje("msg-catalogo-unidades", data.error || "No se pudo reingresar", "error");
+        }
+
+        utils.mostrarMensaje("msg-catalogo-unidades", `Unidad #${id_unidad} reingresada`, "success");
+        await this.cargarTablaCatalogo();
+        await this.renderizarSelectUnidades();
+    } catch (e) {
+        console.error(e);
+        utils.mostrarMensaje("msg-catalogo-unidades", "Error de conexión", "error");
+    }
+    },
 
     async eliminarUnidadCatalogo(id_unidad) {
         const res = await fetch(`${CONFIG.API_BASE}/supervisor/unidades/catalogo/${id_unidad}`, { method: 'DELETE' });
