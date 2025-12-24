@@ -218,27 +218,34 @@ router.get("/unidades/todas", async (req, res) => {
   }
 });
 
-// 6.1  Catálogo de unidades (con filtro por activo)
+// 6.1 GET catálogo de unidades (con filtros)
 router.get("/unidades/catalogo", async (req, res) => {
   try {
-    const activoRaw = String(req.query.activo ?? "true").toLowerCase().trim();
+    const { activo, q } = req.query;
 
-    // true | false | all
-    let where = "";
     const params = [];
+    const whereParts = [];
 
-    const isAll = ["all", "todos", "*"].includes(activoRaw);
-    const isTrue = ["true", "1", "activo", "activa"].includes(activoRaw);
-    const isFalse = ["false", "0", "inactivo", "inactiva"].includes(activoRaw);
-
-    if (!isAll && !isTrue && !isFalse) {
-      return res.status(400).json({ error: "Parámetro activo inválido. Usa: true | false | all" });
+    // Filtro activo (true/false). Si no viene, no filtra.
+    if (activo === "true" || activo === "false") {
+      params.push(activo === "true");
+      whereParts.push(`u.activo = $${params.length}`);
     }
 
-    if (!isAll) {
-      params.push(isTrue); // true si pidió activos, false si pidió inactivos
-      where = `WHERE u.activo = $${params.length}`;
+    // Filtro texto (opcional): busca por id_unidad / sentido / estado_unidad
+    if (q && String(q).trim() !== "") {
+      const term = `%${String(q).trim().toUpperCase()}%`;
+      params.push(term);
+      whereParts.push(`
+        (
+          CAST(u.id_unidad AS TEXT) ILIKE $${params.length}
+          OR UPPER(u.sentido::text) ILIKE $${params.length}
+          OR UPPER(u.estado_unidad) ILIKE $${params.length}
+        )
+      `);
     }
+
+    const where = whereParts.length ? `WHERE ${whereParts.join(" AND ")}` : "";
 
     const query = `
       SELECT
@@ -252,7 +259,6 @@ router.get("/unidades/catalogo", async (req, res) => {
         u.progreso,
         u.activo,
 
-        -- operador asignado (si existe asignación activa)
         COALESCE(
           op.nombre || ' ' || op.primer_apellido || COALESCE(' ' || op.segundo_apellido, ''),
           NULL
@@ -278,10 +284,16 @@ router.get("/unidades/catalogo", async (req, res) => {
 });
 
 
-//  6.2 POST crear unidad
+// 6.2 POST crear unidad (permitiendo elegir el número/id_unidad)
 router.post("/unidades/catalogo", async (req, res) => {
+  const client = await pool.connect();
   try {
     const { id_ruta, sentido } = req.body;
+
+    // Número de unidad opcional (si lo mandas, se usará como id_unidad)
+    const id_unidad = (req.body.id_unidad !== undefined && req.body.id_unidad !== null && String(req.body.id_unidad).trim() !== "")
+      ? parseInt(req.body.id_unidad)
+      : null;
 
     if (!id_ruta || !sentido) {
       return res.status(400).json({ error: "id_ruta y sentido son obligatorios" });
@@ -289,21 +301,61 @@ router.post("/unidades/catalogo", async (req, res) => {
     if (!["IDA", "REGRESO"].includes(sentido)) {
       return res.status(400).json({ error: "sentido inválido (IDA | REGRESO)" });
     }
+    if (id_unidad !== null && (Number.isNaN(id_unidad) || id_unidad <= 0)) {
+      return res.status(400).json({ error: "id_unidad inválido (entero positivo)" });
+    }
 
-    const query = `
-      INSERT INTO UnidadesMB (id_ruta, sentido, estado_unidad, en_circuito, velocidad, idx_tramo, progreso, activo)
-      VALUES ($1, $2, 'FUERA_DE_SERVICIO', false, 0, 0, 0, true)
-      RETURNING *;
-    `;
-    const result = await pool.query(query, [id_ruta, sentido]);
+    await client.query("BEGIN");
+
+    let result;
+
+    // Si el usuario eligió número, insert explícito
+    if (id_unidad !== null) {
+      const query = `
+        INSERT INTO UnidadesMB (id_unidad, id_ruta, sentido, estado_unidad, en_circuito, velocidad, idx_tramo, progreso, activo)
+        VALUES ($1, $2, $3, 'FUERA_DE_SERVICIO', false, 0, 0, 0, true)
+        RETURNING *;
+      `;
+      result = await client.query(query, [id_unidad, parseInt(id_ruta), sentido]);
+
+      // Sincroniza secuencia para que luego no choque el autoincrement
+      await client.query(`
+        SELECT setval(
+          pg_get_serial_sequence('unidadesmb', 'id_unidad'),
+          (SELECT GREATEST(MAX(id_unidad), 1) FROM unidadesmb)
+        );
+      `);
+    } else {
+      // Insert normal autoincremental
+      const query = `
+        INSERT INTO UnidadesMB (id_ruta, sentido, estado_unidad, en_circuito, velocidad, idx_tramo, progreso, activo)
+        VALUES ($1, $2, 'FUERA_DE_SERVICIO', false, 0, 0, 0, true)
+        RETURNING *;
+      `;
+      result = await client.query(query, [parseInt(id_ruta), sentido]);
+    }
+
+    await client.query("COMMIT");
     return res.status(201).json(result.rows[0]);
+
   } catch (error) {
+    await client.query("ROLLBACK");
     console.error("Error creando unidad:", error);
+
+    // Duplicado de PK (id_unidad repetido)
+    if (error.code === "23505") {
+      return res.status(409).json({ error: "Ese número de unidad ya existe" });
+    }
+
     return res.status(500).json({ error: "Error al crear unidad" });
+  } finally {
+    client.release();
   }
 });
 
-// 6.3 PUT editar unidad (ruta/sentido) + cambiar activo (baja/reingreso)
+
+
+// 6.3 PUT editar unidad (ruta/sentido) + cambiar activo (baja/reingreso) SIN outer join lock
 router.put("/unidades/catalogo/:id_unidad", async (req, res) => {
   const client = await pool.connect();
   try {
@@ -330,59 +382,73 @@ router.put("/unidades/catalogo/:id_unidad", async (req, res) => {
 
     await client.query("BEGIN");
 
-    // Bloqueo para consistencia
-    const checkQ = `
-      SELECT
-        u.activo,
-        u.en_circuito,
-        CASE WHEN au.id_asignacion IS NOT NULL THEN true ELSE false END AS tiene_operador
-      FROM UnidadesMB u
-      LEFT JOIN AsignacionesUnidad au ON au.id_unidad = u.id_unidad AND au.activo = true
-      WHERE u.id_unidad = $1
+    // Lock SOLO de la unidad (evita el error: FOR UPDATE en outer join)
+    const uQ = `
+      SELECT id_unidad, en_circuito, activo
+      FROM UnidadesMB
+      WHERE id_unidad = $1
       FOR UPDATE;
     `;
-    const check = await client.query(checkQ, [id_unidad]);
-    if (check.rowCount === 0) {
+    const uRes = await client.query(uQ, [id_unidad]);
+    if (uRes.rowCount === 0) {
       await client.query("ROLLBACK");
       return res.status(404).json({ error: "Unidad no encontrada" });
     }
 
-    const estado = check.rows[0];
+    const unidad = uRes.rows[0];
 
-    // Regla principal: nunca tocar si está en circuito
-    if (estado.en_circuito) {
+    // Regla: nunca modificar si está en circuito
+    if (unidad.en_circuito) {
       await client.query("ROLLBACK");
       return res.status(409).json({ error: "No se puede modificar: la unidad está en circuito" });
     }
 
-    // Si tiene operador asignado, no permitas bajas ni cambios de ruta/sentido (evita inconsistencias)
-    if (estado.tiene_operador && (wantsRuta || wantsSentido || (wantsActivo && activo === false))) {
+    // ¿Tiene operador asignado?
+    const opQ = `
+      SELECT 1
+      FROM AsignacionesUnidad
+      WHERE id_unidad = $1 AND activo = true
+      LIMIT 1;
+    `;
+    const opRes = await client.query(opQ, [id_unidad]);
+    const tieneOperador = opRes.rowCount > 0;
+
+    // Si tiene operador: no permitir cambios de ruta/sentido ni dar de baja
+    if (tieneOperador && (wantsRuta || wantsSentido || (wantsActivo && activo === false))) {
       await client.query("ROLLBACK");
       return res.status(409).json({ error: "No se puede modificar: la unidad tiene operador asignado" });
     }
 
-    // Armado dinámico
+    // Armado dinámico del UPDATE
     const sets = [];
     const params = [];
-    let idx = 1;
+    let i = 1;
 
-    // Cambios ruta/sentido (opcionales)
     if (wantsRuta) {
       params.push(id_ruta);
-      sets.push(`id_ruta = $${++idx - 1}`);
+      sets.push(`id_ruta = $${i++}`);
     }
     if (wantsSentido) {
       params.push(sentido);
-      sets.push(`sentido = $${++idx - 1}`);
+      sets.push(`sentido = $${i++}`);
     }
 
-    // Cambio de activo (baja / reingreso)
     if (wantsActivo) {
       params.push(activo);
-      sets.push(`activo = $${++idx - 1}`);
+      sets.push(`activo = $${i++}`);
 
-      // Si reingresa, resetea campos operativos para evitar “revivir” estados viejos
+      // Si se desactiva o reingresa, dejamos consistente el estado
+      if (activo === false) {
+        sets.push(`estado_unidad = 'FUERA_DE_SERVICIO'`);
+        sets.push(`en_circuito = false`);
+        sets.push(`idx_tramo = 0`);
+        sets.push(`progreso = 0`);
+        sets.push(`velocidad = 0`);
+        sets.push(`dwell_hasta = NULL`);
+      }
+
       if (activo === true) {
+        // Reingreso: reseteo para no “revivir” estados viejos
         sets.push(`estado_unidad = 'FUERA_DE_SERVICIO'`);
         sets.push(`en_circuito = false`);
         sets.push(`idx_tramo = 0`);
@@ -392,18 +458,18 @@ router.put("/unidades/catalogo/:id_unidad", async (req, res) => {
       }
     }
 
-    // Ejecuta update
     params.push(parseInt(id_unidad));
     const updateQ = `
       UPDATE UnidadesMB
       SET ${sets.join(", ")}
-      WHERE id_unidad = $${++idx - 1}
+      WHERE id_unidad = $${i++}
       RETURNING *;
     `;
     const updated = await client.query(updateQ, params);
 
     await client.query("COMMIT");
     return res.status(200).json({ ok: true, unidad: updated.rows[0] });
+
   } catch (error) {
     await client.query("ROLLBACK");
     console.error("Error editando unidad:", error);
@@ -414,7 +480,7 @@ router.put("/unidades/catalogo/:id_unidad", async (req, res) => {
 });
 
 
-//  6.4 DELETE baja lógica (no permitir si está en circuito o tiene operador asignado)
+// 6.4 DELETE baja lógica (no permitir si está en circuito o tiene operador asignado)
 router.delete("/unidades/catalogo/:id_unidad", async (req, res) => {
   try {
     const { id_unidad } = req.params;
@@ -422,10 +488,11 @@ router.delete("/unidades/catalogo/:id_unidad", async (req, res) => {
     const q = `
       SELECT
         u.en_circuito,
-        CASE WHEN au.id_asignacion IS NOT NULL THEN true ELSE false END AS tiene_operador
+        EXISTS(
+          SELECT 1 FROM AsignacionesUnidad au
+          WHERE au.id_unidad = u.id_unidad AND au.activo = true
+        ) AS tiene_operador
       FROM UnidadesMB u
-      LEFT JOIN AsignacionesUnidad au
-        ON au.id_unidad = u.id_unidad AND au.activo = true
       WHERE u.id_unidad = $1 AND u.activo = true;
     `;
     const check = await pool.query(q, [id_unidad]);
@@ -436,9 +503,19 @@ router.delete("/unidades/catalogo/:id_unidad", async (req, res) => {
     if (tiene_operador) return res.status(409).json({ error: "No se puede eliminar: tiene operador asignado" });
 
     const result = await pool.query(
-      "UPDATE UnidadesMB SET activo = false WHERE id_unidad = $1 AND activo = true RETURNING id_unidad",
+      `UPDATE UnidadesMB
+       SET activo = false,
+           estado_unidad = 'FUERA_DE_SERVICIO',
+           en_circuito = false,
+           idx_tramo = 0,
+           progreso = 0,
+           velocidad = 0,
+           dwell_hasta = NULL
+       WHERE id_unidad = $1 AND activo = true
+       RETURNING id_unidad;`,
       [id_unidad]
     );
+
     return res.status(200).json({ ok: true, id_unidad: result.rows[0].id_unidad });
   } catch (error) {
     console.error("Error eliminando unidad:", error);
@@ -446,6 +523,84 @@ router.delete("/unidades/catalogo/:id_unidad", async (req, res) => {
   }
 });
 
+// 6.5 DELETE eliminar PERMANENTEMENTE (borrado físico)
+// Reglas: solo si NO está en circuito, NO tiene operador activo y la unidad está INACTIVA.
+router.delete("/unidades/catalogo/:id_unidad/permanente", async (req, res) => {
+  const client = await pool.connect();
+  try {
+    const { id_unidad } = req.params;
+
+    await client.query("BEGIN");
+
+    // 1) Lock SOLO de la unidad (sin outer join)
+    const uQ = `
+      SELECT id_unidad, activo, en_circuito
+      FROM UnidadesMB
+      WHERE id_unidad = $1
+      FOR UPDATE;
+    `;
+    const uRes = await client.query(uQ, [id_unidad]);
+
+    if (uRes.rowCount === 0) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ error: "Unidad no encontrada" });
+    }
+
+    const unidad = uRes.rows[0];
+
+    if (unidad.en_circuito) {
+      await client.query("ROLLBACK");
+      return res.status(409).json({ error: "No se puede eliminar permanentemente: la unidad está en circuito" });
+    }
+
+    // 2) Verifica operador asignado (sin join)
+    const opQ = `
+      SELECT 1
+      FROM AsignacionesUnidad
+      WHERE id_unidad = $1 AND activo = true
+      LIMIT 1;
+    `;
+    const opRes = await client.query(opQ, [id_unidad]);
+
+    if (opRes.rowCount > 0) {
+      await client.query("ROLLBACK");
+      return res.status(409).json({ error: "No se puede eliminar permanentemente: tiene operador asignado" });
+    }
+
+    // 3) Reglas de seguridad: primero debe estar INACTIVA
+    if (unidad.activo === true) {
+      await client.query("ROLLBACK");
+      return res.status(409).json({ error: "Primero da de baja la unidad (INACTIVA) antes de eliminarla permanentemente" });
+    }
+
+    // 4) Borra dependencias para evitar FK
+    await client.query("DELETE FROM EventosUnidad WHERE id_unidad = $1;", [id_unidad]);
+    await client.query("DELETE FROM Incidencias WHERE id_unidad = $1;", [id_unidad]);
+    await client.query("DELETE FROM AsignacionesUnidad WHERE id_unidad = $1;", [id_unidad]);
+
+    // 5) Borra la unidad
+    const del = await client.query(
+      "DELETE FROM UnidadesMB WHERE id_unidad = $1 RETURNING id_unidad;",
+      [id_unidad]
+    );
+
+    await client.query("COMMIT");
+    return res.status(200).json({ ok: true, id_unidad: del.rows[0].id_unidad });
+
+  } catch (error) {
+    await client.query("ROLLBACK");
+    console.error("Error eliminando unidad permanentemente:", error);
+
+    // Si llegara a ser FK aún, te lo deja claro
+    if (error.code === "23503") {
+      return res.status(409).json({ error: "No se puede eliminar: existen registros relacionados (FK). Revisa tablas relacionadas." });
+    }
+
+    return res.status(500).json({ error: "Error al eliminar unidad permanentemente" });
+  } finally {
+    client.release();
+  }
+});
 
 //   7. NUEVO: Obtener conductores/operadores disponibles
 router.get("/conductores", async (req, res) => {

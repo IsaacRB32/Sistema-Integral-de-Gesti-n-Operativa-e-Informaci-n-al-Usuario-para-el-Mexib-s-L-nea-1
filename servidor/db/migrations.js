@@ -30,6 +30,31 @@ export async function runMigrations() {
       `ALTER TABLE UnidadesMB ADD COLUMN IF NOT EXISTS activo BOOLEAN NOT NULL DEFAULT TRUE;`
     );
 
+    // UnidadesMB.velocidad (usado por simulación y por reingreso)
+    await safeExec(
+      client,
+      `ALTER TABLE UnidadesMB ADD COLUMN IF NOT EXISTS velocidad INTEGER NOT NULL DEFAULT 0;`
+    );
+
+    // UnidadesMB.numero_unidad (para capturar el número visible de la unidad)
+    await safeExec(
+      client,
+      `ALTER TABLE UnidadesMB ADD COLUMN IF NOT EXISTS numero_unidad INTEGER;`
+    );
+
+    // Único (evita duplicados)
+    await safeExec(
+      client,
+      `DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'uq_unidadesmb_numero_unidad') THEN
+          CREATE UNIQUE INDEX uq_unidadesmb_numero_unidad
+          ON UnidadesMB (numero_unidad)
+          WHERE numero_unidad IS NOT NULL;
+        END IF;
+      END$$;`
+    );
+
     // Password requerido por login (si ya existe, se ignora)
     await safeExec(
       client,

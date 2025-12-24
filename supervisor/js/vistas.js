@@ -70,9 +70,15 @@ const VISTAS = {
 
                 <!-- Form (crear/editar) - OCULTO por defecto -->
                     <div id="form-unidad-catalogo" class="hidden bg-white rounded shadow border p-4 mb-4">
+                    <input type="hidden" id="unidad-id-editando" value="">
                     <div class="flex items-center justify-between mb-3">
                         <h3 id="form-unidad-titulo" class="text-lg font-bold text-gray-800">Nueva unidad</h3>
-                        <button class="text-gray-500 hover:text-gray-800" onclick="moduloUnidades.cancelarEdicionUnidad()">✕</button>
+                        <button type="button"
+                            class="text-gray-500 hover:text-gray-800"
+                            onclick="moduloUnidades.cerrarFormUnidadCatalogo()"
+                            title="Cerrar">
+                            ✕
+                        </button>
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
@@ -82,7 +88,14 @@ const VISTAS = {
                             <option value="1">L1 - Abastos ↔ Azteca</option>
                         </select>
                         </div>
-
+                        <div>
+                        <label class="block text-sm font-medium mb-1">Número de unidad</label>
+                        <input id="cat-id-unidad"
+                                type="number"
+                                min="1"
+                                class="border rounded px-3 py-2 w-full"
+                                placeholder="Ej: 25">
+                        </div>
                         <div>
                         <label class="block text-sm font-medium mb-1">Sentido</label>
                         <select id="cat-sentido" class="border rounded px-3 py-2 w-full">
@@ -105,8 +118,9 @@ const VISTAS = {
                                 onclick="moduloUnidades.guardarUnidadCatalogo()">
                             Guardar
                         </button>
-                        <button class="bg-gray-300 px-4 py-2 rounded w-full hover:bg-gray-200"
-                                onclick="moduloUnidades.cancelarEdicionUnidad()">
+                        <button type="button"
+                            class="bg-gray-300 px-6 py-2 rounded"
+                            onclick="moduloUnidades.cerrarFormUnidadCatalogo()">
                             Cancelar
                         </button>
                         </div>
