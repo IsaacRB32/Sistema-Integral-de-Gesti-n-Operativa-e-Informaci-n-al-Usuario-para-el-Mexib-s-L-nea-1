@@ -250,6 +250,10 @@ router.get("/unidades/catalogo", async (req, res) => {
     const query = `
       SELECT
         u.id_unidad,
+        u.numero_unidad,
+        u.marca,
+        u.modelo,
+
         u.id_ruta,
         u.sentido,
         u.estado_unidad,
@@ -257,6 +261,7 @@ router.get("/unidades/catalogo", async (req, res) => {
         u.velocidad,
         u.idx_tramo,
         u.progreso,
+        u.dwell_hasta,
         u.activo,
 
         COALESCE(
@@ -274,7 +279,7 @@ router.get("/unidades/catalogo", async (req, res) => {
       ${where}
       ORDER BY u.id_unidad ASC;
     `;
-
+    
     const result = await pool.query(query, params);
     return res.status(200).json(result.rows);
   } catch (error) {
@@ -285,199 +290,223 @@ router.get("/unidades/catalogo", async (req, res) => {
 
 
 // 6.2 POST crear unidad (permitiendo elegir el número/id_unidad)
+// POST /api/supervisor/unidades/catalogo
 router.post("/unidades/catalogo", async (req, res) => {
   const client = await pool.connect();
   try {
-    const { id_ruta, sentido } = req.body;
+    // 1) Datos (solo 3 obligatorios para alta)
+    const numero_unidad = Number(req.body.numero_unidad ?? req.body.id_unidad);
+    const marca = String(req.body.marca ?? "").trim();
+    const modelo = String(req.body.modelo ?? "").trim();
 
-    // Número de unidad opcional (si lo mandas, se usará como id_unidad)
-    const id_unidad = (req.body.id_unidad !== undefined && req.body.id_unidad !== null && String(req.body.id_unidad).trim() !== "")
-      ? parseInt(req.body.id_unidad)
-      : null;
+    // Opcionales (si el front no los manda, se asignan defaults para no romper el motor)
+    const id_ruta = Number(req.body.id_ruta ?? 1);
+    const sentido = String(req.body.sentido ?? "IDA").trim().toUpperCase();
 
-    if (!id_ruta || !sentido) {
-      return res.status(400).json({ error: "id_ruta y sentido son obligatorios" });
+    // 2) Validaciones
+    if (!Number.isInteger(numero_unidad) || numero_unidad <= 0) {
+      return res.status(400).json({ error: "numero_unidad debe ser un entero > 0" });
+    }
+    if (!marca) return res.status(400).json({ error: "marca es obligatoria" });
+    if (!modelo) return res.status(400).json({ error: "modelo es obligatorio" });
+
+    if (!Number.isInteger(id_ruta) || id_ruta <= 0) {
+      return res.status(400).json({ error: "id_ruta inválido" });
     }
     if (!["IDA", "REGRESO"].includes(sentido)) {
-      return res.status(400).json({ error: "sentido inválido (IDA | REGRESO)" });
-    }
-    if (id_unidad !== null && (Number.isNaN(id_unidad) || id_unidad <= 0)) {
-      return res.status(400).json({ error: "id_unidad inválido (entero positivo)" });
+      return res.status(400).json({ error: "sentido inválido (IDA|REGRESO)" });
     }
 
     await client.query("BEGIN");
 
-    let result;
-
-    // Si el usuario eligió número, insert explícito
-    if (id_unidad !== null) {
-      const query = `
-        INSERT INTO UnidadesMB (id_unidad, id_ruta, sentido, estado_unidad, en_circuito, velocidad, idx_tramo, progreso, activo)
-        VALUES ($1, $2, $3, 'FUERA_DE_SERVICIO', false, 0, 0, 0, true)
-        RETURNING *;
-      `;
-      result = await client.query(query, [id_unidad, parseInt(id_ruta), sentido]);
-
-      // Sincroniza secuencia para que luego no choque el autoincrement
-      await client.query(`
-        SELECT setval(
-          pg_get_serial_sequence('unidadesmb', 'id_unidad'),
-          (SELECT GREATEST(MAX(id_unidad), 1) FROM unidadesmb)
-        );
-      `);
-    } else {
-      // Insert normal autoincremental
-      const query = `
-        INSERT INTO UnidadesMB (id_ruta, sentido, estado_unidad, en_circuito, velocidad, idx_tramo, progreso, activo)
-        VALUES ($1, $2, 'FUERA_DE_SERVICIO', false, 0, 0, 0, true)
-        RETURNING *;
-      `;
-      result = await client.query(query, [parseInt(id_ruta), sentido]);
+    // 3) Evitar duplicado (más claro que dejar que truene por PK)
+    const yaExiste = await client.query(
+      "SELECT 1 FROM UnidadesMB WHERE id_unidad = $1 LIMIT 1",
+      [numero_unidad]
+    );
+    if (yaExiste.rowCount > 0) {
+      await client.query("ROLLBACK");
+      return res.status(409).json({ error: `Ya existe la unidad ${numero_unidad}` });
     }
+
+    // 4) Insert: id_unidad = numero_unidad, y numero_unidad se setea igual
+    const insertSQL = `
+      INSERT INTO UnidadesMB (
+        id_unidad,
+        numero_unidad,
+        marca,
+        modelo,
+        id_ruta,
+        sentido,
+        estado_unidad,
+        en_circuito,
+        velocidad,
+        idx_tramo,
+        progreso,
+        activo
+      )
+      VALUES (
+        $1, $1, $2, $3, $4, $5,
+        'FUERA_DE_SERVICIO',
+        false,
+        0,
+        0,
+        0,
+        true
+      )
+      RETURNING *;
+    `;
+
+    const result = await client.query(insertSQL, [
+      numero_unidad,
+      marca,
+      modelo,
+      id_ruta,
+      sentido,
+    ]);
 
     await client.query("COMMIT");
     return res.status(201).json(result.rows[0]);
+  } catch (err) {
+    try { await client.query("ROLLBACK"); } catch (_) {}
+    console.error("POST /unidades/catalogo error:", err);
 
-  } catch (error) {
-    await client.query("ROLLBACK");
-    console.error("Error creando unidad:", error);
-
-    // Duplicado de PK (id_unidad repetido)
-    if (error.code === "23505") {
-      return res.status(409).json({ error: "Ese número de unidad ya existe" });
+    // Si cae por PK/unique, también devolvemos 409
+    if (err?.code === "23505") {
+      return res.status(409).json({ error: "Unidad ya existe (conflicto de clave/único)" });
     }
-
-    return res.status(500).json({ error: "Error al crear unidad" });
+    return res.status(500).json({ error: "Error creando unidad" });
   } finally {
     client.release();
   }
 });
+
 
 
 
 // 6.3 PUT editar unidad (ruta/sentido) + cambiar activo (baja/reingreso) SIN outer join lock
+// PUT /api/supervisor/unidades/catalogo/:id_unidad
 router.put("/unidades/catalogo/:id_unidad", async (req, res) => {
   const client = await pool.connect();
   try {
-    const { id_unidad } = req.params;
-
-    const body = req.body || {};
-    const id_ruta = (body.id_ruta !== undefined && body.id_ruta !== null) ? parseInt(body.id_ruta) : undefined;
-    const sentido = (body.sentido !== undefined && body.sentido !== null) ? String(body.sentido) : undefined;
-    const activo = (typeof body.activo === "boolean") ? body.activo : undefined;
-
-    const wantsRuta = id_ruta !== undefined;
-    const wantsSentido = sentido !== undefined;
-    const wantsActivo = activo !== undefined;
-
-    if (!wantsRuta && !wantsSentido && !wantsActivo) {
-      return res.status(400).json({ error: "Envía al menos un campo a actualizar: id_ruta, sentido o activo" });
+    const id_unidad = Number(req.params.id_unidad);
+    if (!Number.isInteger(id_unidad) || id_unidad <= 0) {
+      return res.status(400).json({ error: "id_unidad inválido" });
     }
-    if (wantsRuta && Number.isNaN(id_ruta)) {
+
+    // Campos opcionales
+    const marca =
+      (req.body.marca !== undefined && req.body.marca !== null)
+        ? String(req.body.marca).trim()
+        : undefined;
+
+    const modelo =
+      (req.body.modelo !== undefined && req.body.modelo !== null)
+        ? String(req.body.modelo).trim()
+        : undefined;
+
+    const id_ruta =
+      (req.body.id_ruta !== undefined && req.body.id_ruta !== null)
+        ? Number(req.body.id_ruta)
+        : undefined;
+
+    const sentido =
+      (req.body.sentido !== undefined && req.body.sentido !== null)
+        ? String(req.body.sentido).trim().toUpperCase()
+        : undefined;
+
+    const activo =
+      (req.body.activo !== undefined && req.body.activo !== null)
+        ? (String(req.body.activo) === "true" || req.body.activo === true)
+        : undefined;
+
+    // Validaciones finas
+    if (marca !== undefined && !marca) return res.status(400).json({ error: "marca no puede ir vacía" });
+    if (modelo !== undefined && !modelo) return res.status(400).json({ error: "modelo no puede ir vacío" });
+
+    if (id_ruta !== undefined && (!Number.isInteger(id_ruta) || id_ruta <= 0)) {
       return res.status(400).json({ error: "id_ruta inválido" });
     }
-    if (wantsSentido && !["IDA", "REGRESO"].includes(sentido)) {
-      return res.status(400).json({ error: "sentido inválido (IDA | REGRESO)" });
+    if (sentido !== undefined && !["IDA", "REGRESO"].includes(sentido)) {
+      return res.status(400).json({ error: "sentido inválido (IDA|REGRESO)" });
     }
 
-    await client.query("BEGIN");
-
-    // Lock SOLO de la unidad (evita el error: FOR UPDATE en outer join)
-    const uQ = `
-      SELECT id_unidad, en_circuito, activo
-      FROM UnidadesMB
-      WHERE id_unidad = $1
-      FOR UPDATE;
-    `;
-    const uRes = await client.query(uQ, [id_unidad]);
-    if (uRes.rowCount === 0) {
-      await client.query("ROLLBACK");
-      return res.status(404).json({ error: "Unidad no encontrada" });
-    }
-
-    const unidad = uRes.rows[0];
-
-    // Regla: nunca modificar si está en circuito
-    if (unidad.en_circuito) {
-      await client.query("ROLLBACK");
-      return res.status(409).json({ error: "No se puede modificar: la unidad está en circuito" });
-    }
-
-    // ¿Tiene operador asignado?
-    const opQ = `
-      SELECT 1
-      FROM AsignacionesUnidad
-      WHERE id_unidad = $1 AND activo = true
-      LIMIT 1;
-    `;
-    const opRes = await client.query(opQ, [id_unidad]);
-    const tieneOperador = opRes.rowCount > 0;
-
-    // Si tiene operador: no permitir cambios de ruta/sentido ni dar de baja
-    if (tieneOperador && (wantsRuta || wantsSentido || (wantsActivo && activo === false))) {
-      await client.query("ROLLBACK");
-      return res.status(409).json({ error: "No se puede modificar: la unidad tiene operador asignado" });
-    }
-
-    // Armado dinámico del UPDATE
+    // Armar UPDATE dinámico
     const sets = [];
     const params = [];
     let i = 1;
 
-    if (wantsRuta) {
+    if (marca !== undefined) {
+      params.push(marca);
+      sets.push(`marca = $${i++}`);
+    }
+    if (modelo !== undefined) {
+      params.push(modelo);
+      sets.push(`modelo = $${i++}`);
+    }
+    if (id_ruta !== undefined) {
       params.push(id_ruta);
       sets.push(`id_ruta = $${i++}`);
     }
-    if (wantsSentido) {
+    if (sentido !== undefined) {
       params.push(sentido);
       sets.push(`sentido = $${i++}`);
     }
 
-    if (wantsActivo) {
+    // Si activo cambia, aplicamos reglas seguras para evitar estados inconsistentes
+    if (activo !== undefined) {
       params.push(activo);
       sets.push(`activo = $${i++}`);
 
-      // Si se desactiva o reingresa, dejamos consistente el estado
       if (activo === false) {
-        sets.push(`estado_unidad = 'FUERA_DE_SERVICIO'`);
+        // Baja lógica: forzamos fuera de circuito y reseteo operacional
         sets.push(`en_circuito = false`);
-        sets.push(`idx_tramo = 0`);
-        sets.push(`progreso = 0`);
-        sets.push(`velocidad = 0`);
-        sets.push(`dwell_hasta = NULL`);
-      }
-
-      if (activo === true) {
-        // Reingreso: reseteo para no “revivir” estados viejos
         sets.push(`estado_unidad = 'FUERA_DE_SERVICIO'`);
-        sets.push(`en_circuito = false`);
-        sets.push(`idx_tramo = 0`);
-        sets.push(`progreso = 0`);
         sets.push(`velocidad = 0`);
+        sets.push(`progreso = 0`);
+        sets.push(`idx_tramo = 0`);
         sets.push(`dwell_hasta = NULL`);
+      } else {
+        // Reingreso: por seguridad lo dejamos fuera de circuito (el supervisor lo mete con /sim/entrar)
+        sets.push(`en_circuito = false`);
+        sets.push(`estado_unidad = 'FUERA_DE_SERVICIO'`);
       }
     }
 
-    params.push(parseInt(id_unidad));
-    const updateQ = `
+    if (sets.length === 0) {
+      return res.status(400).json({
+        error: "Envía al menos un campo a actualizar: marca, modelo, id_ruta, sentido, activo",
+      });
+    }
+
+    await client.query("BEGIN");
+
+    const updateSQL = `
       UPDATE UnidadesMB
       SET ${sets.join(", ")}
-      WHERE id_unidad = $${i++}
+      WHERE id_unidad = $${i}
       RETURNING *;
     `;
-    const updated = await client.query(updateQ, params);
+    params.push(id_unidad);
+
+    const result = await client.query(updateSQL, params);
+
+    if (result.rowCount === 0) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ error: "Unidad no encontrada" });
+    }
 
     await client.query("COMMIT");
-    return res.status(200).json({ ok: true, unidad: updated.rows[0] });
-
-  } catch (error) {
-    await client.query("ROLLBACK");
-    console.error("Error editando unidad:", error);
-    return res.status(500).json({ error: "Error al editar unidad" });
+    return res.status(200).json(result.rows[0]);
+  } catch (err) {
+    try { await client.query("ROLLBACK"); } catch (_) {}
+    console.error("PUT /unidades/catalogo/:id_unidad error:", err);
+    return res.status(500).json({ error: "Error actualizando unidad" });
   } finally {
     client.release();
   }
 });
+
 
 
 // 6.4 DELETE baja lógica (no permitir si está en circuito o tiene operador asignado)

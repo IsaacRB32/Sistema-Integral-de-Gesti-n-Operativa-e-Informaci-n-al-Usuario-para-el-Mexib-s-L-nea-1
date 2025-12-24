@@ -352,19 +352,33 @@ const moduloUnidades = {
         const titulo = document.getElementById("form-unidad-titulo");
         if (titulo) titulo.textContent = "Agregar unidad";
 
+        // 1) Ocultar campos avanzados (ruta/sentido/activo) en modo "Agregar"
+        const adv = document.getElementById("cat-campos-avanzados");
+        if (adv) adv.classList.add("hidden");
+
+        // 2) Reset de defaults internos (aunque no se muestren)
         const ruta = document.getElementById("cat-ruta");
         const sentido = document.getElementById("cat-sentido");
         const activoSel = document.getElementById("cat-activo");
-        const inputId = document.getElementById("cat-id-unidad");
 
         if (ruta) ruta.value = "1";
         if (sentido) sentido.value = "IDA";
         if (activoSel) activoSel.value = "true";
+
+        // 3) Limpiar y habilitar número de unidad
+        const inputId = document.getElementById("cat-id-unidad");
         if (inputId) {
             inputId.value = "";
             inputId.disabled = false;
         }
 
+        // 4) Limpiar Marca/Modelo (estos IDs deben existir en tu vistas.js)
+        const marca = document.getElementById("cat-marca");
+        const modelo = document.getElementById("cat-modelo");
+        if (marca) marca.value = "";
+        if (modelo) modelo.value = "";
+
+        // 5) Mostrar formulario
         this.mostrarFormUnidad(true);
     },
 
@@ -510,7 +524,7 @@ const moduloUnidades = {
     const tbody = document.getElementById('tbody-catalogo-unidades');
     if (!tbody) return;
 
-    tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-gray-400 text-center">Cargando...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="11" class="p-4 text-gray-400 text-center">Cargando...</td></tr>';
 
     this.catalogoUnidades = await this.cargarCatalogoUnidades({ activo: "all" });
 
@@ -536,26 +550,38 @@ const moduloUnidades = {
             data = data.filter(u => Boolean(u.en_circuito) === want);
         }
 
-        // Búsqueda
+        // Búsqueda (sin idx_tramo/estacion/progreso/dwell)
         if (q) {
             data = data.filter(u => {
             const txt = [
                 u.id_unidad,
+                u.numero_unidad,
+                u.marca,
+                u.modelo,
                 u.id_ruta,
                 u.sentido,
                 u.estado_unidad,
                 u.operador_nombre,
+                u.operador_id,
+                u.velocidad,
                 u.activo ? "activa" : "inactiva",
                 u.en_circuito ? "circuito" : "fuera",
             ].join(" ").toLowerCase();
+
             return txt.includes(q);
             });
         }
 
         if (!data.length) {
-            tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-gray-400 text-center">Sin unidades</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="11" class="p-4 text-gray-400 text-center">Sin unidades</td></tr>`;
             return;
         }
+
+        const fmtVel = (v) => {
+            if (v === null || v === undefined || v === "") return "-";
+            const n = Number(v);
+            return Number.isFinite(n) ? n.toFixed(1) : "-";
+        };
 
         tbody.innerHTML = data.map(u => {
             const enCircuito = Boolean(u.en_circuito);
@@ -565,14 +591,20 @@ const moduloUnidades = {
             const disableEditar = enCircuito;
             const disableBaja = enCircuito || tieneOperador || !activa;
 
+            const unidadLabel = `#${u.numero_unidad ?? u.id_unidad}`;
+            const velocidad = fmtVel(u.velocidad);
+
             return `
             <tr class="border-b hover:bg-gray-50">
-                <td class="p-2 font-semibold">#${u.numero_unidad ?? u.id_unidad}</td>
+                <td class="p-2 font-semibold">${unidadLabel}</td>
+                <td class="p-2">${u.marca ?? "-"}</td>
+                <td class="p-2">${u.modelo ?? "-"}</td>
                 <td class="p-2">${u.id_ruta ?? "-"}</td>
                 <td class="p-2">${u.sentido ?? "-"}</td>
                 <td class="p-2">${this.badgeCircuito(enCircuito)}</td>
                 <td class="p-2">${u.estado_unidad ?? "-"}</td>
-                <td class="p-2">${u.operador_nombre ?? "-"}</td>
+                <td class="p-2">${velocidad}</td>
+                <td class="p-2">${u.operador_nombre ?? "-"}${u.operador_id ? ` (ID:${u.operador_id})` : ""}</td>
                 <td class="p-2">${this.badgeActivo(activa)}</td>
                 <td class="p-2">
                 <div class="flex gap-2">
@@ -610,6 +642,7 @@ const moduloUnidades = {
             `;
         }).join("");
     },
+
     cerrarFormUnidadCatalogo() {
         // Oculta el formulario
         const form = document.getElementById("form-unidad-catalogo");
@@ -618,12 +651,21 @@ const moduloUnidades = {
         // Limpia estado de edición
         this.unidadEditandoId = null;
 
-        // (Opcional) limpia campos para que no queden valores pegados
+        // Ocultar avanzados por defecto (para que al abrir "Agregar" no se vean)
+        const adv = document.getElementById("cat-campos-avanzados");
+        if (adv) adv.classList.add("hidden");
+
+        // Limpieza de campos
         const inputId = document.getElementById("cat-id-unidad");
         if (inputId) {
             inputId.value = "";
             inputId.disabled = false;
         }
+
+        const inputMarca = document.getElementById("cat-marca");
+        const inputModelo = document.getElementById("cat-modelo");
+        if (inputMarca) inputMarca.value = "";
+        if (inputModelo) inputModelo.value = "";
     },
 
     editarUnidadCatalogo(id_unidad) {
@@ -637,10 +679,15 @@ const moduloUnidades = {
         }
 
         this.unidadEditandoId = id_unidad;
+        // Mostrar campos avanzados (en edición sí se ven)
+        const adv = document.getElementById("cat-campos-avanzados");
         const ruta = document.getElementById('cat-ruta');
         const sentido = document.getElementById('cat-sentido');
         const activoSel = document.getElementById("cat-activo");
         const inputId = document.getElementById("cat-id-unidad");
+        // Cargar marca/modelo desde el catálogo (si vienen del backend)
+        const inputMarca = document.getElementById("cat-marca");
+        const inputModelo = document.getElementById("cat-modelo");
         if (ruta) ruta.value = String(u.id_ruta);
         if (sentido) sentido.value = u.sentido;
         if (activoSel) activoSel.value = String(Boolean(u.activo)); // NUEVO
@@ -648,6 +695,9 @@ const moduloUnidades = {
             inputId.value = u.id_unidad;
             inputId.disabled = true;
         }
+        if (adv) adv.classList.remove("hidden");
+        if (inputMarca) inputMarca.value = u.marca ?? "";
+        if (inputModelo) inputModelo.value = u.modelo ?? "";
         this.mostrarFormUnidad(true); // NUEVO
 
         utils.mostrarMensaje('msg-catalogo-unidades', `Editando unidad #${id_unidad}`, 'warning');
@@ -665,75 +715,89 @@ const moduloUnidades = {
         },
 
     async guardarUnidadCatalogo() {
-    try {
-        const ruta = document.getElementById("cat-ruta")?.value;
-        const sentido = document.getElementById("cat-sentido")?.value;
-        const activoStr = document.getElementById("cat-activo")?.value ?? "true";
-        const activo = (String(activoStr) === "true");
+        try {
+            const esEdicion = this.unidadEditandoId !== null;
 
-        // ESTE ES EL INPUT CORRECTO (según tu vistas.js)
-        const num = document.getElementById("cat-id-unidad")?.value;
-        const id_unidad = (num !== undefined && String(num).trim() !== "") ? parseInt(num) : null;
+            // Campos principales (SIEMPRE)
+            const num = document.getElementById("cat-id-unidad")?.value;
+            const numero = (num !== undefined && String(num).trim() !== "") ? parseInt(num) : null;
 
-        if (!ruta || !sentido) {
-        return utils.mostrarMensaje("msg-catalogo-unidades", "Ruta y sentido son obligatorios", "error");
-        }
+            const marca = document.getElementById("cat-marca")?.value?.trim() ?? "";
+            const modelo = document.getElementById("cat-modelo")?.value?.trim() ?? "";
 
-        const esEdicion = this.unidadEditandoId !== null;
+            // Avanzados (solo edición; si no existen en DOM, tomamos defaults)
+            const ruta = document.getElementById("cat-ruta")?.value ?? "1";
+            const sentido = document.getElementById("cat-sentido")?.value ?? "IDA";
+            const activoStr = document.getElementById("cat-activo")?.value ?? "true";
+            const activo = (String(activoStr) === "true");
 
-        const payload = {
-        id_ruta: parseInt(ruta),
-        sentido,
-        activo
-        };
+            // Validaciones
+            if (!marca || !modelo) {
+            return utils.mostrarMensaje("msg-catalogo-unidades", "Marca y modelo son obligatorios", "error");
+            }
 
-        // SOLO al crear: exigir número y mandarlo al backend
-        if (!esEdicion) {
-        if (id_unidad === null || Number.isNaN(id_unidad) || id_unidad <= 0) {
-            return utils.mostrarMensaje(
+            // Crear: exigir número de unidad
+            if (!esEdicion) {
+            if (numero === null || Number.isNaN(numero) || numero <= 0) {
+                return utils.mostrarMensaje(
+                "msg-catalogo-unidades",
+                "Número de unidad inválido (entero positivo)",
+                "error"
+                );
+            }
+            }
+
+            // Payload
+            const payload = {
+            // Para no romper tu backend actual y el nuevo:
+            // - si backend viejo espera id_unidad, lo mandamos
+            // - si backend nuevo espera numero_unidad, también lo mandamos
+            marca,
+            modelo,
+            id_ruta: parseInt(ruta),
+            sentido,
+            activo
+            };
+
+            if (!esEdicion) {
+            payload.id_unidad = numero;       // compatibilidad backend actual
+            payload.numero_unidad = numero;   // compatibilidad backend nuevo
+            }
+
+            const url = esEdicion
+            ? `${CONFIG.API_BASE}/supervisor/unidades/catalogo/${this.unidadEditandoId}`
+            : `${CONFIG.API_BASE}/supervisor/unidades/catalogo`;
+
+            const method = esEdicion ? "PUT" : "POST";
+
+            const res = await fetch(url, {
+            method,
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+            });
+
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+            return utils.mostrarMensaje("msg-catalogo-unidades", data.error || "Error al guardar", "error");
+            }
+
+            utils.mostrarMensaje(
             "msg-catalogo-unidades",
-            "Número de unidad inválido (entero positivo)",
-            "error"
+            esEdicion ? "Unidad actualizada" : `Unidad #${data.id_unidad ?? numero} creada`,
+            "success"
             );
+
+            this.unidadEditandoId = null;
+            this.mostrarFormUnidad(false);
+
+            await this.cargarTablaCatalogo();
+            await this.renderizarSelectUnidades();
+
+        } catch (e) {
+            console.error(e);
+            utils.mostrarMensaje("msg-catalogo-unidades", "Error inesperado al guardar", "error");
         }
-        payload.id_unidad = id_unidad;
-        }
-
-        const url = esEdicion
-        ? `${CONFIG.API_BASE}/supervisor/unidades/catalogo/${this.unidadEditandoId}`
-        : `${CONFIG.API_BASE}/supervisor/unidades/catalogo`;
-
-        const method = esEdicion ? "PUT" : "POST";
-
-        const res = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-        });
-
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) {
-        return utils.mostrarMensaje("msg-catalogo-unidades", data.error || "Error al guardar", "error");
-        }
-
-        utils.mostrarMensaje(
-        "msg-catalogo-unidades",
-        esEdicion ? "Unidad actualizada" : `Unidad #${data.id_unidad} creada`,
-        "success"
-        );
-
-        this.unidadEditandoId = null;
-        this.mostrarFormUnidad(false);
-
-        await this.cargarTablaCatalogo();
-        await this.renderizarSelectUnidades();
-
-    } catch (e) {
-        console.error(e);
-        utils.mostrarMensaje("msg-catalogo-unidades", "Error inesperado al guardar", "error");
-    }
     },
-
 
     darBajaUnidadCatalogo(id_unidad) {
     utils.mostrarModal(

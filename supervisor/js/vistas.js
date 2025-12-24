@@ -69,33 +69,49 @@ const VISTAS = {
                 </div>
 
                 <!-- Form (crear/editar) - OCULTO por defecto -->
-                    <div id="form-unidad-catalogo" class="hidden bg-white rounded shadow border p-4 mb-4">
-                    <input type="hidden" id="unidad-id-editando" value="">
-                    <div class="flex items-center justify-between mb-3">
-                        <h3 id="form-unidad-titulo" class="text-lg font-bold text-gray-800">Nueva unidad</h3>
-                        <button type="button"
-                            class="text-gray-500 hover:text-gray-800"
-                            onclick="moduloUnidades.cerrarFormUnidadCatalogo()"
-                            title="Cerrar">
-                            ✕
-                        </button>
+                <div id="form-unidad-catalogo" class="hidden bg-white rounded shadow border p-4 mb-4">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 id="form-unidad-titulo" class="font-bold text-gray-900">Agregar unidad</h3>
+                    <button class="text-gray-600 hover:text-gray-900"
+                            onclick="moduloUnidades.cerrarFormUnidadCatalogo()">✕</button>
+                </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Número de unidad</label>
+                        <input id="cat-id-unidad"
+                        type="number"
+                        min="1"
+                        class="border rounded px-3 py-2 w-full"
+                        placeholder="Ej: 25">
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Marca</label>
+                        <input id="cat-marca"
+                        type="text"
+                        class="border rounded px-3 py-2 w-full"
+                        placeholder="Ej: Volvo">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Modelo</label>
+                        <input id="cat-modelo"
+                        type="text"
+                        class="border rounded px-3 py-2 w-full"
+                        placeholder="Ej: 7900 Electric">
+                    </div>
+                    </div>
+
+                    <!-- Campos avanzados: SOLO edición -->
+                    <div id="cat-campos-avanzados" class="hidden mt-3">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
                         <div>
                         <label class="block text-sm font-medium mb-1">Ruta</label>
                         <select id="cat-ruta" class="border rounded px-3 py-2 w-full">
                             <option value="1">L1 - Abastos ↔ Azteca</option>
                         </select>
                         </div>
-                        <div>
-                        <label class="block text-sm font-medium mb-1">Número de unidad</label>
-                        <input id="cat-id-unidad"
-                                type="number"
-                                min="1"
-                                class="border rounded px-3 py-2 w-full"
-                                placeholder="Ej: 25">
-                        </div>
+
                         <div>
                         <label class="block text-sm font-medium mb-1">Sentido</label>
                         <select id="cat-sentido" class="border rounded px-3 py-2 w-full">
@@ -112,39 +128,44 @@ const VISTAS = {
                         </select>
                         <p class="text-xs text-gray-500 mt-1">Para reingresar: selecciona ACTIVA y guarda.</p>
                         </div>
-
-                        <div class="flex gap-2 items-end">
-                        <button class="bg-green-600 text-white px-4 py-2 rounded w-full hover:opacity-90"
-                                onclick="moduloUnidades.guardarUnidadCatalogo()">
-                            Guardar
-                        </button>
-                        <button type="button"
-                            class="bg-gray-300 px-6 py-2 rounded"
-                            onclick="moduloUnidades.cerrarFormUnidadCatalogo()">
-                            Cancelar
-                        </button>
-                        </div>
                     </div>
                     </div>
 
+                    <div class="flex gap-2 items-end mt-3">
+                    <button class="bg-green-600 text-white px-4 py-2 rounded w-full hover:opacity-90"
+                        onclick="moduloUnidades.guardarUnidadCatalogo()">
+                        Guardar
+                    </button>
+
+                    <button type="button"
+                        class="bg-gray-300 px-6 py-2 rounded"
+                        onclick="moduloUnidades.cerrarFormUnidadCatalogo()">
+                        Cancelar
+                    </button>
+                    </div>
+                </div>
 
                 <!-- Tabla catálogo -->
                 <div class="bg-white rounded shadow border overflow-x-auto">
                     <table class="w-full">
                     <thead>
-                        <tr class="border-b bg-gray-50">
+                    <tr class="border-b bg-gray-50">
                         <th class="text-left p-2">Unidad</th>
+                        <th class="text-left p-2">Marca</th>
+                        <th class="text-left p-2">Modelo</th>
                         <th class="text-left p-2">Ruta</th>
                         <th class="text-left p-2">Sentido</th>
                         <th class="text-left p-2">Circuito</th>
                         <th class="text-left p-2">Estado</th>
+                        <th class="text-left p-2">Velocidad</th>
                         <th class="text-left p-2">Operador</th>
                         <th class="text-left p-2">Estatus</th>
                         <th class="text-left p-2">Acciones</th>
-                        </tr>
+                    </tr>
                     </thead>
+
                     <tbody id="tbody-catalogo-unidades">
-                        <tr><td colspan="8" class="p-4 text-gray-400 text-center">Cargando...</td></tr>
+                    <tr><td colspan="11" class="p-4 text-gray-400 text-center">Cargando...</td></tr>
                     </tbody>
                     </table>
                 </div>

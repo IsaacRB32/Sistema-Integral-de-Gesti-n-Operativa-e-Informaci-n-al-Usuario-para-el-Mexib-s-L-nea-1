@@ -41,6 +41,23 @@ export async function runMigrations() {
       client,
       `ALTER TABLE UnidadesMB ADD COLUMN IF NOT EXISTS numero_unidad INTEGER;`
     );
+    
+    // UnidadesMB.marca y UnidadesMB.modelo
+    await safeExec(
+      client,
+      `ALTER TABLE UnidadesMB ADD COLUMN IF NOT EXISTS marca VARCHAR(100);`
+    );
+
+    await safeExec(
+      client,
+      `ALTER TABLE UnidadesMB ADD COLUMN IF NOT EXISTS modelo VARCHAR(100);`
+    );
+
+    // (Opcional recomendado) si ya hay unidades viejas y quieres que se muestre el # correctamente
+    await safeExec(
+      client,
+      `UPDATE UnidadesMB SET numero_unidad = id_unidad WHERE numero_unidad IS NULL;`
+    );
 
     // Único (evita duplicados)
     await safeExec(
