@@ -3,6 +3,29 @@ import { pool } from "../db/conexion.js";
 
 const router = express.Router();
 
+// ==================================
+// Utilidades de validación
+// ==================================
+const PASSWORD_POLICY = /^(?=.*[A-Za-z])(?=.*\d).{8,}$/;
+
+function isValidPassword(pw) {
+  return PASSWORD_POLICY.test(String(pw ?? ""));
+}
+
+function normalizeRol(rol) {
+  const r = String(rol ?? "").trim().toUpperCase();
+  return (r === "OPERADOR" || r === "SUPERVISOR") ? r : null;
+}
+
+async function getRoleId(rol) {
+  const result = await pool.query(
+    `SELECT id_rol FROM Roles WHERE rol = $1 LIMIT 1`,
+    [rol]
+  );
+  return result.rows[0]?.id_rol ?? null;
+}
+
+
 //   1. Consultar todas las incidencias (GET /api/supervisor/incidencias)
 
 router.get("/incidencias", async (req, res) => {
@@ -624,5 +647,317 @@ router.delete("/operadores/:id_usuario", async (req, res) => {
   }
 });
 
+// =====================================================
+// CRUD DE USUARIOS (OPERADOR + SUPERVISOR)
+// =====================================================
+
+// GET /api/supervisor/usuarios?rol=OPERADOR|SUPERVISOR
+// GET /api/supervisor/usuarios?rol=OPERADOR|SUPERVISOR&activo=true|false
+router.get("/usuarios", async (req, res) => {
+  try {
+    const rolQ = String(req.query.rol ?? "").trim().toUpperCase();
+    const activoQ = String(req.query.activo ?? "").trim().toLowerCase();
+
+    // Validar rol (opcional)
+    const rol = rolQ ? normalizeRol(rolQ) : null;
+    if (rolQ && !rol) {
+      return res.status(400).json({ error: "Parámetro rol inválido (usa OPERADOR o SUPERVISOR)" });
+    }
+
+    // Validar activo (opcional)
+    let filtroActivo = null; // null = sin filtro
+    if (activoQ === "true") filtroActivo = true;
+    else if (activoQ === "false") filtroActivo = false;
+    else if (activoQ !== "") {
+      return res.status(400).json({ error: "Parámetro activo inválido (usa true o false)" });
+    }
+
+    let sql = `
+      SELECT 
+        u.id_usuario,
+        u.nombre,
+        u.primer_apellido,
+        u.segundo_apellido,
+        u.contacto,
+        u.email,
+        u.activo,
+        r.rol,
+        au.id_unidad
+      FROM Usuarios u
+      JOIN Roles r ON r.id_rol = u.id_rol
+      LEFT JOIN AsignacionesUnidad au 
+        ON au.id_usuario = u.id_usuario AND au.activo = TRUE
+    `;
+
+    const params = [];
+    const conditions = [];
+
+    // Filtro por rol
+    if (rol) {
+      params.push(rol);
+      conditions.push(`r.rol = $${params.length}`);
+    }
+
+    // Filtro por activo:
+    // - activo=true incluye NULL como activo
+    // - activo=false solo false
+    if (filtroActivo === true) {
+      conditions.push(`(u.activo IS NULL OR u.activo = TRUE)`);
+    } else if (filtroActivo === false) {
+      conditions.push(`u.activo = FALSE`);
+    }
+
+    if (conditions.length) {
+      sql += ` WHERE ` + conditions.join(" AND ");
+    }
+
+    sql += ` ORDER BY u.id_usuario`;
+
+    const result = await pool.query(sql, params);
+    res.json(result.rows);
+
+  } catch (err) {
+    console.error("Error obteniendo usuarios:", err);
+    res.status(500).json({ error: "Error obteniendo usuarios" });
+  }
+});
+
+
+
+// POST /api/supervisor/usuarios
+router.post("/usuarios", async (req, res) => {
+  try {
+    const {
+      rol,
+      nombre,
+      primer_apellido,
+      segundo_apellido,
+      contacto,
+      email,
+      password,
+      confirm_password
+    } = req.body;
+
+    const rolNorm = normalizeRol(rol);
+    if (!rolNorm) {
+      return res.status(400).json({ error: "Rol inválido" });
+    }
+
+    if (!password || !confirm_password) {
+      return res.status(400).json({ error: "La contraseña es obligatoria" });
+    }
+
+    if (password !== confirm_password) {
+      return res.status(400).json({ error: "Las contraseñas no coinciden" });
+    }
+
+    if (!isValidPassword(password)) {
+      return res.status(400).json({
+        error: "La contraseña debe tener mínimo 8 caracteres, letras y números"
+      });
+    }
+
+    const idRol = await getRoleId(rolNorm);
+    if (!idRol) {
+      return res.status(400).json({ error: "Rol no encontrado" });
+    }
+
+    const result = await pool.query(
+      `
+      INSERT INTO Usuarios 
+        (nombre, primer_apellido, segundo_apellido, contacto, email, password, id_rol, activo)
+      VALUES 
+        ($1,$2,$3,$4,$5,$6,$7,TRUE)
+      RETURNING id_usuario
+      `,
+      [
+        nombre,
+        primer_apellido,
+        segundo_apellido,
+        contacto,
+        email,
+        password,
+        idRol
+      ]
+    );
+
+    res.status(201).json({
+      message: "Usuario creado correctamente",
+      id_usuario: result.rows[0].id_usuario
+    });
+
+  } catch (err) {
+    console.error("Error creando usuario:", err);
+    res.status(500).json({ error: "Error creando usuario" });
+  }
+});
+
+
+// PUT /api/supervisor/usuarios/:id_usuario
+// PUT /api/supervisor/usuarios/:id_usuario
+router.put("/usuarios/:id_usuario", async (req, res) => {
+  try {
+    const { id_usuario } = req.params;
+
+    const {
+      rol,
+      activo,
+      nombre,
+      primer_apellido,
+      segundo_apellido,
+      contacto,
+      email,
+      password,
+      confirm_password
+    } = req.body;
+
+    // -----------------------------
+    // Rol (opcional)
+    // -----------------------------
+    let idRol = null;
+    if (rol !== undefined && rol !== null && String(rol).trim() !== "") {
+      const rolNorm = normalizeRol(rol);
+      if (!rolNorm) {
+        return res.status(400).json({ error: "Rol inválido" });
+      }
+      idRol = await getRoleId(rolNorm);
+      if (!idRol) {
+        return res.status(400).json({ error: "Rol no encontrado" });
+      }
+    }
+
+    // -----------------------------
+    // Activo (opcional)
+    // -----------------------------
+    let activoBool = null; // null = no modificar
+    if (activo !== undefined) {
+      if (typeof activo === "boolean") {
+        activoBool = activo;
+      } else {
+        const s = String(activo).trim().toLowerCase();
+        if (s === "true") activoBool = true;
+        else if (s === "false") activoBool = false;
+        else {
+          return res.status(400).json({ error: "Campo activo inválido (usa true/false)" });
+        }
+      }
+    }
+
+    // -----------------------------
+    // Password (opcional: solo si quieren restablecer)
+    // -----------------------------
+    const wantsPwChange = (password !== undefined && String(password).trim() !== "") ||
+                          (confirm_password !== undefined && String(confirm_password).trim() !== "");
+
+    let passwordToSave = null;
+
+    if (wantsPwChange) {
+      if (!password || !confirm_password) {
+        return res.status(400).json({ error: "Para cambiar contraseña debes enviar password y confirm_password" });
+      }
+      if (String(password) !== String(confirm_password)) {
+        return res.status(400).json({ error: "Las contraseñas no coinciden" });
+      }
+      if (!isValidPassword(password)) {
+        return res.status(400).json({
+          error: "La contraseña debe tener mínimo 8 caracteres, letras y números"
+        });
+      }
+      passwordToSave = password; // texto plano según tu implementación actual
+    }
+
+    // -----------------------------
+    // UPDATE
+    // -----------------------------
+    await pool.query(
+      `
+      UPDATE Usuarios SET
+        nombre = COALESCE($1, nombre),
+        primer_apellido = COALESCE($2, primer_apellido),
+        segundo_apellido = COALESCE($3, segundo_apellido),
+        contacto = COALESCE($4, contacto),
+        email = COALESCE($5, email),
+        password = COALESCE($6, password),
+        id_rol = COALESCE($7, id_rol),
+        activo = COALESCE($8, activo)
+      WHERE id_usuario = $9
+      `,
+      [
+        nombre ?? null,
+        primer_apellido ?? null,
+        segundo_apellido ?? null,
+        contacto ?? null,
+        email ?? null,
+        passwordToSave,   // null si no quieren cambiar
+        idRol,            // null si no quieren cambiar rol
+        activoBool,       // null si no quieren cambiar activo
+        id_usuario
+      ]
+    );
+
+    res.json({ message: "Usuario actualizado correctamente" });
+
+  } catch (err) {
+    // Email único (si aplica en tu BD con índice unique)
+    if (err && err.code === "23505") {
+      return res.status(409).json({ error: "Email ya registrado" });
+    }
+
+    console.error("Error actualizando usuario:", err);
+    res.status(500).json({ error: "Error actualizando usuario" });
+  }
+});
+
+
+
+// DELETE /api/supervisor/usuarios/:id_usuario
+router.delete("/usuarios/:id_usuario", async (req, res) => {
+  try {
+    const { id_usuario } = req.params;
+
+    const check = await pool.query(
+      `
+      SELECT r.rol
+      FROM Usuarios u
+      JOIN Roles r ON r.id_rol = u.id_rol
+      WHERE u.id_usuario = $1
+      `,
+      [id_usuario]
+    );
+
+    if (!check.rows.length) {
+      return res.status(404).json({ error: "Usuario no encontrado" });
+    }
+
+    if (check.rows[0].rol === "OPERADOR") {
+      const ocupado = await pool.query(
+        `
+        SELECT 1
+        FROM AsignacionesUnidad
+        WHERE id_usuario = $1 AND activo = TRUE
+        LIMIT 1
+        `,
+        [id_usuario]
+      );
+
+      if (ocupado.rows.length) {
+        return res.status(409).json({
+          error: "No se puede eliminar un operador OCUPADO"
+        });
+      }
+    }
+
+    await pool.query(
+      `UPDATE Usuarios SET activo = FALSE WHERE id_usuario = $1`,
+      [id_usuario]
+    );
+
+    res.json({ message: "Usuario dado de baja correctamente" });
+
+  } catch (err) {
+    console.error("Error eliminando usuario:", err);
+    res.status(500).json({ error: "Error eliminando usuario" });
+  }
+});
 
 export default router;

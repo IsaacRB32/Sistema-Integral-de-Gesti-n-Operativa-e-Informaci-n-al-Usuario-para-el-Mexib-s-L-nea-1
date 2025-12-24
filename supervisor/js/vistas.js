@@ -239,28 +239,77 @@ const VISTAS = {
         </div>
     `,
 
-    operadores: () => `
+   operadores: () => `
     <div class="fade-in">
-        <div class="bg-white rounded-lg p-6 shadow-lg border border-gray-200">
-        <div class="flex items-center justify-between mb-4">
-            <h2 class="text-xl font-bold text-mexibus-dark">Operadores</h2>
-            <button onclick="moduloOperadores.mostrarFormularioNuevo()"
-            class="bg-mexibus-blue text-white px-4 py-2 rounded-lg font-medium hover:opacity-90 transition">
-            ➕ Nuevo
-            </button>
+        <div class="bg-white rounded-xl p-6 shadow-lg border border-gray-200">
+        <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-4">
+            <div>
+                <h2 class="text-2xl font-bold text-mexibus-dark">Gestión de Usuarios</h2>
+                <p class="text-sm text-gray-600">Operadores y Supervisores (CRUD completo)</p>
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-2 sm:items-center">
+                <div class="flex gap-2">
+                    <button id="filtro-rol-todos" onclick="moduloOperadores.setFiltroRol('ALL')"
+                        class="px-3 py-2 rounded-lg text-sm font-medium border bg-mexibus-blue text-white hover:opacity-90 transition">
+                        Todos
+                    </button>
+                    <button id="filtro-rol-operador" onclick="moduloOperadores.setFiltroRol('OPERADOR')"
+                        class="px-3 py-2 rounded-lg text-sm font-medium border bg-white text-gray-700 hover:bg-gray-50 transition">
+                        Operadores
+                    </button>
+                    <button id="filtro-rol-supervisor" onclick="moduloOperadores.setFiltroRol('SUPERVISOR')"
+                        class="px-3 py-2 rounded-lg text-sm font-medium border bg-white text-gray-700 hover:bg-gray-50 transition">
+                        Supervisores
+                    </button>
+                </div>
+                <div class="flex gap-2">
+                <button id="filtro-status-todos" onclick="moduloOperadores.setFiltroStatus('ALL')"
+                    class="px-3 py-2 rounded-lg text-sm font-medium border bg-mexibus-blue text-white hover:opacity-90 transition">
+                    Todos (estatus)
+                </button>
+                <button id="filtro-status-activo" onclick="moduloOperadores.setFiltroStatus('ACTIVO')"
+                    class="px-3 py-2 rounded-lg text-sm font-medium border bg-white text-gray-700 hover:bg-gray-50 transition">
+                    Activos
+                </button>
+                <button id="filtro-status-inactivo" onclick="moduloOperadores.setFiltroStatus('INACTIVO')"
+                    class="px-3 py-2 rounded-lg text-sm font-medium border bg-white text-gray-700 hover:bg-gray-50 transition">
+                    Inactivos
+                </button>
+                </div>
+
+                <div class="flex gap-2">
+                    <div class="relative">
+                        <input id="usuarios-search" oninput="moduloOperadores.aplicarFiltros()"
+                            placeholder="Buscar por nombre o email..."
+                            class="w-64 max-w-full bg-white border border-gray-300 rounded-lg pl-3 pr-3 py-2 text-sm focus:ring-2 focus:ring-mexibus-blue focus:outline-none" />
+                    </div>
+                    <button onclick="moduloOperadores.mostrarFormularioNuevo()"
+                        class="bg-mexibus-blue text-white px-4 py-2 rounded-lg font-medium hover:opacity-90 transition">
+                        Nuevo
+                    </button>
+                </div>
+            </div>
         </div>
 
         <div id="msg-operadores" class="hidden mb-4 border rounded-lg p-3"></div>
 
-        <div id="form-operador" class="hidden mb-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
+        <div id="form-operador" class="hidden mb-6 bg-gray-50 p-5 rounded-xl border border-gray-200">
             <div class="flex items-center justify-between mb-3">
-            <h3 id="form-operador-titulo" class="font-bold text-gray-900">Nuevo Operador</h3>
-            <button onclick="moduloOperadores.cancelar()" class="text-gray-600 hover:text-gray-900">✖</button>
+            <h3 id="form-operador-titulo" class="font-bold text-gray-900">Nuevo Usuario</h3>
+            <button onclick="moduloOperadores.cancelar()" class="text-gray-600 hover:text-gray-900">Cerrar</button>
             </div>
 
             <input type="hidden" id="op-id" />
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-sm font-medium mb-1 text-gray-700">Rol</label>
+                <select id="op-rol" class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2">
+                    <option value="OPERADOR">OPERADOR</option>
+                    <option value="SUPERVISOR">SUPERVISOR</option>
+                </select>
+            </div>
             <div>
                 <label class="block text-sm font-medium mb-1 text-gray-700">Nombre</label>
                 <input id="op-nombre" class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2" />
@@ -282,9 +331,22 @@ const VISTAS = {
                 <input id="op-email" type="email" class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2" />
             </div>
             <div>
-                <label class="block text-sm font-medium mb-1 text-gray-700">Password</label>
+            <label class="block text-sm font-medium mb-1 text-gray-700">Estado</label>
+            <select id="op-activo" class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2">
+                <option value="true">ACTIVO</option>
+                <option value="false">INACTIVO</option>
+            </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1 text-gray-700">Nueva contraseña</label>
                 <input id="op-password" type="password" class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2"
-                placeholder="En edición: dejar vacío para no cambiar" />
+                    placeholder="Mín. 8 caracteres, letras y números" />
+                <p class="text-xs text-gray-500 mt-1">En edición: dejar vacío para no cambiar.</p>
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1 text-gray-700">Confirmar contraseña</label>
+                <input id="op-password2" type="password" class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2"
+                    placeholder="Repite la contraseña" />
             </div>
             </div>
 
@@ -300,12 +362,13 @@ const VISTAS = {
             </div>
         </div>
 
-        <div class="overflow-x-auto scrollbar-custom">
+            <div class="overflow-x-auto scrollbar-custom">
             <table class="w-full text-sm">
             <thead>
                 <tr class="border-b-2 border-gray-200">
                 <th class="text-left py-2 px-2 text-gray-700">Nombre</th>
                 <th class="text-left py-2 px-2 text-gray-700">Email</th>
+                <th class="text-left py-2 px-2 text-gray-700">Rol</th>
                 <th class="text-left py-2 px-2 text-gray-700">Contacto</th>
                 <th class="text-left py-2 px-2 text-gray-700">Estado</th>
                 <th class="text-left py-2 px-2 text-gray-700">Unidad</th>
@@ -313,11 +376,11 @@ const VISTAS = {
                 </tr>
             </thead>
             <tbody id="tabla-operadores">
-                <tr><td colspan="6" class="text-center py-4 text-gray-400">Cargando...</td></tr>
+                <tr><td colspan="7" class="text-center py-6 text-gray-400">Cargando...</td></tr>
             </tbody>
             </table>
         </div>
         </div>
     </div>
-    `
+    `,
 };

@@ -27,7 +27,8 @@ router.post("/login", async (req, res) => {
                 ON au.id_usuario = u.id_usuario
                 AND au.activo = TRUE
             WHERE u.email = $1 
-              AND u.password = $2;
+              AND u.password = $2
+              AND (u.activo IS NULL OR u.activo = TRUE);
         `;
 
         const result = await pool.query(sql, [email, password]);

@@ -1,5 +1,14 @@
 // Funciones auxiliares reutilizables
 const utils = {
+    escapeHtml(value) {
+    const s = String(value ?? "");
+    return s
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/\"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    },
     mostrarMensaje(id, mensaje, tipo) {
         const elemento = document.getElementById(id);
         if (!elemento) return;
