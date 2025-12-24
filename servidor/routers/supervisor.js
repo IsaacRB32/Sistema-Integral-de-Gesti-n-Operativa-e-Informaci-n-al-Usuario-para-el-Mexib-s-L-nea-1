@@ -405,6 +405,12 @@ router.put("/unidades/catalogo/:id_unidad", async (req, res) => {
         ? String(req.body.modelo).trim()
         : undefined;
 
+    // Número visible de la unidad (editable). NO cambia el id_unidad interno.
+    const numero_unidad =
+      (req.body.numero_unidad !== undefined && req.body.numero_unidad !== null)
+        ? Number(req.body.numero_unidad)
+        : undefined;
+
     const id_ruta =
       (req.body.id_ruta !== undefined && req.body.id_ruta !== null)
         ? Number(req.body.id_ruta)
@@ -424,6 +430,10 @@ router.put("/unidades/catalogo/:id_unidad", async (req, res) => {
     if (marca !== undefined && !marca) return res.status(400).json({ error: "marca no puede ir vacía" });
     if (modelo !== undefined && !modelo) return res.status(400).json({ error: "modelo no puede ir vacío" });
 
+    if (numero_unidad !== undefined && (!Number.isInteger(numero_unidad) || numero_unidad <= 0)) {
+      return res.status(400).json({ error: "numero_unidad inválido (entero > 0)" });
+    }
+
     if (id_ruta !== undefined && (!Number.isInteger(id_ruta) || id_ruta <= 0)) {
       return res.status(400).json({ error: "id_ruta inválido" });
     }
@@ -435,6 +445,11 @@ router.put("/unidades/catalogo/:id_unidad", async (req, res) => {
     const sets = [];
     const params = [];
     let i = 1;
+
+    if (numero_unidad !== undefined) {
+      params.push(numero_unidad);
+      sets.push(`numero_unidad = $${i++}`);
+    }
 
     if (marca !== undefined) {
       params.push(marca);
@@ -459,7 +474,6 @@ router.put("/unidades/catalogo/:id_unidad", async (req, res) => {
       sets.push(`activo = $${i++}`);
 
       if (activo === false) {
-        // Baja lógica: forzamos fuera de circuito y reseteo operacional
         sets.push(`en_circuito = false`);
         sets.push(`estado_unidad = 'FUERA_DE_SERVICIO'`);
         sets.push(`velocidad = 0`);
@@ -467,7 +481,6 @@ router.put("/unidades/catalogo/:id_unidad", async (req, res) => {
         sets.push(`idx_tramo = 0`);
         sets.push(`dwell_hasta = NULL`);
       } else {
-        // Reingreso: por seguridad lo dejamos fuera de circuito (el supervisor lo mete con /sim/entrar)
         sets.push(`en_circuito = false`);
         sets.push(`estado_unidad = 'FUERA_DE_SERVICIO'`);
       }
@@ -475,11 +488,23 @@ router.put("/unidades/catalogo/:id_unidad", async (req, res) => {
 
     if (sets.length === 0) {
       return res.status(400).json({
-        error: "Envía al menos un campo a actualizar: marca, modelo, id_ruta, sentido, activo",
+        error: "Envía al menos un campo a actualizar: numero_unidad, marca, modelo, id_ruta, sentido, activo",
       });
     }
 
     await client.query("BEGIN");
+
+    // Evitar duplicado del número visible (solo si se intenta cambiar)
+    if (numero_unidad !== undefined) {
+      const dup = await client.query(
+        "SELECT 1 FROM UnidadesMB WHERE numero_unidad = $1 AND id_unidad <> $2 LIMIT 1",
+        [numero_unidad, id_unidad]
+      );
+      if (dup.rowCount > 0) {
+        await client.query("ROLLBACK");
+        return res.status(409).json({ error: `Ya existe la unidad con número ${numero_unidad}` });
+      }
+    }
 
     const updateSQL = `
       UPDATE UnidadesMB
@@ -501,13 +526,16 @@ router.put("/unidades/catalogo/:id_unidad", async (req, res) => {
   } catch (err) {
     try { await client.query("ROLLBACK"); } catch (_) {}
     console.error("PUT /unidades/catalogo/:id_unidad error:", err);
+
+    if (err?.code === "23505") {
+      return res.status(409).json({ error: "Conflicto: número de unidad ya existe" });
+    }
+
     return res.status(500).json({ error: "Error actualizando unidad" });
   } finally {
     client.release();
   }
 });
-
-
 
 // 6.4 DELETE baja lógica (no permitir si está en circuito o tiene operador asignado)
 router.delete("/unidades/catalogo/:id_unidad", async (req, res) => {

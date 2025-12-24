@@ -17,7 +17,7 @@ const moduloUnidades = {
 
         } catch (err) {
             console.error('Error obteniendo conductores:', err);
-            const select = document.getElementById('input-conductor');
+            const select = document.getElementById('input-operador');
             if (select) {
                 select.innerHTML = '<option value="">❌ Error al cargar conductores</option>';
             }
@@ -58,129 +58,128 @@ const moduloUnidades = {
     },
 
     async meterUnidad() {
-        const id = document.getElementById('input-unidad-id').value;
-        const ruta = document.getElementById('input-ruta').value;
-        const sentido = document.getElementById('input-sentido').value;
-        const conductorId = document.getElementById('input-operador').value;
+        const sel = document.getElementById("input-unidad-id"); // METER
+        const id = sel?.value;
+
+        const ruta = document.getElementById("input-ruta")?.value;
+        const sentido = document.getElementById("input-sentido")?.value;
+        const conductorId = document.getElementById("input-operador")?.value;
 
         if (!id) {
-            return utils.mostrarMensaje(
-                'msg-unidades',
-                'Selecciona una unidad del catálogo',
-                'error'
-            );
+            return utils.mostrarMensaje("msg-unidades", "Selecciona una unidad (FUERA de circuito)", "error");
         }
 
-        const sel = document.getElementById('input-unidad-id');
         const opt = sel?.selectedOptions?.[0];
-        const enCircuito = opt?.dataset?.enCircuito === '1';
-
+        const enCircuito = opt?.dataset?.enCircuito === "1";
         if (enCircuito) {
-            return utils.mostrarMensaje('msg-unidades', 'Esa unidad ya está en circuito. Selecciona una “Fuera de circuito”.', 'error');
+            return utils.mostrarMensaje("msg-unidades", "Esa unidad ya está en circuito.", "error");
         }
 
+        // velocidad: input -> dataset
+        const velocidadStr = document.getElementById("input-velocidad")?.value;
+        let velocidad = Number(velocidadStr);
+        if (!Number.isFinite(velocidad)) velocidad = Number(opt?.dataset?.velocidad);
+
+        if (!Number.isFinite(velocidad) || velocidad < 0) {
+            return utils.mostrarMensaje("msg-unidades", "Velocidad inválida (>= 0)", "error");
+        }
+
+        const label = opt?.dataset?.label ?? `#${id}`;
 
         try {
-            // 1. Meter unidad al circuito
             const resUnidad = await fetch(`${CONFIG.API_BASE}/sim/entrar`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                id_unidad: parseInt(id, 10),
+                id_ruta: parseInt(ruta, 10),
+                sentido,
+                idx_tramo: 0,
+                velocidad
+            })
+            });
+
+            const dataUnidad = await resUnidad.json().catch(() => ({}));
+            if (!resUnidad.ok || !dataUnidad.ok) {
+            return utils.mostrarMensaje("msg-unidades", dataUnidad.error || "Error al ingresar unidad", "error");
+            }
+
+            if (conductorId) {
+            const resConductor = await fetch(`${CONFIG.API_BASE}/supervisor/asignar-conductor`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    id_unidad: parseInt(id),
-                    id_ruta: parseInt(ruta),
-                    sentido,
-                    idx_tramo: 0 // Siempre inicia en estación 0
+                id_usuario: parseInt(conductorId, 10),
+                id_unidad: parseInt(id, 10)
                 })
             });
 
-            const dataUnidad = await resUnidad.json();
-            
-            if (!dataUnidad.ok) {
-                return utils.mostrarMensaje('msg-unidades', dataUnidad.error || 'Error al ingresar unidad', 'error');
-            }
-
-            // 2. Asignar conductor si se seleccionó uno
-            if (conductorId) {
-                const resConductor = await fetch(`${CONFIG.API_BASE}/supervisor/asignar-conductor`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        id_usuario: parseInt(conductorId),
-                        id_unidad: parseInt(id)
-                    })
-                });
-
-                const dataConductor = await resConductor.json();
-
-                if (!resConductor.ok) {
-                    console.warn('Advertencia al asignar conductor:', dataConductor.error);
-                    utils.mostrarMensaje('msg-unidades', `Unidad ${id} ingresada pero no se pudo asignar conductor`, 'warning');
-                } else {
-                    utils.mostrarMensaje('msg-unidades', `Unidad ${id} ingresada con conductor asignado`, 'success');
-                }
+            if (!resConductor.ok) {
+                utils.mostrarMensaje("msg-unidades", `${label} ingresada pero no se pudo asignar conductor`, "warning");
             } else {
-                utils.mostrarMensaje('msg-unidades', `Unidad ${id} ingresada sin conductor`, 'success');
+                utils.mostrarMensaje("msg-unidades", `${label} ingresada con conductor asignado`, "success");
+            }
+            } else {
+            utils.mostrarMensaje("msg-unidades", `${label} ingresada sin conductor`, "success");
             }
 
-            // 3. Recargar todo
             setTimeout(() => {
-                this.cargar();
-                this.cargarConductores();
-                this.renderizarSelectUnidades(); // 👈
+            this.cargar();
+            this.cargarConductores();
+            this.renderizarSelectUnidades();
             }, 500);
 
         } catch (err) {
-            console.error('Error:', err);
-            utils.mostrarMensaje('msg-unidades', 'Error de conexión', 'error');
+            console.error(err);
+            utils.mostrarMensaje("msg-unidades", "Error de conexión", "error");
         }
     },
 
     async sacarUnidad() {
-        const id = document.getElementById('input-unidad-id').value;
+        const sel = document.getElementById("input-unidad-id-sacar"); // SACAR
+        const id = sel?.value;
+
         if (!id) {
-            return utils.mostrarMensaje(
-                'msg-unidades',
-                'Selecciona una unidad del catálogo',
-                'error'
-            );
+            return utils.mostrarMensaje("msg-unidades", "Selecciona una unidad EN circuito", "error");
         }
 
-        const sel = document.getElementById('input-unidad-id');
         const opt = sel?.selectedOptions?.[0];
-        const enCircuito = opt?.dataset?.enCircuito === '1';
+        const enCircuito = opt?.dataset?.enCircuito === "1";
+        const label = opt?.dataset?.label ?? `#${id}`;
 
         if (!enCircuito) {
-            return utils.mostrarMensaje('msg-unidades', 'Esa unidad NO está en circuito. Selecciona una “En circuito”.', 'error');
+            return utils.mostrarMensaje("msg-unidades", "Esa unidad NO está en circuito.", "error");
         }
 
         try {
-            // 1. Desasignar conductor primero
             await fetch(`${CONFIG.API_BASE}/supervisor/desasignar-conductor`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id_unidad: parseInt(id) })
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id_unidad: parseInt(id, 10) })
             });
 
-            // 2. Sacar unidad del circuito
             const res = await fetch(`${CONFIG.API_BASE}/sim/salir`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id_unidad: parseInt(id) })
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id_unidad: parseInt(id, 10) })
             });
 
-            const data = await res.json();
-            if (data.ok) {
-                utils.mostrarMensaje('msg-unidades', `Unidad ${id} sacada del servicio`, 'success');
-                setTimeout(() => {
-                    this.cargar();
-                    this.cargarConductores();
-                    this.renderizarSelectUnidades(); // 👈
-                }, 500);
-            } else {
-                utils.mostrarMensaje('msg-unidades', data.error, 'error');
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok || !data.ok) {
+            return utils.mostrarMensaje("msg-unidades", data.error || "Error al sacar unidad", "error");
             }
+
+            utils.mostrarMensaje("msg-unidades", `${label} sacada del servicio`, "success");
+
+            setTimeout(() => {
+            this.cargar();
+            this.cargarConductores();
+            this.renderizarSelectUnidades();
+            }, 500);
+
         } catch (err) {
-            utils.mostrarMensaje('msg-unidades', 'Error de conexión', 'error');
+            console.error(err);
+            utils.mostrarMensaje("msg-unidades", "Error de conexión", "error");
         }
     },
 
@@ -346,6 +345,7 @@ const moduloUnidades = {
             }
         }
     },
+    
     mostrarFormularioNuevoUnidad() {
         this.unidadEditandoId = null;
 
@@ -411,40 +411,87 @@ const moduloUnidades = {
 
 
     async renderizarSelectUnidades() {
-        const select = document.getElementById('input-unidad-id');
-        if (!select) return;
+        const selectMeter = document.getElementById("input-unidad-id");         // METER
+        const selectSacar = document.getElementById("input-unidad-id-sacar");   // SACAR (pon este id en el HTML)
 
-        select.innerHTML = '<option value="">-- Selecciona una unidad --</option>';
-
-        const unidades = await this.cargarCatalogoUnidades({ activo: "true" });
-
-        if (!unidades || unidades.length === 0) {
-            select.innerHTML = '<option value="">⚠️ No hay unidades registradas</option>';
+        if (!selectMeter && !selectSacar) {
+            console.warn("No se encontraron selects de unidades (input-unidad-id / input-unidad-id-sacar).");
             return;
         }
 
-        const fuera = document.createElement('optgroup');
-        fuera.label = '🟢 Fuera de circuito (se puede METER)';
+        if (selectMeter) selectMeter.innerHTML = `<option value="">Cargando unidades...</option>`;
+        if (selectSacar) selectSacar.innerHTML = `<option value="">Cargando unidades en circuito...</option>`;
 
-        const dentro = document.createElement('optgroup');
-        dentro.label = '🔵 En circuito (se puede SACAR)';
+        let unidades = [];
+        try {
+            unidades = await this.cargarCatalogoUnidades({ activo: "true" });
+        } catch (e) {
+            console.error("Error cargando catálogo:", e);
+        }
 
-        unidades.forEach(u => {
-            const opt = document.createElement('option');
+        if (!Array.isArray(unidades) || unidades.length === 0) {
+            if (selectMeter) selectMeter.innerHTML = `<option value="">⚠️ No hay unidades registradas</option>`;
+            if (selectSacar) selectSacar.innerHTML = `<option value="">⚠️ No hay unidades en circuito</option>`;
+            return;
+        }
+
+        const fuera = unidades.filter(u => !u.en_circuito);
+        const dentro = unidades.filter(u => !!u.en_circuito);
+
+        const crearOption = (u) => {
+            const opt = document.createElement("option");
             opt.value = u.id_unidad;
 
-            // guardamos flag para validaciones
-            opt.dataset.enCircuito = u.en_circuito ? '1' : '0';
+            opt.dataset.enCircuito = u.en_circuito ? "1" : "0";
+            opt.dataset.velocidad = String(u.velocidad ?? 0.8);
 
-            // texto visible
-            opt.textContent = `#${u.id_unidad} - ${u.estado_unidad}${u.en_circuito ? ' (EN CIRCUITO)' : ''}`;
+            const labelNum = (u.numero_unidad ?? u.id_unidad);
+            opt.dataset.label = `#${labelNum}`;
 
-            if (u.en_circuito) dentro.appendChild(opt);
-            else fuera.appendChild(opt);
-        });
+            const estado = (u.estado_unidad ?? "-");
+            opt.textContent = `#${labelNum} - ${estado}`;
 
-        if (fuera.children.length > 0) select.appendChild(fuera);
-        if (dentro.children.length > 0) select.appendChild(dentro);
+            return opt;
+        };
+
+        // ----- SELECT METER: SOLO FUERA DE CIRCUITO -----
+        if (selectMeter) {
+            selectMeter.innerHTML = `<option value="">-- Selecciona una unidad (FUERA) --</option>`;
+
+            if (fuera.length === 0) {
+            const opt = document.createElement("option");
+            opt.value = "";
+            opt.textContent = "⚠️ No hay unidades FUERA de circuito";
+            selectMeter.appendChild(opt);
+            } else {
+            fuera.forEach(u => selectMeter.appendChild(crearOption(u)));
+            }
+
+            // Sincroniza velocidad al cambiar unidad (solo en METER)
+            const syncVel = () => {
+            const opt = selectMeter.selectedOptions?.[0];
+            const v = opt?.dataset?.velocidad;
+            const inputVel = document.getElementById("input-velocidad");
+            if (inputVel && v !== undefined) inputVel.value = Number(v);
+            };
+
+            selectMeter.onchange = syncVel;
+            setTimeout(syncVel, 0);
+        }
+
+        // ----- SELECT SACAR: SOLO EN CIRCUITO -----
+        if (selectSacar) {
+            selectSacar.innerHTML = `<option value="">-- Selecciona una unidad (EN CIRCUITO) --</option>`;
+
+            if (dentro.length === 0) {
+            const opt = document.createElement("option");
+            opt.value = "";
+            opt.textContent = "⚠️ No hay unidades EN circuito";
+            selectSacar.appendChild(opt);
+            } else {
+            dentro.forEach(u => selectSacar.appendChild(crearOption(u)));
+            }
+        }
     },
 
     seccionActual: 'catalogo',
@@ -513,12 +560,25 @@ const moduloUnidades = {
         }
 
         if (seccion === 'operaciones') {
+            await this.cargarConductores();
             await this.renderizarSelectUnidades();
             await this.cargar();
         }
     },
 
     catalogoUnidades: [],
+    getUnidadLabelById(id_unidad) {
+        const u = Array.isArray(this.catalogoUnidades)
+            ? this.catalogoUnidades.find(x => x.id_unidad === id_unidad)
+            : null;
+
+        return `#${u?.numero_unidad ?? id_unidad}`;
+    },
+    // ✅ NUEVO: si ya tienes el objeto unidad (u), úsalo directo
+    unidadLabel(u) {
+        return `#${u?.numero_unidad ?? u?.id_unidad ?? ""}`.trim();
+    },
+
 
     async cargarTablaCatalogo() {
     const tbody = document.getElementById('tbody-catalogo-unidades');
@@ -670,38 +730,48 @@ const moduloUnidades = {
 
     editarUnidadCatalogo(id_unidad) {
         const u = this.catalogoUnidades.find(x => x.id_unidad === id_unidad);
-
         if (!u) return;
 
         // regla: no editar en circuito (si tu backend ya lo bloquea, esto es UX)
         if (u.en_circuito) {
-            return utils.mostrarMensaje('msg-catalogo-unidades', 'No se puede editar: la unidad está en circuito', 'error');
+            return utils.mostrarMensaje(
+            'msg-catalogo-unidades',
+            'No se puede editar: la unidad está en circuito',
+            'error'
+            );
         }
 
         this.unidadEditandoId = id_unidad;
-        // Mostrar campos avanzados (en edición sí se ven)
+
+        // Título
+        const titulo = document.getElementById("form-unidad-titulo");
+        if (titulo) titulo.textContent = `Editar unidad #${u.numero_unidad ?? u.id_unidad}`;
+
+        // En edición SOLO dejamos: número, marca, modelo.
+        // Ruta / Sentido / Estatus (reingreso) no se editan aquí.
         const adv = document.getElementById("cat-campos-avanzados");
-        const ruta = document.getElementById('cat-ruta');
-        const sentido = document.getElementById('cat-sentido');
-        const activoSel = document.getElementById("cat-activo");
-        const inputId = document.getElementById("cat-id-unidad");
-        // Cargar marca/modelo desde el catálogo (si vienen del backend)
+        if (adv) adv.classList.add("hidden");
+
+        // Número visible (numero_unidad). El ID interno se mantiene en this.unidadEditandoId.
+        const inputNum = document.getElementById("cat-id-unidad");
+        if (inputNum) {
+            inputNum.value = (u.numero_unidad ?? u.id_unidad);
+            inputNum.disabled = false;
+        }
+
+        // Marca / modelo
         const inputMarca = document.getElementById("cat-marca");
         const inputModelo = document.getElementById("cat-modelo");
-        if (ruta) ruta.value = String(u.id_ruta);
-        if (sentido) sentido.value = u.sentido;
-        if (activoSel) activoSel.value = String(Boolean(u.activo)); // NUEVO
-        if (inputId) {
-            inputId.value = u.id_unidad;
-            inputId.disabled = true;
-        }
-        if (adv) adv.classList.remove("hidden");
         if (inputMarca) inputMarca.value = u.marca ?? "";
         if (inputModelo) inputModelo.value = u.modelo ?? "";
-        this.mostrarFormUnidad(true); // NUEVO
 
-        utils.mostrarMensaje('msg-catalogo-unidades', `Editando unidad #${id_unidad}`, 'warning');
-        },
+        this.mostrarFormUnidad(true);
+        utils.mostrarMensaje(
+            'msg-catalogo-unidades',
+            `Editando unidad #${u.numero_unidad ?? u.id_unidad}`,
+            'warning'
+        );
+    },
 
     cancelarEdicionUnidad() {
         this.unidadEditandoId = null;
@@ -725,43 +795,38 @@ const moduloUnidades = {
             const marca = document.getElementById("cat-marca")?.value?.trim() ?? "";
             const modelo = document.getElementById("cat-modelo")?.value?.trim() ?? "";
 
-            // Avanzados (solo edición; si no existen en DOM, tomamos defaults)
-            const ruta = document.getElementById("cat-ruta")?.value ?? "1";
-            const sentido = document.getElementById("cat-sentido")?.value ?? "IDA";
-            const activoStr = document.getElementById("cat-activo")?.value ?? "true";
-            const activo = (String(activoStr) === "true");
+            // Nota: Ruta / Sentido / Estatus (reingreso) NO se editan desde este formulario.
+            // En alta, asignamos defaults seguros para no romper simulación.
 
             // Validaciones
             if (!marca || !modelo) {
             return utils.mostrarMensaje("msg-catalogo-unidades", "Marca y modelo son obligatorios", "error");
             }
 
-            // Crear: exigir número de unidad
-            if (!esEdicion) {
+            // Número: obligatorio y válido en alta y edición
             if (numero === null || Number.isNaN(numero) || numero <= 0) {
-                return utils.mostrarMensaje(
+            return utils.mostrarMensaje(
                 "msg-catalogo-unidades",
                 "Número de unidad inválido (entero positivo)",
                 "error"
-                );
-            }
+            );
             }
 
             // Payload
-            const payload = {
-            // Para no romper tu backend actual y el nuevo:
-            // - si backend viejo espera id_unidad, lo mandamos
-            // - si backend nuevo espera numero_unidad, también lo mandamos
-            marca,
-            modelo,
-            id_ruta: parseInt(ruta),
-            sentido,
-            activo
-            };
+            const payload = { marca, modelo };
 
-            if (!esEdicion) {
-            payload.id_unidad = numero;       // compatibilidad backend actual
-            payload.numero_unidad = numero;   // compatibilidad backend nuevo
+            if (esEdicion) {
+            // Se edita el "número visible" (numero_unidad), NO el id_unidad interno.
+            payload.numero_unidad = numero;
+            } else {
+            // Alta: mantenemos compatibilidad con backend que usa id_unidad como número.
+            payload.id_unidad = numero;
+            payload.numero_unidad = numero;
+
+            // Defaults de simulación
+            payload.id_ruta = 1;
+            payload.sentido = "IDA";
+            payload.activo = true;
             }
 
             const url = esEdicion
@@ -799,54 +864,68 @@ const moduloUnidades = {
         }
     },
 
+
     darBajaUnidadCatalogo(id_unidad) {
-    utils.mostrarModal(
-        "¿Dar de baja unidad?",
-        "La unidad quedará INACTIVA (baja lógica). No se permite si está en circuito o con operador asignado.",
-        async () => {
-        await this.eliminarUnidadCatalogo(id_unidad);
-        }
-    );
+        const label = this.getUnidadLabelById(id_unidad);
+
+        utils.mostrarModal(
+            `¿Dar de baja la unidad ${label}?`,
+            "La unidad quedará INACTIVA (baja lógica). No se permite si está en circuito o con operador asignado.",
+            async () => {
+            await this.eliminarUnidadCatalogo(id_unidad);
+            }
+        );
     },
 
+
     async reingresarUnidadCatalogo(id_unidad) {
-    try {
-        const res = await fetch(`${CONFIG.API_BASE}/supervisor/unidades/catalogo/${id_unidad}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ activo: true })
-        });
+        const labelAntes = this.getUnidadLabelById(id_unidad);
 
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) {
-        return utils.mostrarMensaje("msg-catalogo-unidades", data.error || "No se pudo reingresar", "error");
+        try {
+            const res = await fetch(`${CONFIG.API_BASE}/supervisor/unidades/catalogo/${id_unidad}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ activo: true })
+            });
+
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+            return utils.mostrarMensaje("msg-catalogo-unidades", data.error || "No se pudo reingresar", "error");
+            }
+
+            // Si el backend regresa numero_unidad, úsalo; si no, usa el labelAntes
+            const labelFinal = `#${data?.numero_unidad ?? labelAntes.replace("#", "")}`;
+
+            utils.mostrarMensaje("msg-catalogo-unidades", `Unidad ${labelFinal} reingresada`, "success");
+            await this.cargarTablaCatalogo();
+            await this.renderizarSelectUnidades();
+        } catch (e) {
+            console.error(e);
+            utils.mostrarMensaje("msg-catalogo-unidades", "Error de conexión", "error");
         }
-
-        utils.mostrarMensaje("msg-catalogo-unidades", `Unidad #${id_unidad} reingresada`, "success");
-        await this.cargarTablaCatalogo();
-        await this.renderizarSelectUnidades();
-    } catch (e) {
-        console.error(e);
-        utils.mostrarMensaje("msg-catalogo-unidades", "Error de conexión", "error");
-    }
     },
 
     async eliminarUnidadCatalogo(id_unidad) {
-        const res = await fetch(`${CONFIG.API_BASE}/supervisor/unidades/catalogo/${id_unidad}`, { method: 'DELETE' });
+        const label = this.getUnidadLabelById(id_unidad);
+
+        const res = await fetch(`${CONFIG.API_BASE}/supervisor/unidades/catalogo/${id_unidad}`, { method: "DELETE" });
         const data = await res.json().catch(() => ({}));
 
         if (!res.ok) {
-            return utils.mostrarMensaje('msg-catalogo-unidades', data.error || 'No se pudo eliminar', 'error');
+            return utils.mostrarMensaje("msg-catalogo-unidades", data.error || "No se pudo eliminar", "error");
         }
 
-        utils.mostrarMensaje('msg-catalogo-unidades', `Unidad #${id_unidad} eliminada`, 'success');
-
+        utils.mostrarMensaje("msg-catalogo-unidades", `Unidad ${label} eliminada`, "success");
         await this.cargarTablaCatalogo();
         await this.renderizarSelectUnidades();
     },
+
+    
     eliminarUnidadCatalogoPermanente(id_unidad) {
+        const label = this.getUnidadLabelById(id_unidad);
+
         utils.mostrarModal(
-            `¿Eliminar permanentemente la unidad #${id_unidad}?`,
+            `¿Eliminar permanentemente la unidad ${label}?`,
             "Esta acción borra la unidad y su historial relacionado (asignaciones, incidencias, eventos). No se puede deshacer.",
             async () => {
             try {
@@ -859,7 +938,7 @@ const moduloUnidades = {
                 return utils.mostrarMensaje("msg-catalogo-unidades", data.error || "No se pudo eliminar permanentemente", "error");
                 }
 
-                utils.mostrarMensaje("msg-catalogo-unidades", `Unidad #${id_unidad} eliminada permanentemente`, "success");
+                utils.mostrarMensaje("msg-catalogo-unidades", `Unidad ${label} eliminada permanentemente`, "success");
                 await this.cargarTablaCatalogo();
                 await this.renderizarSelectUnidades();
             } catch (e) {
@@ -869,7 +948,6 @@ const moduloUnidades = {
             }
         );
     },
-
 
     renderizarSimulacion(unidades) {
         const cont = document.getElementById('simulacion-viva');
@@ -948,11 +1026,10 @@ const moduloUnidades = {
         }).join('');
     },
     iniciarAutoRefresh() {
-        setInterval(() => {
-            if (this.seccionActual === 'operaciones') {
-                this.cargar();
-            }
-        }, 3000); // cada 3 segundos
+        if (this._autoRefreshId) return; // ya está corriendo
+        this._autoRefreshId = setInterval(() => {
+            if (this.seccionActual === "operaciones") this.cargar();
+        }, 3000);
     },
 
 

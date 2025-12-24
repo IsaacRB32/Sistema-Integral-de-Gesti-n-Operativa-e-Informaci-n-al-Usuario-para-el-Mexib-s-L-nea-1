@@ -75,75 +75,48 @@ const VISTAS = {
                     <button class="text-gray-600 hover:text-gray-900"
                             onclick="moduloUnidades.cerrarFormUnidadCatalogo()">✕</button>
                 </div>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    <div>
-                        <label class="block text-sm font-medium mb-1">Número de unidad</label>
-                        <input id="cat-id-unidad"
-                        type="number"
-                        min="1"
-                        class="border rounded px-3 py-2 w-full"
-                        placeholder="Ej: 25">
-                    </div>
 
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
                     <div>
-                        <label class="block text-sm font-medium mb-1">Marca</label>
-                        <input id="cat-marca"
-                        type="text"
-                        class="border rounded px-3 py-2 w-full"
-                        placeholder="Ej: Volvo">
+                    <label class="block text-sm font-medium mb-1">Número de unidad</label>
+                    <input id="cat-id-unidad"
+                            type="number"
+                            min="1"
+                            class="border rounded px-3 py-2 w-full"
+                            placeholder="Ej: 25">
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium mb-1">Modelo</label>
-                        <input id="cat-modelo"
-                        type="text"
-                        class="border rounded px-3 py-2 w-full"
-                        placeholder="Ej: 7900 Electric">
-                    </div>
-                    </div>
-
-                    <!-- Campos avanzados: SOLO edición -->
-                    <div id="cat-campos-avanzados" class="hidden mt-3">
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                        <div>
-                        <label class="block text-sm font-medium mb-1">Ruta</label>
-                        <select id="cat-ruta" class="border rounded px-3 py-2 w-full">
-                            <option value="1">L1 - Abastos ↔ Azteca</option>
-                        </select>
-                        </div>
-
-                        <div>
-                        <label class="block text-sm font-medium mb-1">Sentido</label>
-                        <select id="cat-sentido" class="border rounded px-3 py-2 w-full">
-                            <option value="IDA">IDA</option>
-                            <option value="REGRESO">REGRESO</option>
-                        </select>
-                        </div>
-
-                        <div>
-                        <label class="block text-sm font-medium mb-1">Estatus (reingreso)</label>
-                        <select id="cat-activo" class="border rounded px-3 py-2 w-full">
-                            <option value="true">ACTIVA</option>
-                            <option value="false">INACTIVA</option>
-                        </select>
-                        <p class="text-xs text-gray-500 mt-1">Para reingresar: selecciona ACTIVA y guarda.</p>
-                        </div>
-                    </div>
+                    <label class="block text-sm font-medium mb-1">Marca</label>
+                    <input id="cat-marca"
+                            type="text"
+                            class="border rounded px-3 py-2 w-full"
+                            placeholder="Ej: Volvo">
                     </div>
 
-                    <div class="flex gap-2 items-end mt-3">
+                    <div>
+                    <label class="block text-sm font-medium mb-1">Modelo</label>
+                    <input id="cat-modelo"
+                            type="text"
+                            class="border rounded px-3 py-2 w-full"
+                            placeholder="Ej: 7900 Electric">
+                    </div>
+                </div>
+
+                <div class="flex gap-2 items-end mt-3">
                     <button class="bg-green-600 text-white px-4 py-2 rounded w-full hover:opacity-90"
-                        onclick="moduloUnidades.guardarUnidadCatalogo()">
-                        Guardar
+                            onclick="moduloUnidades.guardarUnidadCatalogo()">
+                    Guardar
                     </button>
 
                     <button type="button"
-                        class="bg-gray-300 px-6 py-2 rounded"
-                        onclick="moduloUnidades.cerrarFormUnidadCatalogo()">
-                        Cancelar
+                            class="bg-gray-300 px-6 py-2 rounded"
+                            onclick="moduloUnidades.cerrarFormUnidadCatalogo()">
+                    Cancelar
                     </button>
-                    </div>
                 </div>
+                </div>
+
 
                 <!-- Tabla catálogo -->
                 <div class="bg-white rounded shadow border overflow-x-auto">
@@ -175,122 +148,83 @@ const VISTAS = {
             <!-- 2) Operaciones -->
             <div id="seccion-unidades-operaciones" class="hidden">
 
-            <div class="bg-white rounded shadow border p-4">
-                <h3 class="font-semibold mb-4">Control de Unidades</h3>
+            <!-- Contenedor en 2 columnas (en desktop) -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
 
-                <div id="msg-unidades" class="hidden border p-3 rounded mb-3"></div>
+                <!-- IZQUIERDA: Control de Unidades -->
+                <div class="bg-white rounded shadow border p-4">
+                    <h3 class="font-semibold mb-4">Control de Unidades</h3>
 
-                <!-- Unidad ID ahora es SELECT -->
-                <label class="block text-sm font-medium mb-1">Unidad ID</label>
-                <select id="input-unidad-id" class="border rounded px-3 py-2 w-full mb-4">
-                <option value="">Cargando unidades...</option>
-                </select>
+                    <div id="msg-unidades" class="hidden border p-3 rounded mb-3"></div>
 
-                <label class="block text-sm font-medium mb-1">Ruta</label>
-                <select id="input-ruta" class="border rounded px-3 py-2 w-full mb-4">
-                <option value="1">L1 - Abastos ↔ Azteca</option>
-                </select>
+                    <!-- ====== METER UNIDAD ====== -->
+                    <div class="mb-6">
+                    <h4 class="font-semibold mb-3">Meter unidad</h4>
 
-                <label class="block text-sm font-medium mb-1">Sentido</label>
-                <select id="input-sentido" class="border rounded px-3 py-2 w-full mb-4">
-                <option value="IDA">IDA (Abastos → Azteca)</option>
-                <option value="REGRESO">REGRESO (Azteca → Abastos)</option>
-                </select>
+                    <label class="block text-sm font-medium mb-1">Unidad</label>
+                    <select id="input-unidad-id" class="border rounded px-3 py-2 w-full mb-4">
+                        <option value="">Cargando unidades...</option>
+                    </select>
 
-                <label class="block text-sm font-medium mb-1">Operador</label>
-                <select id="input-operador" class="border rounded px-3 py-2 w-full mb-4">
-                <option value="">-- Sin asignar --</option>
-                </select>
+                    <!-- Como tu JS manda id_ruta, agrega un input oculto fijo -->
+                    <input type="hidden" id="input-ruta" value="1" />
 
-                <div class="grid grid-cols-2 gap-3">
-                <button class="bg-green-500 text-white px-4 py-2 rounded" onclick="meterUnidad()">
-                    🚌 Meter
-                </button>
-                <button class="bg-red-500 text-white px-4 py-2 rounded" onclick="sacarUnidad()">
-                    ⛔ Sacar
-                </button>
-                </div>
-            </div>
+                    <label class="block text-sm font-medium mb-1">Sentido</label>
+                    <select id="input-sentido" class="border rounded px-3 py-2 w-full mb-4">
+                        <option value="IDA">IDA (Abastos → Azteca)</option>
+                        <option value="REGRESO">REGRESO (Azteca → Abastos)</option>
+                    </select>
 
-            <!-- Simulación en vivo dentro de Operaciones -->
-            <div class="mt-6">
+                    <label class="block text-sm font-medium mb-1">Operador</label>
+                    <select id="input-operador" class="border rounded px-3 py-2 w-full mb-4">
+                        <option value="">-- Sin asignar --</option>
+                    </select>
+
+                    <label class="block text-sm font-medium mb-1">Velocidad</label>
+                    <input id="input-velocidad"
+                            type="number"
+                            min="0"
+                            step="0.1"
+                            value="0.8"
+                            class="border rounded px-3 py-2 w-full mb-4"
+                            placeholder="Ej: 0.8">
+
+                    <button class="bg-green-500 text-white px-4 py-2 rounded w-full"
+                            onclick="meterUnidad()">
+                        🚌 Meter
+                    </button>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <!-- ====== SACAR UNIDAD ====== -->
+                    <div>
+                    <h4 class="font-semibold mb-3">Sacar unidad</h4>
+
+                    <label class="block text-sm font-medium mb-1">Unidad (en circuito)</label>
+                    <select id="input-unidad-id-sacar" class="border rounded px-3 py-2 w-full mb-4">
+                        <option value="">Cargando unidades en circuito...</option>
+                    </select>
+
+                    <button class="bg-red-500 text-white px-4 py-2 rounded w-full"
+                            onclick="sacarUnidad()">
+                        ⛔ Sacar
+                    </button>
+                    </div>
+                <!-- DERECHA: Simulación en vivo dentro de Operaciones -->
+                <div class="bg-white rounded shadow border p-4">
                 <h3 class="font-semibold mb-2">Simulación en vivo</h3>
                 <div id="simulacion-viva" class="border rounded bg-white shadow p-4 h-96 overflow-auto">
-                Cargando simulación...
+                    Cargando simulación...
                 </div>
+                </div>
+
             </div>
 
             </div>
+
 
     `,
-
-    /*
-    `
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 fade-in">
-            <div class="lg:col-span-1 bg-white rounded-lg p-6 shadow-lg border border-gray-200">
-                <h2 class="text-xl font-bold mb-4 text-mexibus-dark">Control de Unidades</h2>
-                <div class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Unidad ID</label>
-                        <select id="input-unidad-id" class="w-full border rounded-md px-3 py-2">
-                        <option value="">-- Selecciona una unidad --</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium mb-2 text-gray-700">Ruta</label>
-                        <select id="input-ruta" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-mexibus-blue focus:outline-none text-gray-900">
-                            <option value="1">L1 - Abastos ↔ Azteca</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium mb-2 text-gray-700">Sentido</label>
-                        <select id="input-sentido" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-mexibus-blue focus:outline-none text-gray-900">
-                            <option value="IDA">IDA (Abastos → Azteca)</option>
-                            <option value="REGRESO">REGRESO (Azteca → Abastos)</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium mb-2 text-gray-700">Operador</label>
-                        <select id="input-operador" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-mexibus-blue focus:outline-none text-gray-900">
-                            <option value="">Cargando Operadores...</option>
-                        </select>
-                    </div>
-                    <div class="flex gap-2">
-                        <button onclick="moduloUnidades.meterUnidad()" class="flex-1 bg-mexibus-green hover:bg-opacity-90 text-gray-900 font-bold py-3 rounded-lg transition shadow">
-                            🚍 Meter
-                        </button>
-                        <button onclick="moduloUnidades.sacarUnidad()" class="flex-1 bg-red-500 hover:bg-red-600 font-bold py-3 rounded-lg transition shadow text-white">
-                            🚫 Sacar
-                        </button>
-                    </div>
-                </div>
-                <div id="msg-unidades" class="mt-4 p-3 rounded-lg text-sm font-medium hidden"></div>
-            </div>
-
-            <div class="lg:col-span-2 bg-white rounded-lg p-6 shadow-lg border border-gray-200">
-                <h2 class="text-xl font-bold mb-4 text-gray-900">Estado de Unidades</h2>
-                <div class="overflow-x-auto scrollbar-custom">
-                    <table class="w-full text-sm">
-                        <thead>
-                            <tr class="border-b-2 border-gray-300">
-                                <th class="text-left py-3 px-2 text-gray-700">ID</th>
-                                <th class="text-left py-3 px-2 text-gray-700">Sentido</th>
-                                <th class="text-left py-3 px-2 text-gray-700">Estado</th>
-                                <th class="text-left py-3 px-2 text-gray-700">Ubicación</th>
-                                <th class="text-left py-3 px-2 text-gray-700">Operador</th>
-                                <th class="text-left py-3 px-2 text-gray-700">Progreso</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tabla-unidades">
-                            <tr><td colspan="6" class="text-center py-8 text-gray-400">Cargando...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    `
-    */
-
     incidencias: () => `
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 fade-in">
             <!-- BANDEJA DE ENTRADA (Reemplaza al formulario) -->

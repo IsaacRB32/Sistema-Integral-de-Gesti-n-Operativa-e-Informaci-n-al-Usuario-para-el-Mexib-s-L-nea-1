@@ -70,7 +70,16 @@ const app = {
                 window.location.href = '/supervisor/login.html';
             }
         );
+    },
+    navegarA(vista) {
+        const root = document.getElementById("app-root");
+        root.innerHTML = VISTAS[vista]();
+
+        if (vista === "unidades") {
+            moduloUnidades.init();
+        }
     }
+
 };
 
 // Inicializar cuando el DOM esté listo
