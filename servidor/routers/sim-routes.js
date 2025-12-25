@@ -31,24 +31,52 @@ router.get("/sim/snapshot", async (_req, res) => {
  */
 router.post("/sim/entrar", async (req, res) => {
   try {
-    const { id_unidad, id_ruta, sentido, idx_tramo = 0, estado_inicial, dwell_seg } = req.body || {};
+    const {
+      id_unidad,
+      id_ruta,
+      sentido,
+      idx_tramo = 0,
+      estado_inicial,
+      dwell_seg,
+      velocidad, // ✅ ahora sí lo tomamos
+    } = req.body || {};
 
     if (!id_unidad || !id_ruta || !sentido) {
       return res.status(400).json({ ok: false, error: "id_unidad, id_ruta y sentido son obligatorios" });
     }
+
+    // estado inicial
     const estado = (estado_inicial === "EN_ESTACION" ? "EN_ESTACION" : "EN_RUTA");
+
+    // dwell
     const dwellDate =
       estado === "EN_ESTACION" && Number(dwell_seg) > 0
         ? new Date(Date.now() + Number(dwell_seg) * 1000)
         : null;
 
+    // ✅ velocidad (opcional, pero si viene debe ser válida)
+    const velNum =
+      (velocidad !== undefined && velocidad !== null && velocidad !== "")
+        ? Number(velocidad)
+        : null;
+
+    if (velNum !== null && (!Number.isFinite(velNum) || velNum < 0)) {
+      return res.status(400).json({ ok: false, error: "velocidad inválida (>= 0)" });
+    }
+
     const upd = await pool.query(
       `UPDATE UnidadesMB
-         SET id_ruta=$1, sentido=$2, en_circuito=TRUE,
-             estado_unidad=$3, idx_tramo=$4, progreso=0, dwell_hasta=$5
-       WHERE id_unidad=$6
+         SET id_ruta=$1,
+             sentido=$2,
+             en_circuito=TRUE,
+             estado_unidad=$3,
+             idx_tramo=$4,
+             progreso=0,
+             dwell_hasta=$5,
+             velocidad = COALESCE($6, velocidad)  -- ✅ si viene, se guarda; si no, conserva
+       WHERE id_unidad=$7
        RETURNING id_unidad`,
-      [id_ruta, sentido, estado, idx_tramo, dwellDate, id_unidad]
+      [id_ruta, sentido, estado, idx_tramo, dwellDate, velNum, id_unidad]
     );
 
     if (upd.rowCount === 0) {
@@ -58,7 +86,7 @@ router.post("/sim/entrar", async (req, res) => {
     await pool.query(
       `INSERT INTO EventosUnidad (id_unidad, tipo, detalle)
        VALUES ($1, 'ENTRAR', $2::jsonb)`,
-      [id_unidad, JSON.stringify({ id_ruta, sentido, idx_tramo, estado_inicial: estado, dwell_hasta: dwellDate })]
+      [id_unidad, JSON.stringify({ id_ruta, sentido, idx_tramo, estado_inicial: estado, dwell_hasta: dwellDate, velocidad: velNum })]
     );
 
     res.json({ ok: true });

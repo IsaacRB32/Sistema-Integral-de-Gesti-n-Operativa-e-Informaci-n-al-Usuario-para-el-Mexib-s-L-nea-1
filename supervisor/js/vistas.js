@@ -148,79 +148,79 @@ const VISTAS = {
             <!-- 2) Operaciones -->
             <div id="seccion-unidades-operaciones" class="hidden">
 
-            <!-- Contenedor en 2 columnas (en desktop) -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+            <!-- Contenedor 40% / 60% (desktop) -->
+            <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
 
-                <!-- IZQUIERDA: Control de Unidades -->
-                <div class="bg-white rounded shadow border p-4">
-                    <h3 class="font-semibold mb-4">Control de Unidades</h3>
+            <!-- IZQUIERDA: Control de Unidades (40%) -->
+            <div class="bg-white rounded shadow border p-4 lg:col-span-2">
+                <h3 class="font-semibold mb-4">Control de Unidades</h3>
 
-                    <div id="msg-unidades" class="hidden border p-3 rounded mb-3"></div>
+                <div id="msg-unidades" class="hidden border p-3 rounded mb-3"></div>
 
-                    <!-- ====== METER UNIDAD ====== -->
-                    <div class="mb-6">
-                    <h4 class="font-semibold mb-3">Meter unidad</h4>
+                <!-- ====== METER UNIDAD ====== -->
+                <div class="mb-6">
+                <h4 class="font-semibold mb-3">Meter unidad</h4>
 
-                    <label class="block text-sm font-medium mb-1">Unidad</label>
-                    <select id="input-unidad-id" class="border rounded px-3 py-2 w-full mb-4">
-                        <option value="">Cargando unidades...</option>
-                    </select>
+                <label class="block text-sm font-medium mb-1">Unidad</label>
+                <select id="input-unidad-id" class="border rounded px-3 py-2 w-full mb-4">
+                    <option value="">Cargando unidades...</option>
+                </select>
 
-                    <!-- Como tu JS manda id_ruta, agrega un input oculto fijo -->
-                    <input type="hidden" id="input-ruta" value="1" />
+                <input type="hidden" id="input-ruta" value="1" />
 
-                    <label class="block text-sm font-medium mb-1">Sentido</label>
-                    <select id="input-sentido" class="border rounded px-3 py-2 w-full mb-4">
-                        <option value="IDA">IDA (Abastos → Azteca)</option>
-                        <option value="REGRESO">REGRESO (Azteca → Abastos)</option>
-                    </select>
+                <label class="block text-sm font-medium mb-1">Sentido</label>
+                <select id="input-sentido" class="border rounded px-3 py-2 w-full mb-4">
+                    <option value="IDA">IDA (Abastos → Azteca)</option>
+                    <option value="REGRESO">REGRESO (Azteca → Abastos)</option>
+                </select>
 
-                    <label class="block text-sm font-medium mb-1">Operador</label>
-                    <select id="input-operador" class="border rounded px-3 py-2 w-full mb-4">
-                        <option value="">-- Sin asignar --</option>
-                    </select>
+                <label class="block text-sm font-medium mb-1">Operador</label>
+                <select id="input-operador" class="border rounded px-3 py-2 w-full mb-4">
+                    <option value="">-- Sin asignar --</option>
+                </select>
 
-                    <label class="block text-sm font-medium mb-1">Velocidad</label>
-                    <input id="input-velocidad"
-                            type="number"
-                            min="0"
-                            step="0.1"
-                            value="0.8"
-                            class="border rounded px-3 py-2 w-full mb-4"
-                            placeholder="Ej: 0.8">
+                <label class="block text-sm font-medium mb-1">Velocidad</label>
+                <input id="input-velocidad"
+                        type="number"
+                        min="0"
+                        step="0.1"
+                        value="0.8"
+                        class="border rounded px-3 py-2 w-full mb-4"
+                        placeholder="Ej: 0.8">
 
-                    <button class="bg-green-500 text-white px-4 py-2 rounded w-full"
-                            onclick="meterUnidad()">
-                        🚌 Meter
-                    </button>
-                    </div>
+                <button class="bg-green-500 text-white px-4 py-2 rounded w-full"
+                        onclick="meterUnidad()">
+                    🚌 Meter
+                </button>
+                </div>
 
-                    <hr class="my-4">
+                <hr class="my-4">
 
-                    <!-- ====== SACAR UNIDAD ====== -->
-                    <div>
-                    <h4 class="font-semibold mb-3">Sacar unidad</h4>
+                <!-- ====== SACAR UNIDAD ====== -->
+                <div>
+                <h4 class="font-semibold mb-3">Sacar unidad</h4>
 
-                    <label class="block text-sm font-medium mb-1">Unidad (en circuito)</label>
-                    <select id="input-unidad-id-sacar" class="border rounded px-3 py-2 w-full mb-4">
-                        <option value="">Cargando unidades en circuito...</option>
-                    </select>
+                <label class="block text-sm font-medium mb-1">Unidad (en circuito)</label>
+                <select id="input-unidad-id-sacar" class="border rounded px-3 py-2 w-full mb-4">
+                    <option value="">Cargando unidades en circuito...</option>
+                </select>
 
-                    <button class="bg-red-500 text-white px-4 py-2 rounded w-full"
-                            onclick="sacarUnidad()">
-                        ⛔ Sacar
-                    </button>
-                    </div>
-                <!-- DERECHA: Simulación en vivo dentro de Operaciones -->
-                <div class="bg-white rounded shadow border p-4">
+                <button class="bg-red-500 text-white px-4 py-2 rounded w-full"
+                        onclick="sacarUnidad()">
+                    ⛔ Sacar
+                </button>
+                </div>
+            </div> <!-- ✅ CIERRE CORRECTO DEL PANEL IZQUIERDO -->
+
+            <!-- DERECHA: Simulación en vivo (60%) -->
+            <div class="bg-white rounded shadow border p-4 lg:col-span-3">
                 <h3 class="font-semibold mb-2">Simulación en vivo</h3>
                 <div id="simulacion-viva" class="border rounded bg-white shadow p-4 h-96 overflow-auto">
-                    Cargando simulación...
+                Cargando simulación...
                 </div>
-                </div>
-
             </div>
 
+            </div>
             </div>
 
 
