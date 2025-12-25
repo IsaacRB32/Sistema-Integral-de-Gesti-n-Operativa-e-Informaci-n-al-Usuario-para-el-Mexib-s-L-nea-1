@@ -3,22 +3,196 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Simulación Mexibús L1</title>
+  <title>Visualización Mexibús L1 - Recorrido en Tiempo Real</title>
   <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-  <h1>Simulación Mexibús L1</h1>
-  <p>Recorrido Central de Abastos a Ciudad Azteca</p>
-
-  <div id="simulacion-container">
-    <!-- La visualización lineal se insertará aquí dinámicamente -->
-    <canvas id="canvasSim" width="800" height="300"></canvas>
+  <!-- Contenedor Principal de Visualización -->
+  <div class="visualizacion-container">
+    <!-- Cabecera Informativa -->
+    <div class="visualizacion-header">
+      <div class="header-left">
+        <div class="logo-brt">
+          <div class="logo-icon">
+            <i class="fas fa-bus"></i>
+          </div>
+          <div class="logo-text">
+            <h1>Mexibús Línea 1</h1>
+            <p class="route-info">Central de Abastos ↔ Ciudad Azteca • 18 estaciones • 42.5 km</p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="header-center">
+        <div class="simulation-controls">
+          <button class="control-btn" id="speedDown">
+            <i class="fas fa-minus"></i>
+          </button>
+          <div class="speed-display">
+            <span id="currentSpeed">1.0x</span>
+            <small>Velocidad</small>
+          </div>
+          <button class="control-btn" id="speedUp">
+            <i class="fas fa-plus"></i>
+          </button>
+          <button class="control-btn btn-play" id="toggleSim">
+            <i class="fas fa-pause" id="playIcon"></i>
+          </button>
+        </div>
+      </div>
+      
+      <div class="header-right">
+        <div class="time-display">
+          <i class="fas fa-clock"></i>
+          <span id="currentTime">--:--:--</span>
+        </div>
+        <div class="sim-status">
+          <div class="status-indicator active"></div>
+          <span>SIMULACIÓN ACTIVA</span>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Visualización Principal -->
+    <div class="main-visualization">
+      <!-- Línea del Recorrido -->
+      <div class="route-container">
+        <div class="route-line">
+          <!-- Marcadores de kilómetros -->
+          <div class="km-markers">
+            <div class="km-marker" style="left: 0%;">0 km</div>
+            <div class="km-marker" style="left: 25%;">10 km</div>
+            <div class="km-marker" style="left: 50%;">21 km</div>
+            <div class="km-marker" style="left: 75%;">32 km</div>
+            <div class="km-marker" style="left: 100%;">42.5 km</div>
+          </div>
+          
+          <!-- Línea principal -->
+          <div class="line" id="mainLine">
+            <div class="line-fill" id="lineFill"></div>
+            <div class="line-glow"></div>
+          </div>
+          
+          <!-- Direcciones -->
+          <div class="directions">
+            <div class="direction direction-ida">
+              <div class="direction-arrow">
+                <i class="fas fa-arrow-right"></i>
+              </div>
+              <div class="direction-label">IDA</div>
+            </div>
+            <div class="direction direction-regreso">
+              <div class="direction-arrow">
+                <i class="fas fa-arrow-left"></i>
+              </div>
+              <div class="direction-label">REGRESO</div>
+            </div>
+          </div>
+          
+          <!-- Contenedor de estaciones -->
+          <div class="stations-container" id="stationsContainer">
+            <!-- Estaciones generadas dinámicamente -->
+          </div>
+          
+          <!-- Contenedor de unidades -->
+          <div class="units-container" id="unitsContainer">
+            <!-- Unidades generadas dinámicamente -->
+          </div>
+        </div>
+      </div>
+      
+      <!-- Panel de Control Lateral -->
+      <div class="control-panel">
+        <!-- Estado de las Unidades -->
+        <div class="panel-section">
+          <h3><i class="fas fa-bus"></i> Unidades Activas <span class="badge" id="unitCount">0</span></h3>
+          <div class="units-status" id="unitsStatus">
+            <!-- Estado generado dinámicamente -->
+          </div>
+        </div>
+        
+        <!-- Información de la Unidad Seleccionada -->
+        <div class="panel-section">
+          <h3><i class="fas fa-info-circle"></i> Información de Unidad</h3>
+          <div class="unit-info" id="unitInfo">
+            <div class="empty-state">
+              <i class="fas fa-mouse-pointer"></i>
+              <p>Selecciona una unidad para ver detalles</p>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Estadísticas Rápidas -->
+        <div class="panel-section">
+          <h3><i class="fas fa-chart-bar"></i> Estadísticas</h3>
+          <div class="quick-stats">
+            <div class="stat-item">
+              <div class="stat-icon en-ruta">
+                <i class="fas fa-road"></i>
+              </div>
+              <div class="stat-content">
+                <div class="stat-value" id="statEnRuta">0</div>
+                <div class="stat-label">En Ruta</div>
+              </div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-icon en-estacion">
+                <i class="fas fa-map-marker-alt"></i>
+              </div>
+              <div class="stat-content">
+                <div class="stat-value" id="statEnEstacion">0</div>
+                <div class="stat-label">En Estación</div>
+              </div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-icon incidencia">
+                <i class="fas fa-exclamation-triangle"></i>
+              </div>
+              <div class="stat-content">
+                <div class="stat-value" id="statIncidencia">0</div>
+                <div class="stat-label">Incidencia</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Pie de Página -->
+    <div class="visualizacion-footer">
+      <div class="legend">
+        <div class="legend-title"><i class="fas fa-key"></i> Leyenda</div>
+        <div class="legend-items">
+          <div class="legend-item">
+            <div class="legend-color" style="background: #2ecc71;"></div>
+            <span>En Ruta</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color" style="background: #f39c12;"></div>
+            <span>En Estación</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color" style="background: #3498db;"></div>
+            <span>En Cola</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color" style="background: #e74c3c;"></div>
+            <span>Incidencia</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="footer-info">
+        <span id="lastUpdate">Última actualización: --:--:--</span>
+        <span class="connection-status connected">
+          <i class="fas fa-signal"></i> Conectado al servidor
+        </span>
+      </div>
+    </div>
   </div>
 
-  <!-- Panel de estado -->
-  <div id="panel"></div>
-
   <script src="/socket.io/socket.io.js"></script>
-  <script src="script.js"></script>
+  <script src="script-brt.js"></script>
 </body>
 </html>
