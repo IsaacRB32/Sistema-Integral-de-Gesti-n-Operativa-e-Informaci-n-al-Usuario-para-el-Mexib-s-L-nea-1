@@ -161,7 +161,6 @@ fun InicioTabContent(homeViewModel: HomeViewModel = viewModel()) {
                 .border(2.dp, Color.White, RoundedCornerShape(24.dp))
         ) {
             MiniRecorridoLinea1(
-                estaciones = estacionesLinea1,
                 modifier = Modifier.fillMaxSize()
             )
         }
@@ -232,11 +231,11 @@ fun IncidenciasListTabContent(homeViewModel: HomeViewModel = viewModel()) {
 // PESTAÑA 3: MAPA COMPLETO CON ZOOM
 @Composable
 fun MapaFullTabContent() {
+    // CORRECCIÓN: Borramos el parámetro "estaciones = ..."
+    // Al dejarlo vacío, usará automáticamente la lista 'estacionesLinea1Full' correcta.
     MiniRecorridoLinea1FullScreen(
-        estaciones = estacionesLinea1,
         modifier = Modifier.fillMaxSize()
     )
-
 }
 
 // PESTAÑA 4: AJUSTES (Sin cambios mayores)

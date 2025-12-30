@@ -15,15 +15,38 @@ import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 
 @Composable
 fun MiniRecorridoLinea1(
-    estaciones: List<EstacionLinea>,
+    estaciones: List<EstacionLineaFull> = estacionesLinea1Full,
     modifier: Modifier = Modifier
 ) {
-    var scale by remember { mutableStateOf(1f) }
-    var offset by remember { mutableStateOf(Offset.Zero) }
+    // Obtenemos la altura en pixeles para calcular el centro exacto
+    val density = LocalDensity.current
+    val mapHeightPx = with(density) { 280.dp.toPx() }
+
+    // 1. ZOOM: Mantenemos el zoom mediano que te gustó
+    var scale by remember { mutableFloatStateOf(2.3f) }
+
+    // 2. OFFSET (POSICIÓN): AQUÍ ESTÁ LA MAGIA
+    // Ciudad Azteca está en la posición Y=0.9 (90% abajo).
+    // Queremos que se vea en la posición Y=0.8 (80% de la pantalla, cerca del borde inferior).
+    // Fórmula: Desplazamiento = (PosiciónDeseada - Centro) - (PosiciónOriginal - Centro) * Zoom
+    // Cálculo: (0.8 - 0.5) - (0.9 - 0.5) * 2.3  =>  0.3 - (0.4 * 2.3)  =>  0.3 - 0.92 = -0.62
+    // Resultado: Tenemos que subir el mapa un 62% de su altura.
+    var offset by remember {
+        mutableStateOf(Offset(0f, -mapHeightPx * 0.02f))
+    }
+
+    // Ruta Recta (Vertical Centrada)
+    val pathRecto = remember {
+        listOf(
+            Offset(0.7f, 0.90f), // Inicio (Cd. Azteca) - Abajo
+            Offset(0.7f, 0.10f)  // Fin (Central de Abastos) - Arriba
+        )
+    }
 
     Canvas(
         modifier = modifier
@@ -32,9 +55,16 @@ fun MiniRecorridoLinea1(
             .clip(RoundedCornerShape(24.dp))
             .background(Color.White)
             .pointerInput(Unit) {
-                detectTransformGestures { centroid, pan, zoom, _ ->
-                    scale = (scale * zoom).coerceIn(1f, 3f)
-                    offset += pan
+                detectTransformGestures { _, pan, zoom, _ ->
+                    scale = (scale * zoom).coerceIn(1f, 4f)
+
+                    // Si el usuario aleja mucho el mapa (zoom out), regresamos a la posición inicial (Azteca)
+                    if (scale < 1.1f) {
+                        scale = 2.3f // Reset al zoom original
+                        offset = Offset(0f, -mapHeightPx * 0.62f) // Reset a la posición original
+                    } else {
+                        offset += pan
+                    }
                 }
             }
     ) {
@@ -44,14 +74,8 @@ fun MiniRecorridoLinea1(
         val baseScale = 0.85f
         val center = Offset(w / 2f, h / 2f)
 
-        val verticalStretch = 1.8f  //+1 cm visual (ajustable)
-
         fun map(p: Offset): Offset {
-            val yCentered = (p.y - 0.5f) * verticalStretch + 0.5f
-            return Offset(
-                p.x * w,
-                yCentered * h
-            )
+            return Offset(p.x * w, p.y * h)
         }
 
         withTransform({
@@ -60,47 +84,88 @@ fun MiniRecorridoLinea1(
             translate(-center.x, -center.y)
         }) {
 
-            // DIBUJO DE LA RUTA
-            for (i in 0 until linea1Path.size - 1) {
+            // --- 1. LÍNEAS RECTAS ---
+            val strokeW = 16f
+            val separation = 9f
+
+            for (i in 0 until pathRecto.size - 1) {
+                val start = map(pathRecto[i])
+                val end = map(pathRecto[i + 1])
+
+                // Línea Express (Izquierda)
                 drawLine(
-                    color = Color(0xFF9BE645),
-                    start = map(linea1Path[i]),
-                    end = map(linea1Path[i + 1]),
-                    strokeWidth = 20f
+                    color = ColorExpress,
+                    start = Offset(start.x - separation, start.y),
+                    end = Offset(end.x - separation, end.y),
+                    strokeWidth = strokeW,
+                    cap = androidx.compose.ui.graphics.StrokeCap.Round
+                )
+
+                // Línea Ordinaria (Derecha)
+                drawLine(
+                    color = ColorOrdinaria,
+                    start = Offset(start.x + separation, start.y),
+                    end = Offset(end.x + separation, end.y),
+                    strokeWidth = strokeW,
+                    cap = androidx.compose.ui.graphics.StrokeCap.Round
                 )
             }
 
-            // ESTACIONES
+            // --- 2. ESTACIONES ---
+            var totalLength = 0f
+            val segmentLengths = FloatArray(pathRecto.size - 1)
+            for (i in 0 until pathRecto.size - 1) {
+                val dist = (pathRecto[i+1] - pathRecto[i]).getDistance()
+                segmentLengths[i] = dist
+                totalLength += dist
+            }
+
             estaciones.forEachIndexed { index, est ->
                 val tGlobal = index.toFloat() / (estaciones.size - 1)
-                val idx = tGlobal * (linea1Path.size - 1)
-                val i = idx.toInt().coerceAtMost(linea1Path.size - 2)
-                val t = idx - i
+                val distanceTarget = tGlobal * totalLength
 
-                val p1 = linea1Path[i]
-                val p2 = linea1Path[i + 1]
+                var currentDist = 0f
+                var segmentIndex = 0
+                var tSegment = 0f
 
-                val interp = Offset(
-                    p1.x + (p2.x - p1.x) * t,
-                    p1.y + (p2.y - p1.y) * t
+                for (i in segmentLengths.indices) {
+                    if (currentDist + segmentLengths[i] >= distanceTarget) {
+                        segmentIndex = i
+                        val distInSegment = distanceTarget - currentDist
+                        tSegment = distInSegment / segmentLengths[i]
+                        break
+                    }
+                    currentDist += segmentLengths[i]
+                }
+
+                if (tGlobal == 1f) {
+                    segmentIndex = segmentLengths.lastIndex
+                    tSegment = 1f
+                }
+
+                val p1 = pathRecto[segmentIndex]
+                val p2 = pathRecto[segmentIndex + 1]
+
+                val rawPos = Offset(
+                    p1.x + (p2.x - p1.x) * tSegment,
+                    p1.y + (p2.y - p1.y) * tSegment
                 )
 
-                val pos = map(interp)
+                val pos = map(rawPos)
 
-                drawCircle(
-                    color = Color.DarkGray,
-                    radius = 12f,
-                    center = pos
-                )
+                drawCircle(Color.DarkGray, radius = 10f, center = pos)
+                drawCircle(Color.White, radius = 5f, center = pos)
 
                 drawContext.canvas.nativeCanvas.drawText(
                     est.nombre,
-                    pos.x + 18f,
-                    pos.y + 10f,
+                    pos.x + 20f,
+                    pos.y + 8f,
                     android.graphics.Paint().apply {
-                        textSize = 32f
+                        // Texto responsivo al zoom
+                        textSize = 34f / (scale * 0.7f)
                         isAntiAlias = true
                         color = android.graphics.Color.DKGRAY
+                        typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
                     }
                 )
             }
