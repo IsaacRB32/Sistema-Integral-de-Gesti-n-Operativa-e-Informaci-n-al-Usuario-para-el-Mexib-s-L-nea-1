@@ -1,5 +1,5 @@
 // supervisor/js/simulacion.js
-// Visualización lineal avanzada para monitoreo (sin simulación circular)
+// Visualización lineal avanzada para monitoreo (IDA arriba, estaciones al centro, REGRESO abajo)
 
 const moduloSimulacion = {
   // =========================
@@ -16,12 +16,19 @@ const moduloSimulacion = {
   CELL_PX: 140,
   MARGIN_PX: 70,
 
-  // Posiciones verticales (px) dentro del track
-  Y_LINE: 26,
-  Y_STATION: 18,
-  Y_LABEL: 40,
-  Y_LANE_IDA: 95,
-  Y_LANE_REG: 132,
+  // =========================
+  // Geometría (nuevo layout)
+  //   - IDA arriba
+  //   - Estaciones al centro
+  //   - REGRESO abajo
+  // =========================
+  TRACK_H: 210,
+
+  Y_LANE_IDA: 26,      // carril superior (IDA)
+  Y_LINE: 100,         // línea central (estaciones)
+  Y_STATION: 92,       // nodos (estaciones) sobre la línea
+  Y_LABEL: 112,        // etiquetas de estaciones
+  Y_LANE_REG: 174,     // carril inferior (REGRESO)
 
   // =========================
   // Estado interno
@@ -45,29 +52,21 @@ const moduloSimulacion = {
   _focusId: "",
 
   // =========================
-  // API pública (app.js)
+  // API pública
   // =========================
   iniciar() {
-    // Contenedores base
     const simContainer = document.getElementById("sim-container");
     const colaLineal = document.getElementById("cola-lineal");
     if (!simContainer || !colaLineal) return;
 
-    // Quitar simulación circular (sin romper si aún existe en la vista)
     this._removerCanvas();
 
-    // Re-vincular DOM (la vista se re-renderiza al cambiar de tab)
     this._dom.simContainer = simContainer;
     this._dom.colaLineal = colaLineal;
     this._markerMap.clear();
 
-    // Construir UI mejorada (toolbar + track)
     this._asegurarUI();
-
-    // Render base (estaciones, líneas, carriles)
     this._renderBaseTrack();
-
-    // Snapshot inicial (para que no dependa 100% del socket)
     this._cargarSnapshot();
   },
 
@@ -78,7 +77,6 @@ const moduloSimulacion = {
     this._actualizarTrack(unidades);
     this.actualizarTabla(unidades);
 
-    // Timestamp de actualización
     if (this._dom.lblUpdated) {
       const d = new Date();
       const hh = String(d.getHours()).padStart(2, "0");
@@ -87,7 +85,6 @@ const moduloSimulacion = {
       this._dom.lblUpdated.textContent = `Actualizado: ${hh}:${mm}:${ss}`;
     }
 
-    // Estadísticas rápidas
     if (this._dom.lblStats) {
       const stats = { EN_RUTA: 0, EN_ESTACION: 0, EN_COLA: 0, INCIDENCIA: 0 };
       unidades.forEach((u) => {
@@ -98,7 +95,6 @@ const moduloSimulacion = {
         `Unidades: ${unidades.length} | Ruta: ${stats.EN_RUTA} | Estación: ${stats.EN_ESTACION} | Cola: ${stats.EN_COLA} | Incidencia: ${stats.INCIDENCIA}`;
     }
 
-    // Seguir unidad enfocada
     if (this._follow && this._focusId) {
       this._centrarEnUnidad(this._focusId);
     }
@@ -116,12 +112,11 @@ const moduloSimulacion = {
   },
 
   // =========================
-  // UI / DOM construction
+  // UI / DOM
   // =========================
   _asegurarUI() {
     const { simContainer, colaLineal } = this._dom;
 
-    // Toolbar (si no existe, se crea)
     let toolbar = document.getElementById("sim-toolbar");
     if (!toolbar) {
       toolbar = document.createElement("div");
@@ -145,8 +140,6 @@ const moduloSimulacion = {
             <span class="flex items-center gap-2 bg-white border rounded-full px-3 py-1">
               <span class="w-3 h-3 rounded-full" style="background:${this.colores.INCIDENCIA}"></span>Incidencia
             </span>
-            <span class="flex items-center gap-2 bg-white border rounded-full px-3 py-1 text-gray-600">IDA →</span>
-            <span class="flex items-center gap-2 bg-white border rounded-full px-3 py-1 text-gray-600">← REGRESO</span>
           </div>
         </div>
 
@@ -167,21 +160,17 @@ const moduloSimulacion = {
         </div>
       `;
 
-      // Insertar toolbar antes del track
       simContainer.insertBefore(toolbar, colaLineal);
     }
 
-    // Guardar refs toolbar
     this._dom.toolbar = toolbar;
     this._dom.selUnidad = document.getElementById("sim-select-unidad");
     this._dom.btnFollow = document.getElementById("sim-btn-follow");
     this._dom.lblUpdated = document.getElementById("sim-updated");
     this._dom.lblStats = document.getElementById("sim-stats");
 
-    // Bind events (re-bind seguro)
     if (this._dom.btnFollow) {
       this._dom.btnFollow.onclick = () => this.toggleFollow();
-      // restaurar estado visual
       this._dom.btnFollow.textContent = `Seguir: ${this._follow ? "ON" : "OFF"}`;
       this._dom.btnFollow.className = this._follow
         ? "px-4 py-2 rounded-lg bg-mexibus-blue text-white text-sm font-medium hover:opacity-90 transition"
@@ -197,11 +186,10 @@ const moduloSimulacion = {
       };
     }
 
-    // Convertir cola-lineal en “viewport” del track
+    // Convertir cola-lineal en viewport
     colaLineal.className =
       "relative p-0 bg-white rounded-lg border border-gray-200 overflow-x-auto scrollbar-custom";
     colaLineal.innerHTML = `<div id="sim-track-inner" class="relative"></div>`;
-
     this._dom.trackInner = document.getElementById("sim-track-inner");
   },
 
@@ -210,27 +198,15 @@ const moduloSimulacion = {
     const n = estaciones.length;
     if (!n || !this._dom.trackInner) return;
 
-    // Ancho total del track
     this._trackWidth = this.MARGIN_PX * 2 + this.CELL_PX * (n - 1);
     this._stationX = estaciones.map((_, i) => this.MARGIN_PX + i * this.CELL_PX);
 
-    // Reset del track
     const t = this._dom.trackInner;
     t.innerHTML = "";
     t.style.width = `${this._trackWidth}px`;
-    t.style.height = "170px";
+    t.style.height = `${this.TRACK_H}px`;
 
-    // Línea principal
-    const baseLine = document.createElement("div");
-    baseLine.className = "absolute rounded-full";
-    baseLine.style.left = `${this._stationX[0]}px`;
-    baseLine.style.top = `${this.Y_LINE}px`;
-    baseLine.style.height = "6px";
-    baseLine.style.width = `${this._stationX[n - 1] - this._stationX[0]}px`;
-    baseLine.style.background = "linear-gradient(90deg, rgba(229,231,235,1), rgba(209,213,219,1))";
-    t.appendChild(baseLine);
-
-    // Carriles (guías)
+    // Carril IDA (arriba)
     const laneIda = document.createElement("div");
     laneIda.className = "absolute";
     laneIda.style.left = `${this._stationX[0]}px`;
@@ -240,6 +216,27 @@ const moduloSimulacion = {
     laneIda.style.borderTop = "2px dashed rgba(209,213,219,0.9)";
     t.appendChild(laneIda);
 
+    // Etiqueta IDA
+    const laneLabelIda = document.createElement("div");
+    laneLabelIda.className =
+      "absolute text-[11px] font-semibold text-gray-600 bg-white border border-gray-200 rounded px-2 py-1";
+    laneLabelIda.style.left = "10px";
+    laneLabelIda.style.top = `${this.Y_LANE_IDA - 12}px`;
+    laneLabelIda.textContent = "IDA →";
+    t.appendChild(laneLabelIda);
+
+    // Línea central (estaciones)
+    const baseLine = document.createElement("div");
+    baseLine.className = "absolute rounded-full";
+    baseLine.style.left = `${this._stationX[0]}px`;
+    baseLine.style.top = `${this.Y_LINE}px`;
+    baseLine.style.height = "6px";
+    baseLine.style.width = `${this._stationX[n - 1] - this._stationX[0]}px`;
+    baseLine.style.background =
+      "linear-gradient(90deg, rgba(229,231,235,1), rgba(209,213,219,1))";
+    t.appendChild(baseLine);
+
+    // Carril REGRESO (abajo)
     const laneReg = document.createElement("div");
     laneReg.className = "absolute";
     laneReg.style.left = `${this._stationX[0]}px`;
@@ -249,15 +246,7 @@ const moduloSimulacion = {
     laneReg.style.borderTop = "2px dashed rgba(209,213,219,0.9)";
     t.appendChild(laneReg);
 
-    // Etiquetas de carril (fijas al inicio)
-    const laneLabelIda = document.createElement("div");
-    laneLabelIda.className =
-      "absolute text-[11px] font-semibold text-gray-600 bg-white border border-gray-200 rounded px-2 py-1";
-    laneLabelIda.style.left = "10px";
-    laneLabelIda.style.top = `${this.Y_LANE_IDA - 12}px`;
-    laneLabelIda.textContent = "IDA →";
-    t.appendChild(laneLabelIda);
-
+    // Etiqueta REGRESO
     const laneLabelReg = document.createElement("div");
     laneLabelReg.className =
       "absolute text-[11px] font-semibold text-gray-600 bg-white border border-gray-200 rounded px-2 py-1";
@@ -270,7 +259,6 @@ const moduloSimulacion = {
     estaciones.forEach((nombre, i) => {
       const x = this._stationX[i];
 
-      // Nodo
       const node = document.createElement("div");
       node.className = "absolute";
       node.style.left = `${x}px`;
@@ -281,10 +269,8 @@ const moduloSimulacion = {
       `;
       t.appendChild(node);
 
-      // Etiqueta (nombre)
       const label = document.createElement("div");
-      label.className =
-        "absolute text-[11px] text-gray-700 leading-tight text-center";
+      label.className = "absolute text-[11px] text-gray-700 leading-tight text-center";
       label.style.left = `${x}px`;
       label.style.top = `${this.Y_LABEL}px`;
       label.style.width = "120px";
@@ -293,7 +279,7 @@ const moduloSimulacion = {
       label.innerHTML = this._wrapStationName(nombre);
       t.appendChild(label);
 
-      // Conector sutil (vertical)
+      // Conector sutil hacia etiquetas (mantiene legibilidad)
       const stem = document.createElement("div");
       stem.className = "absolute";
       stem.style.left = `${x}px`;
@@ -307,21 +293,18 @@ const moduloSimulacion = {
   },
 
   // =========================
-  // Track update (marcadores)
+  // Marcadores
   // =========================
   _actualizarTrack(unidades) {
     const estaciones = this._getEstaciones();
     const n = estaciones.length;
     if (!n) return;
 
-    // Actualizar select de unidades (si existe)
     this._actualizarSelectUnidades(unidades);
 
-    // Preparar stacking para evitar encimados
-    const stackMapIda = new Map(); // bucket -> count
-    const stackMapReg = new Map(); // bucket -> count
+    const stackMapIda = new Map();
+    const stackMapReg = new Map();
 
-    // Render / Update each unit marker
     unidades.forEach((u) => {
       const id = String(u?.id_unidad ?? "");
       if (!id) return;
@@ -334,8 +317,7 @@ const moduloSimulacion = {
 
       const pos = this._posicionPixel(idx, prog, sentido, n);
 
-      // bucket para stacking
-      const bucket = Math.round(pos.x / 24); // granularidad
+      const bucket = Math.round(pos.x / 24);
       const isReg = sentido === "REGRESO";
       const map = isReg ? stackMapReg : stackMapIda;
       const c = (map.get(bucket) || 0);
@@ -357,10 +339,10 @@ const moduloSimulacion = {
         el.style.border = "2px solid rgba(0,0,0,0.10)";
         el.style.transform = "translate(-50%, -50%)";
         el.style.cursor = "pointer";
-        el.style.transition = "left 600ms ease, top 350ms ease, box-shadow 250ms ease, transform 250ms ease";
+        el.style.transition =
+          "left 600ms ease, top 350ms ease, box-shadow 250ms ease, transform 250ms ease";
         el.style.zIndex = "30";
 
-        // Click para enfocar
         el.onclick = () => {
           this._focusId = id;
           if (this._dom.selUnidad) this._dom.selUnidad.value = id;
@@ -372,36 +354,33 @@ const moduloSimulacion = {
         this._markerMap.set(id, el);
       }
 
-      // Estilo por estado
       const bg = this.colores[estado] || "#6B7280";
       el.style.background = bg;
       el.style.color = (estado === "EN_RUTA") ? "#000" : "#fff";
       el.textContent = id;
 
-      // Posición
       el.style.left = `${pos.x}px`;
       el.style.top = `${y}px`;
 
-      // Tooltip
       el.title = this._tooltipUnidad(u, estaciones);
 
-      // Indicador sentido (pequeña flecha)
-      // (Se agrega como pseudo “badge” interno con box-shadow)
       el.style.boxShadow = this._focusId === id
         ? "0 0 0 4px rgba(7,150,194,0.35), 0 10px 20px rgba(0,0,0,0.18)"
         : "0 10px 20px rgba(0,0,0,0.18)";
 
-      el.style.outline = "none";
-      el.style.position = "absolute";
+      el.style.transform = (this._focusId && this._focusId === id)
+        ? "translate(-50%, -50%) scale(1.06)"
+        : "translate(-50%, -50%) scale(1.0)";
 
-      // Pequeña marca de sentido (corner)
+      // Marca visual sutil de sentido (esquina)
       el.style.backgroundImage = sentido === "REGRESO"
         ? "linear-gradient(135deg, rgba(0,0,0,0.22) 0%, rgba(0,0,0,0.0) 40%)"
         : "linear-gradient(225deg, rgba(0,0,0,0.22) 0%, rgba(0,0,0,0.0) 40%)";
     });
 
-    // Remover marcadores de unidades que ya no vienen
-    const idsActuales = new Set(unidades.map((u) => String(u?.id_unidad ?? "")).filter(Boolean));
+    const idsActuales = new Set(
+      unidades.map((u) => String(u?.id_unidad ?? "")).filter(Boolean)
+    );
     for (const [id, el] of this._markerMap.entries()) {
       if (!idsActuales.has(id)) {
         el.remove();
@@ -409,15 +388,11 @@ const moduloSimulacion = {
       }
     }
 
-    // Resaltar foco después del render (por si el DOM se recreó)
     this._resaltarFocus();
   },
 
   _posicionPixel(idx, prog, sentido, n) {
-    // idx indica el tramo “base” (entre estaciones idx -> idx+1 en IDA)
-    // Para REGRESO, se invierte el eje: (N-1-idx) es la estación equivalente en el track.
     const isReg = sentido === "REGRESO";
-
     const i0 = isReg ? (n - 1 - idx) : idx;
     const x0 = this._stationX[this._clampInt(i0, 0, n - 1)] || this.MARGIN_PX;
 
@@ -428,13 +403,11 @@ const moduloSimulacion = {
   },
 
   _stackOffsetY(k) {
-    // Evita encimado: 0, -10, +10, -20, +20, ...
     if (k <= 0) return 0;
     const step = 12;
     const m = Math.ceil(k / 2);
     const sign = (k % 2 === 1) ? -1 : 1;
     const off = sign * m * step;
-    // clamp suave para no salirse demasiado del carril
     return Math.max(-24, Math.min(24, off));
   },
 
@@ -444,9 +417,6 @@ const moduloSimulacion = {
       el.style.boxShadow = (this._focusId && this._focusId === id)
         ? "0 0 0 4px rgba(7,150,194,0.35), 0 10px 20px rgba(0,0,0,0.18)"
         : "0 10px 20px rgba(0,0,0,0.18)";
-      el.style.transform = (this._focusId && this._focusId === id)
-        ? "translate(-50%, -50%) scale(1.06)"
-        : "translate(-50%, -50%) scale(1.0)";
       el.style.zIndex = (this._focusId && this._focusId === id) ? "40" : "30";
     }
   },
@@ -456,7 +426,7 @@ const moduloSimulacion = {
     if (!el || !this._dom.colaLineal) return;
 
     const viewport = this._dom.colaLineal;
-    const left = el.offsetLeft; // relativo al trackInner
+    const left = el.offsetLeft;
     const target = left - viewport.clientWidth / 2;
 
     viewport.scrollTo({
@@ -469,28 +439,26 @@ const moduloSimulacion = {
     const sel = this._dom.selUnidad;
     if (!sel) return;
 
-    // Mantener selección actual
     const current = this._focusId || String(sel.value || "");
 
-    // Reconstruir opciones
-    const ids = Array.from(new Set(unidades.map((u) => String(u?.id_unidad ?? "")).filter(Boolean)))
-      .sort((a, b) => Number(a) - Number(b));
+    const ids = Array.from(
+      new Set(unidades.map((u) => String(u?.id_unidad ?? "")).filter(Boolean))
+    ).sort((a, b) => Number(a) - Number(b));
 
-    // Si el select ya contiene exactamente lo mismo, no re-renderizar
     const existing = Array.from(sel.querySelectorAll("option"))
       .map((o) => String(o.value))
       .filter((v) => v !== "");
+
     const same =
       existing.length === ids.length &&
       existing.every((v, i) => v === ids[i]);
 
     if (!same) {
-      sel.innerHTML = `<option value="">Todas</option>` + ids.map((id) =>
-        `<option value="${id}">#${id}</option>`
-      ).join("");
+      sel.innerHTML =
+        `<option value="">Todas</option>` +
+        ids.map((id) => `<option value="${id}">#${id}</option>`).join("");
     }
 
-    // Restaurar selección
     if (current) {
       sel.value = current;
       this._focusId = current;
@@ -501,7 +469,7 @@ const moduloSimulacion = {
   },
 
   // =========================
-  // Tabla inferior (corrige REGRESO)
+  // Tabla inferior
   // =========================
   actualizarTabla(unidades) {
     const panel = document.getElementById("panel-sim");
@@ -533,7 +501,6 @@ const moduloSimulacion = {
         const prog = this._clampNum(u?.progreso, 0, 0.9999);
         const pct = Math.round(prog * 100);
 
-        // Ubicación (corrige según sentido)
         const ubic = this._ubicacionTexto(idx, pct, estado, sentido, estaciones);
 
         return `
@@ -560,7 +527,6 @@ const moduloSimulacion = {
     const n = estaciones.length;
     const isReg = sentido === "REGRESO";
 
-    // Map idx_tramo a estación “actual” en el track
     const estIdx = isReg ? (n - 1 - idx) : idx;
     const estacion = estaciones[estIdx] || "Desconocida";
 
@@ -568,22 +534,16 @@ const moduloSimulacion = {
       return `En <strong>${estacion}</strong>`;
     }
 
-    // Siguiente estación depende del sentido
     let siguienteIdx;
-    if (!isReg) {
-      // IDA: idx -> idx+1
-      siguienteIdx = (estIdx + 1) % n;
-    } else {
-      // REGRESO: (n-1-idx) -> (n-2-idx)
-      siguienteIdx = (estIdx - 1 + n) % n;
-    }
+    if (!isReg) siguienteIdx = (estIdx + 1) % n;
+    else siguienteIdx = (estIdx - 1 + n) % n;
 
     const siguiente = estaciones[siguienteIdx] || "Desconocida";
     return `${estacion} → ${siguiente} (${pct}%)`;
   },
 
   // =========================
-  // Datos (snapshot)
+  // Snapshot
   // =========================
   async _cargarSnapshot() {
     try {
@@ -591,9 +551,7 @@ const moduloSimulacion = {
       if (!res.ok) return;
       const data = await res.json();
       if (Array.isArray(data)) this.actualizar(data);
-    } catch (_e) {
-      // Silencioso: el socket seguirá alimentando datos
-    }
+    } catch (_e) {}
   },
 
   // =========================
@@ -604,14 +562,12 @@ const moduloSimulacion = {
   },
 
   _wrapStationName(nombre) {
-    // Partir en máximo 2 líneas de forma legible
     const s = String(nombre || "");
     if (s.length <= 14) return s;
 
     const parts = s.split(" ");
-    if (parts.length === 1) return s; // palabra larga
+    if (parts.length === 1) return s;
 
-    // Construir 2 líneas equilibradas
     let l1 = "";
     let l2 = "";
     for (const p of parts) {
@@ -659,12 +615,8 @@ const moduloSimulacion = {
     const canvas = document.getElementById("canvasSim");
     if (!canvas) return;
 
-    // El canvas está dentro de un wrapper <div class="flex justify-center mb-6">...</div>
     const wrap = canvas.closest("div");
-    if (wrap && wrap.parentElement) {
-      wrap.remove();
-    } else {
-      canvas.remove();
-    }
+    if (wrap && wrap.parentElement) wrap.remove();
+    else canvas.remove();
   },
 };
