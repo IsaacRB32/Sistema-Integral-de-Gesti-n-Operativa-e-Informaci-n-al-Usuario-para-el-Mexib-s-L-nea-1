@@ -250,37 +250,37 @@ const VISTAS = {
     `,
 
     simulacion: () => `
-        <div class="bg-white rounded-lg p-6 shadow-lg border border-gray-200 fade-in">
-            <h2 class="text-xl font-bold mb-4 text-gray-900">Simulación en Tiempo Real</h2>
-            
-            <div id="sim-container" class="mb-6">
-                <div id="cola-lineal" class="flex justify-between items-center p-4 bg-gray-50 rounded-lg border border-gray-300 overflow-x-auto scrollbar-custom"></div>
-            </div>
+    <div class="bg-white rounded-lg p-6 shadow-lg border border-gray-200 fade-in">
+        <h2 class="text-xl font-bold mb-4 text-gray-900">Simulación en Tiempo Real</h2>
 
-            <div class="flex justify-center mb-6">
-                <canvas id="canvasSim" width="600" height="600" class="rounded-lg bg-gray-50 border border-gray-300"></canvas>
-            </div>
-
-            <div class="bg-gray-50 rounded-lg p-4 border border-gray-300">
-                <h3 class="font-bold mb-3 text-gray-900">Estado en Tiempo Real</h3>
-                <div class="overflow-x-auto scrollbar-custom">
-                    <table class="w-full text-sm">
-                        <thead>
-                            <tr class="border-b-2 border-gray-300">
-                                <th class="text-left py-2 px-2 text-gray-700">Unidad</th>
-                                <th class="text-left py-2 px-2 text-gray-700">Sentido</th>
-                                <th class="text-left py-2 px-2 text-gray-700">Estado</th>
-                                <th class="text-left py-2 px-2 text-gray-700">Ubicación</th>
-                            </tr>
-                        </thead>
-                        <tbody id="panel-sim">
-                            <tr><td colspan="4" class="text-center py-4 text-gray-400">Sin unidades</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+        <!-- El módulo JS insertará aquí el toolbar + el track -->
+        <div id="sim-container" class="mb-6">
+        <div id="cola-lineal" class="p-4 bg-gray-50 rounded-lg border border-gray-300 overflow-x-auto scrollbar-custom">
+            <div class="text-center py-4 text-gray-400 text-sm">Cargando estaciones...</div>
         </div>
+        </div>
+
+        <div class="bg-gray-50 rounded-lg p-4 border border-gray-300">
+        <h3 class="font-bold mb-3 text-gray-900">Estado en Tiempo Real</h3>
+        <div class="overflow-x-auto scrollbar-custom">
+            <table class="w-full text-sm">
+            <thead>
+                <tr class="border-b-2 border-gray-300">
+                <th class="text-left py-2 px-2 text-gray-700">Unidad</th>
+                <th class="text-left py-2 px-2 text-gray-700">Sentido</th>
+                <th class="text-left py-2 px-2 text-gray-700">Estado</th>
+                <th class="text-left py-2 px-2 text-gray-700">Ubicación</th>
+                </tr>
+            </thead>
+            <tbody id="panel-sim">
+                <tr><td colspan="4" class="text-center py-4 text-gray-400">Sin unidades</td></tr>
+            </tbody>
+            </table>
+        </div>
+        </div>
+    </div>
     `,
+
 
    operadores: () => `
     <div class="fade-in">
