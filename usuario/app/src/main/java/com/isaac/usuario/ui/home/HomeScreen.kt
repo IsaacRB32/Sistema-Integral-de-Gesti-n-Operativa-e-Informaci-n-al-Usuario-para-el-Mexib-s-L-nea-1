@@ -38,6 +38,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.isaac.usuario.ui.utils.tiempoTranscurrido
 import kotlinx.coroutines.delay
+import com.isaac.usuario.ui.recorrido.MiniRecorridoLinea1
+import com.isaac.usuario.ui.recorrido.MiniRecorridoLinea1FullScreen
+import com.isaac.usuario.ui.recorrido.estacionesLinea1
+
 // Asegúrate de tener tu ViewModel importado correctamente
 // import com.isaac.usuario.ui.home.HomeViewModel
 
@@ -102,14 +106,14 @@ fun InicioTabContent(homeViewModel: HomeViewModel = viewModel()) {
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            text = "¡Hola viajero!",
+            text = "¡Hola, pasajer@!",
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
             color = Color.Black,
             modifier = Modifier.fillMaxWidth()
         )
         Text(
-            text = "Recuerda tomar precauciones antes de salir",
+            text = "Recuerda tomar precauciones.",
             style = MaterialTheme.typography.bodyLarge,
             color = Color.Gray,
             modifier = Modifier.fillMaxWidth()
@@ -119,7 +123,7 @@ fun InicioTabContent(homeViewModel: HomeViewModel = viewModel()) {
 
         Text(
             text = "⚠️ Última incidencia reportada:",
-            style = MaterialTheme.typography.labelLarge,
+            style = MaterialTheme.typography.titleMedium,
             color = Color.DarkGray,
             modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
         )
@@ -143,25 +147,26 @@ fun InicioTabContent(homeViewModel: HomeViewModel = viewModel()) {
         Spacer(modifier = Modifier.height(32.dp))
 
         Text(
-            text = "Tu ubicación actual:",
+            text = "Consulta el estado del recorrido",
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)
         )
 
-        Image(
-            painter = painterResource(id = R.drawable.mapa),
-            contentDescription = "Mini mapa",
-            contentScale = ContentScale.Crop,
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(200.dp)
+                .height(300.dp)
                 .clip(RoundedCornerShape(24.dp))
                 .border(2.dp, Color.White, RoundedCornerShape(24.dp))
-        )
+        ) {
+            MiniRecorridoLinea1(
+                estaciones = estacionesLinea1,
+                modifier = Modifier.fillMaxSize()
+            )
+        }
     }
 }
-
 
 // PESTAÑA 2: LISTA DE INCIDENCIAS
 @Composable
@@ -227,60 +232,12 @@ fun IncidenciasListTabContent(homeViewModel: HomeViewModel = viewModel()) {
 // PESTAÑA 3: MAPA COMPLETO CON ZOOM
 @Composable
 fun MapaFullTabContent() {
-    // Variables de estado para el Zoom y el Pan (Movimiento)
-    var scale by remember { mutableFloatStateOf(1f) }
-    var offset by remember { mutableStateOf(Offset.Zero) }
+    MiniRecorridoLinea1FullScreen(
+        estaciones = estacionesLinea1,
+        modifier = Modifier.fillMaxSize()
+    )
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xFFEFEFEF))
-            // Detectar gestos en toda la caja
-            .pointerInput(Unit) {
-                detectTransformGestures { _, pan, zoom, _ ->
-                    // Actualizamos el zoom (limitamos para que no se haga microscópico ni gigante)
-                    scale = maxOf(1f, minOf(scale * zoom, 5f))
-                    // Actualizamos la posición (pan)
-                    // Si el zoom es 1 (original), no dejamos mover para que no se pierda la imagen
-                    val newOffset = if (scale == 1f) Offset.Zero else offset + pan
-                    offset = newOffset
-                }
-            },
-        contentAlignment = Alignment.Center
-    ) {
-        Image(
-            painter = painterResource(id = R.drawable.mapa),
-            contentDescription = "Mapa Completo",
-            contentScale = ContentScale.Fit,
-            modifier = Modifier
-                .fillMaxSize()
-                // Aquí aplicamos la transformación gráfica
-                .graphicsLayer(
-                    scaleX = scale,
-                    scaleY = scale,
-                    translationX = offset.x,
-                    translationY = offset.y
-                )
-        )
-
-        // Botón para resetear el zoom si el usuario se pierde
-        if (scale > 1f) {
-            FloatingActionButton(
-                onClick = {
-                    scale = 1f
-                    offset = Offset.Zero
-                },
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(16.dp),
-                containerColor = AppTealColor
-            ) {
-                Icon(Icons.Default.ZoomOutMap, contentDescription = "Reset Zoom", tint = Color.White)
-            }
-        }
-    }
 }
-
 
 // PESTAÑA 4: AJUSTES (Sin cambios mayores)
 @Composable
@@ -387,7 +344,7 @@ fun IncidentCard(data: IncidenciaData, esDestacada: Boolean, limitarDescripcion:
                 // Estación (Ubicación)
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
-                        Icons.Default.Place,
+                        Icons.Default.Timer,
                         contentDescription = null,
                         tint = Color.Gray,
                         modifier = Modifier.size(14.dp)

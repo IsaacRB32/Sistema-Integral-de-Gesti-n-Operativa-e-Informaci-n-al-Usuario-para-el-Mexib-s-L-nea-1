@@ -40,12 +40,13 @@ class IncidenciasViewModel : ViewModel() {
                 }
             }
 
-            //val url = "http://192.168.100.207:3000/api/sim/incidencia"
+            //IP de Fernando Aranda
+            val url = "http://192.168.100.207:3000/api/sim/incidencia"
 
             //----------------------------------------------
             //IP--ISAAC ROJAS BARRON
             //----------------------------------------------
-            val url = "http://192.168.0.97:3000/api/sim/incidencia"
+            //val url = "http://192.168.0.97:3000/api/sim/incidencia"
 
             val request = JsonObjectRequest(
                 Request.Method.POST,
