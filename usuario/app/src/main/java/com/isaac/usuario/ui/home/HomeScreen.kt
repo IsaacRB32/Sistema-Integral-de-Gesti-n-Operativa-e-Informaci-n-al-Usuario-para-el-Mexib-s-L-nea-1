@@ -54,8 +54,22 @@ data class IncidenciaData(
     val tiempo: String,
     val estacion: String,
     val descripcion: String,
-    val icono: ImageVector
+    val iconoRes: Int
 )
+
+fun iconoDrawablePorIncidencia(nombre: String): Int {
+    return when (nombre) {
+        "Bloqueo por manifestación" -> R.drawable.bloqueomanifestacion
+        "Inundación" -> R.drawable.inundacion
+        "Colisión de unidad" -> R.drawable.colisionunidad
+        "Colisión de terceros" -> R.drawable.colisionterceros
+        "Fallas técnicas de la unidad" -> R.drawable.fallastecnicas
+        "Unidad detenida en el carril" -> R.drawable.unidaddetenida
+        "Incidente en la estación" -> R.drawable.incidenteestacion
+        "Otro" -> R.drawable.otraincidencia
+        else -> R.drawable.otraincidencia
+    }
+}
 
 @Composable
 fun HomeScreen() {
@@ -137,7 +151,9 @@ fun InicioTabContent(homeViewModel: HomeViewModel = viewModel()) {
                     tiempo = "Unidad ${ultimaIncidencia!!.id_unidad}",
                     estacion = tiempoTranscurrido(ultimaIncidencia!!.fecha_inicio),
                     descripcion = ultimaIncidencia!!.descripcion,
-                    icono = Icons.Default.Warning
+                    iconoRes = iconoDrawablePorIncidencia(
+                        ultimaIncidencia!!.nombre_incidencia
+                    )
                 )
                 // Aquí limitamos la descripción porque es la pantalla de resumen
                 IncidentCard(data = incidenciaUi, esDestacada = true, limitarDescripcion = true)
@@ -215,7 +231,9 @@ fun IncidenciasListTabContent(homeViewModel: HomeViewModel = viewModel()) {
                                 tiempo = "Unidad ${incidencia.id_unidad}",
                                 estacion = tiempoTranscurrido(incidencia.fecha_inicio),
                                 descripcion = incidencia.descripcion,
-                                icono = Icons.Default.Warning
+                                iconoRes = iconoDrawablePorIncidencia(
+                                    incidencia.nombre_incidencia
+                                )
                             ),
                             esDestacada = false,
                             // Aquí NO limitamos la descripción para que sea responsive
@@ -313,21 +331,20 @@ fun IncidentCard(data: IncidenciaData, esDestacada: Boolean, limitarDescripcion:
             // Esto permite que si el texto es largo, el icono se quede arriba y no flote en medio.
             verticalAlignment = Alignment.Top
         ) {
-            // Icono Circular
-            Box(
+            // Icono de la incidencia
+            Image(
+                painter = painterResource(id = data.iconoRes),
+                contentDescription = null,
                 modifier = Modifier
-                    .size(50.dp)
-                    .background(AppTealColor.copy(alpha = 0.1f), CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = data.icono,
-                    contentDescription = null,
-                    tint = AppTealColor,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-
+                    .size(48.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .border(
+                        width = 1.dp,
+                        color = Color.White,
+                        shape = RoundedCornerShape(10.dp)
+                    ),
+                contentScale = ContentScale.Crop
+            )
             Spacer(modifier = Modifier.width(16.dp))
 
             // Columna Central (Textos)
