@@ -40,13 +40,12 @@ fun MiniRecorridoLinea1(
         mutableStateOf(Offset(0f, -mapHeightPx * 0.02f))
     }
 
-    // Ruta Recta (Vertical Centrada)
-    val pathRecto = remember {
-        listOf(
-            Offset(0.7f, 0.90f), // Inicio (Cd. Azteca) - Abajo
-            Offset(0.7f, 0.10f)  // Fin (Central de Abastos) - Arriba
-        )
-    }
+    val linea1PathFull = listOf(
+        Offset(0.55f, 0.75f),
+        Offset(0.55f, 0.40f),
+        Offset(0.25f, 0.20f),
+        Offset(0.60f, 0.05f)
+    )
 
     Canvas(
         modifier = modifier
@@ -88,9 +87,9 @@ fun MiniRecorridoLinea1(
             val strokeW = 16f
             val separation = 9f
 
-            for (i in 0 until pathRecto.size - 1) {
-                val start = map(pathRecto[i])
-                val end = map(pathRecto[i + 1])
+            for (i in 0 until linea1PathFull.size - 1) {
+                val start = map(linea1PathFull[i])
+                val end = map(linea1PathFull[i + 1])
 
                 // Línea Express (Izquierda)
                 drawLine(
@@ -113,9 +112,9 @@ fun MiniRecorridoLinea1(
 
             // --- 2. ESTACIONES ---
             var totalLength = 0f
-            val segmentLengths = FloatArray(pathRecto.size - 1)
-            for (i in 0 until pathRecto.size - 1) {
-                val dist = (pathRecto[i+1] - pathRecto[i]).getDistance()
+            val segmentLengths = FloatArray(linea1PathFull.size - 1)
+            for (i in 0 until linea1PathFull.size - 1) {
+                val dist = (linea1PathFull[i+1] - linea1PathFull[i]).getDistance()
                 segmentLengths[i] = dist
                 totalLength += dist
             }
@@ -143,8 +142,8 @@ fun MiniRecorridoLinea1(
                     tSegment = 1f
                 }
 
-                val p1 = pathRecto[segmentIndex]
-                val p2 = pathRecto[segmentIndex + 1]
+                val p1 = linea1PathFull[segmentIndex]
+                val p2 = linea1PathFull[segmentIndex + 1]
 
                 val rawPos = Offset(
                     p1.x + (p2.x - p1.x) * tSegment,
