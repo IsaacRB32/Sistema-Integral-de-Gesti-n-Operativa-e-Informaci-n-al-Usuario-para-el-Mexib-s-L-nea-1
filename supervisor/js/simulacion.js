@@ -10,6 +10,7 @@ const moduloSimulacion = {
     EN_ESTACION: "#FFA500",
     EN_COLA: "#0796C2",
     INCIDENCIA: "#FF4444",
+    RETORNO: "#A855F7",
   },
 
   // Escala del track (px por estación)
@@ -523,24 +524,47 @@ const moduloSimulacion = {
       .join("");
   },
 
-  _ubicacionTexto(idx, pct, estado, sentido, estaciones) {
-    const n = estaciones.length;
-    const isReg = sentido === "REGRESO";
+_ubicacionTexto(idx, pct, estado, sentido, estaciones) {
+  const n = estaciones.length;
+  const isReg = String(sentido || "").toUpperCase().startsWith("REG");
 
-    const estIdx = isReg ? (n - 1 - idx) : idx;
-    const estacion = estaciones[estIdx] || "Desconocida";
+  const estIdx = isReg ? (n - 1 - idx) : idx;
+  const estacion = estaciones[estIdx] || "Desconocida";
 
-    if (estado === "EN_ESTACION") {
-      return `En <strong>${estacion}</strong>`;
-    }
+  if (estado === "EN_ESTACION") {
+    return `En <strong>${estacion}</strong>`;
+  }
 
-    let siguienteIdx;
-    if (!isReg) siguienteIdx = (estIdx + 1) % n;
-    else siguienteIdx = (estIdx - 1 + n) % n;
+  const siguienteIdx = isReg
+    ? (estIdx - 1 + n) % n
+    : (estIdx + 1) % n;
 
-    const siguiente = estaciones[siguienteIdx] || "Desconocida";
-    return `${estacion} → ${siguiente} (${pct}%)`;
-  },
+  const siguiente = estaciones[siguienteIdx] || "Desconocida";
+
+  // Normalizador fuerte (quita acentos, colapsa espacios, lowercase)
+  const norm = (s) =>
+    String(s || "")
+      .replace(/\u00A0/g, " ")                 // NBSP -> espacio normal
+      .normalize("NFD")                        // separa diacríticos
+      .replace(/[\u0300-\u036f]/g, "")         // elimina diacríticos
+      .replace(/\s+/g, " ")                    // colapsa espacios
+      .trim()
+      .toLowerCase();
+
+  const a = norm(estacion);
+  const b = norm(siguiente);
+
+  // Regla EXACTA pedida (ambas direcciones)
+  if (
+    (a === "ciudad azteca" && b === "central de abastos") ||
+    (a === "central de abastos" && b === "ciudad azteca")
+  ) {
+    return "Unidad retornando";
+  }
+
+  return `${estacion} → ${siguiente} (${pct}%)`;
+},
+
 
   // =========================
   // Snapshot
