@@ -74,7 +74,6 @@ fun iconoDrawablePorIncidencia(nombre: String): Int {
 @Composable
 fun HomeScreen() {
     var selectedTab by remember { mutableIntStateOf(0) }
-    // Asumiendo que inyectas o creas el VM aquí. Si usas Hilt sería hiltViewModel()
     val homeViewModel: HomeViewModel = viewModel()
 
     Scaffold(
@@ -123,7 +122,7 @@ fun InicioTabContent(homeViewModel: HomeViewModel = viewModel()) {
             text = "¡Hola, pasajer@!",
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
-            color = Color.Black,
+            color = AppTealColor,
             modifier = Modifier.fillMaxWidth()
         )
         Text(
@@ -248,6 +247,7 @@ fun IncidenciasListTabContent(homeViewModel: HomeViewModel = viewModel()) {
 
 // PESTAÑA 3: MAPA COMPLETO CON ZOOM
 @Composable
+
 fun MapaFullTabContent() {
     // CORRECCIÓN: Borramos el parámetro "estaciones = ..."
     // Al dejarlo vacío, usará automáticamente la lista 'estacionesLinea1Full' correcta.
@@ -256,7 +256,7 @@ fun MapaFullTabContent() {
     )
 }
 
-// PESTAÑA 4: AJUSTES (Sin cambios mayores)
+// PESTAÑA 4: INFORMACION GENERAL DEL SISTEMA
 @Composable
 fun AjustesTabContent() {
     var notificacionesEnabled by remember { mutableStateOf(true) }
@@ -265,10 +265,11 @@ fun AjustesTabContent() {
         modifier = Modifier.fillMaxSize().padding(24.dp)
     ) {
         Text(
-            text = "Configuración",
-            style = MaterialTheme.typography.headlineMedium,
+            text = "Información del Mexibús",
+            style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(bottom = 32.dp)
+            color = AppTealColor,
+            modifier = Modifier.padding(bottom = 16.dp)
         )
         Row(
             modifier = Modifier
@@ -389,16 +390,6 @@ fun IncidentCard(data: IncidenciaData, esDestacada: Boolean, limitarDescripcion:
             }
 
             Spacer(modifier = Modifier.width(8.dp))
-
-            // Tiempo (Alineado arriba a la derecha)
-            Text(
-                text = data.tiempo,
-                style = MaterialTheme.typography.labelSmall,
-                color = AppTealColor,
-                fontWeight = FontWeight.Bold,
-                // Modifier para asegurar que no se aplaste si el título es largo
-                modifier = Modifier.padding(top = 4.dp)
-            )
         }
     }
 }
@@ -433,8 +424,8 @@ fun UsuarioBottomBar(selectedTab: Int, onTabSelected: (Int) -> Unit) {
             colors = NavigationBarItemDefaults.colors(selectedIconColor = AppTealColor, selectedTextColor = AppTealColor, indicatorColor = AppTealColor.copy(alpha = 0.1f))
         )
         NavigationBarItem(
-            icon = { Icon(Icons.Default.Settings, contentDescription = "Ajustes") },
-            label = { Text("Ajustes") },
+            icon = { Icon(Icons.Default.Info, contentDescription = "Info.") },
+            label = { Text("Info.") },
             selected = selectedTab == 3,
             onClick = { onTabSelected(3) },
             colors = NavigationBarItemDefaults.colors(selectedIconColor = AppTealColor, selectedTextColor = AppTealColor, indicatorColor = AppTealColor.copy(alpha = 0.1f))
