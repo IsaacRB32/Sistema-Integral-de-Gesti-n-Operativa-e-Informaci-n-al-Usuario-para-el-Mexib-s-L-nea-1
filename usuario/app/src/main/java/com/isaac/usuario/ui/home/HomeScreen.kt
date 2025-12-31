@@ -34,6 +34,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.isaac.usuario.R
 import com.isaac.usuario.ui.recorrido.MiniRecorridoLinea1
 import com.isaac.usuario.ui.recorrido.MiniRecorridoLinea1FullScreen
+import com.isaac.usuario.ui.recorrido.estacionesLinea1Full
 import com.isaac.usuario.ui.utils.tiempoTranscurrido
 import kotlinx.coroutines.delay
 
@@ -93,11 +94,20 @@ fun InicioTabContent(homeViewModel: HomeViewModel = viewModel()) {
     val context = LocalContext.current
     val ultimaIncidencia by homeViewModel.ultimaIncidencia
     val cargando by homeViewModel.cargando
+    val unidades by homeViewModel.unidades
 
+    //Se actualiza la última incidencia cada 10 segundos
     LaunchedEffect(Unit) {
         while (true) {
             homeViewModel.cargarUltimaIncidencia(context)
             delay(10_000)
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        while (true) {
+            homeViewModel.cargarSnapshot(context)
+            delay(3_000) // cada 3 segundos
         }
     }
 
@@ -165,9 +175,14 @@ fun InicioTabContent(homeViewModel: HomeViewModel = viewModel()) {
                 .height(300.dp)
                 .clip(RoundedCornerShape(24.dp))
                 .border(2.dp, Color.White, RoundedCornerShape(24.dp))
-        ) {
+        ){
+            //Cambio (se dibujan las estaciones y las incidencias)
             MiniRecorridoLinea1(
-                modifier = Modifier.fillMaxSize()
+                estaciones = estacionesLinea1Full,
+                unidades = unidades,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .border(2.dp, Color.White, RoundedCornerShape(24.dp))
             )
         }
     }

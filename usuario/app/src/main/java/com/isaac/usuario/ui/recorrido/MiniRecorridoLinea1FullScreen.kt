@@ -130,20 +130,11 @@ fun MiniRecorridoLinea1FullScreen(
                 val start = map(linea1PathFull[i])
                 val end = map(linea1PathFull[i + 1])
 
-                // Línea Express
-                drawLine(
-                    color = ColorExpress,
-                    start = Offset(start.x - separation, start.y),
-                    end = Offset(end.x - separation, end.y),
-                    strokeWidth = strokeW,
-                    cap = androidx.compose.ui.graphics.StrokeCap.Round
-                )
-
                 // Línea Ordinaria
                 drawLine(
                     color = ColorOrdinaria,
-                    start = Offset(start.x + separation, start.y),
-                    end = Offset(end.x + separation, end.y),
+                    start = Offset(start.x, start.y),
+                    end = Offset(end.x, end.y),
                     strokeWidth = strokeW,
                     cap = androidx.compose.ui.graphics.StrokeCap.Round
                 )

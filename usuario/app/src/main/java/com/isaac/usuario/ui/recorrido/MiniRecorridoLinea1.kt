@@ -17,10 +17,12 @@ import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
+import com.isaac.usuario.data.model.UnidadMB
 
 @Composable
 fun MiniRecorridoLinea1(
     estaciones: List<EstacionLineaFull> = estacionesLinea1Full,
+    unidades: List<UnidadMB>,
     modifier: Modifier = Modifier
 ) {
     // Obtenemos la altura en pixeles para calcular el centro exacto
@@ -42,10 +44,10 @@ fun MiniRecorridoLinea1(
 
     // Ruta Recta (Vertical Centrada)
     val pathRecto = remember {
-        listOf(
-            Offset(0.7f, 0.90f), // Inicio (Cd. Azteca) - Abajo
-            Offset(0.7f, 0.10f)  // Fin (Central de Abastos) - Arriba
-        )
+        List(estaciones.size) { i ->
+            val t = i.toFloat() / (estaciones.size - 1)
+            Offset(0.7f, 0.9f - 0.8f * t)
+        }
     }
 
     Canvas(
@@ -67,6 +69,7 @@ fun MiniRecorridoLinea1(
                     }
                 }
             }
+
     ) {
         val w = size.width
         val h = size.height
@@ -92,20 +95,11 @@ fun MiniRecorridoLinea1(
                 val start = map(pathRecto[i])
                 val end = map(pathRecto[i + 1])
 
-                // Línea Express (Izquierda)
-                drawLine(
-                    color = ColorExpress,
-                    start = Offset(start.x - separation, start.y),
-                    end = Offset(end.x - separation, end.y),
-                    strokeWidth = strokeW,
-                    cap = androidx.compose.ui.graphics.StrokeCap.Round
-                )
-
                 // Línea Ordinaria (Derecha)
                 drawLine(
                     color = ColorOrdinaria,
-                    start = Offset(start.x + separation, start.y),
-                    end = Offset(end.x + separation, end.y),
+                    start = Offset(start.x, start.y),
+                    end = Offset(end.x, end.y),
                     strokeWidth = strokeW,
                     cap = androidx.compose.ui.graphics.StrokeCap.Round
                 )
@@ -115,7 +109,9 @@ fun MiniRecorridoLinea1(
             var totalLength = 0f
             val segmentLengths = FloatArray(pathRecto.size - 1)
             for (i in 0 until pathRecto.size - 1) {
-                val dist = (pathRecto[i+1] - pathRecto[i]).getDistance()
+                val dx = pathRecto[i+1].x - pathRecto[i].x
+                val dy = pathRecto[i+1].y - pathRecto[i].y
+                val dist = kotlin.math.sqrt(dx * dx + dy * dy)
                 segmentLengths[i] = dist
                 totalLength += dist
             }
@@ -169,6 +165,71 @@ fun MiniRecorridoLinea1(
                     }
                 )
             }
+            // 3. UNIDADES (recorrido + incidencias)
+            unidades.forEach { unidad ->
+
+                // Validar tramo
+                if (unidad.idx_tramo < 0 || unidad.idx_tramo >= pathRecto.size - 1) return@forEach
+
+                val p1 = pathRecto[unidad.idx_tramo]
+                val p2 = pathRecto[unidad.idx_tramo + 1]
+
+                val rawPos = Offset(
+                    p1.x + (p2.x - p1.x) * unidad.progreso,
+                    p1.y + (p2.y - p1.y) * unidad.progreso
+                )
+
+                val pos = map(rawPos)
+
+                when (unidad.estado_unidad) {
+
+                    // INCIDENCIA
+                    "INCIDENCIA" -> {
+                        drawCircle(
+                            color = Color.Red,
+                            radius = 10f,
+                            center = pos
+                        )
+                        drawCircle(
+                            color = Color.Red,
+                            radius = 5f,
+                            center = pos
+                        )
+                    }
+
+                    /*El dibujo de las unidades es para realizar las pruebas de funcionamiento.
+                    En el funcionamiento final no se deben mostrar las unidades.
+                    */
+
+                    /*
+                    // UNIDADES EN RUTA O EN COLA
+                    "EN_RUTA", "EN_COLA" -> {
+                        drawCircle(
+                            color = Color(0xFF00a1d3),
+                            radius = 10f,
+                            center = pos
+                        )
+                        drawCircle(
+                            color = Color(0xFF00a1d3),
+                            radius = 5f,
+                            center = pos
+                        )
+                    }
+                    */
+                }
+            }
         }
+        //Esta parte se utiliza para ver en el mapa cuántas unidades hay en recorrido
+        /*
+        drawContext.canvas.nativeCanvas.drawText(
+            "Unidades: ${unidades.size}",
+            20f,
+            40f,
+            android.graphics.Paint().apply {
+                textSize = 40f
+                color = android.graphics.Color.RED
+            }
+        )
+        */
     }
 }
