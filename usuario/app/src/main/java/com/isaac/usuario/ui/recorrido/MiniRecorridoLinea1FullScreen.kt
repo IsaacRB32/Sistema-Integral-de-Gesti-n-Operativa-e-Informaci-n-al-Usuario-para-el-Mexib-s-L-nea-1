@@ -34,7 +34,7 @@ val ColorExpress = Color(0xFF387008)
 val ColorOrdinaria = Color(0xFF9BE645)
 val ColorLeyendaFondo = Color(0xFF00a1d3)
 
-// 3. LA RUTA TRAZADA
+// 3. LA RUTA TRAZADA (Tu versión modificada)
 val linea1PathFull = listOf(
     Offset(0.55f, 0.75f), // Inicio: Cd. Azteca (Abajo)
     Offset(0.55f, 0.40f), // Recto
@@ -74,7 +74,7 @@ fun MiniRecorridoLinea1FullScreen(
     var scale by remember { mutableFloatStateOf(1f) }
     var offset by remember { mutableStateOf(Offset.Zero) }
 
-    // Cargar la imagen del logo (Asegúrate que se llame mexibusicon en drawable)
+    // Cargar la imagen del logo
     val context = LocalContext.current
     val logoBitmap = remember(context) {
         BitmapFactory.decodeResource(context.resources, R.drawable.mexibusicon)
@@ -98,12 +98,14 @@ fun MiniRecorridoLinea1FullScreen(
         val h = size.height
         val baseScale = 0.9f
         val center = Offset(w / 2f, h / 2f)
+        val margin = 30f // Definimos el margen aquí para usarlo en cálculos
 
-        // --- CÁLCULO PARA CENTRAR AUTOMÁTICAMENTE ---
-        // La ruta original está cargada a la derecha (X entre 0.35 y 0.80, centro ~0.575).
-        // Calculamos cuánto moverla a la izquierda para que el centro visual sea 0.5.
-        // 0.575 - 0.5 = 0.075 de ancho de pantalla.
+        // --- CÁLCULO PARA CENTRAR Y BAJAR EL MAPA ---
         val centeringShiftX = -w * 0.075f
+
+        // CAMBIO 1: Desplazamiento vertical inicial para bajar el mapa
+        // Lo bajamos unos 150 pixeles para que no quede debajo del cuadro azul
+        val mapVerticalShift = 150f
 
         fun map(p: Offset): Offset {
             return Offset(p.x * w, p.y * h)
@@ -111,8 +113,11 @@ fun MiniRecorridoLinea1FullScreen(
 
         // --- CAPA 1: EL MAPA (Zoomable) ---
         withTransform({
-            // Aplicamos el offset de usuario + el offset de centrado automático
-            translate(center.x + offset.x + centeringShiftX, center.y + offset.y)
+            // Aplicamos: Centro + Offset Usuario + Ajuste X + Ajuste Y (Bajada)
+            translate(
+                left = center.x + offset.x + centeringShiftX,
+                top = center.y + offset.y + mapVerticalShift // <--- Aquí bajamos el mapa
+            )
             scale(scale * baseScale)
             translate(-center.x, -center.y)
         }) {
@@ -204,10 +209,10 @@ fun MiniRecorridoLinea1FullScreen(
         }
 
         // --- CAPA 2: LEYENDA FIJA (HUD) ---
-        // Aumentamos la altura para que quepa el logo
-        val boxW = 400f
-        val boxH = 220f // Antes 160f
-        val margin = 30f
+
+        // CAMBIO 2: Ancho dinámico (Ancho de pantalla - márgenes)
+        val boxW = size.width - (margin * 2)
+        val boxH = 220f
 
         // Fondo Azul
         drawRoundRect(
@@ -226,7 +231,6 @@ fun MiniRecorridoLinea1FullScreen(
 
         // --- ENCABEZADO: LOGO + TITULO ---
         if (logoBitmap != null) {
-            // Dibujamos la imagen cuadrada pequeña (60x60 aprox)
             drawImage(
                 image = logoBitmap.asImageBitmap(),
                 dstOffset = IntOffset((margin + 20).toInt(), (margin + 20).toInt()),
@@ -234,30 +238,27 @@ fun MiniRecorridoLinea1FullScreen(
             )
         }
 
-        // Texto "Mexibús" a la derecha del logo
         drawContext.canvas.nativeCanvas.drawText(
             "Mexibús",
-            margin + 100f, // Separado del logo
-            margin + 65f,  // Centrado verticalmente con el logo
-            textPaint.apply { textSize = 40f } // Un poco más grande el título
+            margin + 100f,
+            margin + 65f,
+            textPaint.apply { textSize = 40f }
         )
 
-        // --- RENGLONES DE RUTAS (Movidos hacia abajo) ---
+        // --- RENGLONES DE RUTAS ---
         val rowStartY = margin + 110f
 
-        // Renglón 1: Express
-        drawCircle(ColorExpress, radius = 15f, center = Offset(margin + 40f, rowStartY))
+        // Renglón 1
         drawContext.canvas.nativeCanvas.drawText(
-            "Ruta Express",
+            "Línea 1",
             margin + 80f,
             rowStartY + 12f,
-            textPaint.apply { textSize = 32f } // Regresamos a tamaño normal
+            textPaint.apply { textSize = 32f }
         )
 
-        // Renglón 2: Ordinaria
-        drawCircle(ColorOrdinaria, radius = 15f, center = Offset(margin + 40f, rowStartY + 50f))
+        // Renglón 2
         drawContext.canvas.nativeCanvas.drawText(
-            "Ruta Ordinaria",
+            "Ciudad Azteca - Central de Abastos",
             margin + 80f,
             rowStartY + 62f,
             textPaint
