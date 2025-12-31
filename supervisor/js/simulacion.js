@@ -296,101 +296,142 @@ const moduloSimulacion = {
   // =========================
   // Marcadores
   // =========================
-  _actualizarTrack(unidades) {
-    const estaciones = this._getEstaciones();
-    const n = estaciones.length;
-    if (!n) return;
+_actualizarTrack(unidades) {
+  const estaciones = this._getEstaciones();
+  const n = estaciones.length;
+  if (!n || !this._dom.trackInner) return;
 
-    this._actualizarSelectUnidades(unidades);
+  this._actualizarSelectUnidades(unidades);
 
-    const stackMapIda = new Map();
-    const stackMapReg = new Map();
+  const stackMapIda = new Map();
+  const stackMapReg = new Map();
 
-    unidades.forEach((u) => {
-      const id = String(u?.id_unidad ?? "");
-      if (!id) return;
+  unidades.forEach((u) => {
+    const id = String(u?.id_unidad ?? "");
+    if (!id) return;
 
-      const sentido = String(u?.sentido || "IDA");
-      const estado = String(u?.estado_unidad || "");
+    const sentido = String(u?.sentido || "IDA");
+    const estado = String(u?.estado_unidad || "");
 
-      const idx = this._clampInt(u?.idx_tramo, 0, n - 1);
-      const prog = this._clampNum(u?.progreso, 0, 0.9999);
+    const idx = this._clampInt(u?.idx_tramo, 0, n - 1);
+    const prog = this._clampNum(u?.progreso, 0, 0.9999);
+    const pos = this._posicionPixel(idx, prog, sentido, n);
 
-      const pos = this._posicionPixel(idx, prog, sentido, n);
+    // ====== RETORNO (por unidad) ======
+    const isReg = String(sentido || "").toUpperCase().startsWith("REG");
+    const baseIdx = isReg ? (n - 1 - idx) : idx;
+    const nextIdx = isReg ? (baseIdx - 1 + n) % n : (baseIdx + 1) % n;
 
-      const bucket = Math.round(pos.x / 24);
-      const isReg = sentido === "REGRESO";
-      const map = isReg ? stackMapReg : stackMapIda;
-      const c = (map.get(bucket) || 0);
-      map.set(bucket, c + 1);
-      const yStack = this._stackOffsetY(c);
+    const estacionBase = estaciones[baseIdx] || "";
+    const estacionSig = estaciones[nextIdx] || "";
+    const esRetorno =
+      (estado !== "EN_ESTACION") && this._esTramoRetorno(estacionBase, estacionSig);
 
-      const yBase = isReg ? this.Y_LANE_REG : this.Y_LANE_IDA;
-      const y = yBase + yStack;
+    // ====== apilado visual para evitar choque ======
+    const bucket = Math.round(pos.x / 24);
+    const map = isReg ? stackMapReg : stackMapIda;
+    const c = (map.get(bucket) || 0);
+    map.set(bucket, c + 1);
+    const yStack = this._stackOffsetY(c);
 
-      let el = this._markerMap.get(id);
-      if (!el) {
-        el = document.createElement("div");
-        el.dataset.idUnidad = id;
-        el.className =
-          "sim-unit-marker absolute flex items-center justify-center text-[12px] font-bold shadow-lg select-none";
-        el.style.width = "34px";
-        el.style.height = "26px";
-        el.style.borderRadius = "9999px";
-        el.style.border = "2px solid rgba(0,0,0,0.10)";
-        el.style.transform = "translate(-50%, -50%)";
-        el.style.cursor = "pointer";
-        el.style.transition =
-          "left 600ms ease, top 350ms ease, box-shadow 250ms ease, transform 250ms ease";
-        el.style.zIndex = "30";
+    const yBase = isReg ? this.Y_LANE_REG : this.Y_LANE_IDA;
+    const y = yBase + yStack;
 
-        el.onclick = () => {
-          this._focusId = id;
-          if (this._dom.selUnidad) this._dom.selUnidad.value = id;
-          this._resaltarFocus();
-          if (this._follow) this._centrarEnUnidad(id);
-        };
+    let el = this._markerMap.get(id);
+    if (!el) {
+      el = document.createElement("div");
+      el.dataset.idUnidad = id;
+      el.className =
+        "sim-unit-marker absolute flex items-center justify-center text-[12px] font-bold shadow-lg select-none";
+      el.style.width = "34px";
+      el.style.height = "26px";
+      el.style.borderRadius = "9999px";
+      el.style.border = "2px solid rgba(0,0,0,0.10)";
+      el.style.transform = "translate(-50%, -50%)";
+      el.style.cursor = "pointer";
+      el.style.transition =
+        "left 600ms ease, top 350ms ease, box-shadow 250ms ease, transform 250ms ease";
+      el.style.zIndex = "30";
 
-        this._dom.trackInner.appendChild(el);
-        this._markerMap.set(id, el);
-      }
+      // HTML del marcador (se crea una sola vez)
+      el.innerHTML = `
+        <span data-id="1" style="position:relative; z-index:1;"></span>
+        <span data-ret="1"
+              style="display:none; position:absolute; right:-7px; top:-7px;
+                     width:18px; height:18px; border-radius:9999px;
+                     background:#fff; color:#111; font-size:11px; line-height:18px;
+                     text-align:center; border:1px solid rgba(0,0,0,0.10);
+                     box-shadow:0 6px 14px rgba(0,0,0,0.18);">↩</span>
+      `;
 
+      el.onclick = () => {
+        this._focusId = id;
+        if (this._dom.selUnidad) this._dom.selUnidad.value = id;
+        this._resaltarFocus();
+        if (this._follow) this._centrarEnUnidad(id);
+      };
+
+      this._dom.trackInner.appendChild(el);
+      this._markerMap.set(id, el);
+    }
+
+    // Mantener el id actualizado
+    const idSpan = el.querySelector('[data-id="1"]');
+    if (idSpan) idSpan.textContent = id;
+
+    // Toggle badge ↩
+    const retBadge = el.querySelector('[data-ret="1"]');
+    if (retBadge) retBadge.style.display = esRetorno ? "block" : "none";
+
+    // Colores
+    if (esRetorno) {
+      el.style.background = this.colores.RETORNO;
+      el.style.color = "#fff";
+      el.style.border = "2px solid rgba(168,85,247,0.55)";
+      el.style.backgroundImage = "none";
+    } else {
       const bg = this.colores[estado] || "#6B7280";
       el.style.background = bg;
       el.style.color = (estado === "EN_RUTA") ? "#000" : "#fff";
-      el.textContent = id;
 
-      el.style.left = `${pos.x}px`;
-      el.style.top = `${y}px`;
-
-      el.title = this._tooltipUnidad(u, estaciones);
-
-      el.style.boxShadow = this._focusId === id
-        ? "0 0 0 4px rgba(7,150,194,0.35), 0 10px 20px rgba(0,0,0,0.18)"
-        : "0 10px 20px rgba(0,0,0,0.18)";
-
-      el.style.transform = (this._focusId && this._focusId === id)
-        ? "translate(-50%, -50%) scale(1.06)"
-        : "translate(-50%, -50%) scale(1.0)";
-
-      // Marca visual sutil de sentido (esquina)
-      el.style.backgroundImage = sentido === "REGRESO"
+      // Marca de sentido
+      el.style.backgroundImage = isReg
         ? "linear-gradient(135deg, rgba(0,0,0,0.22) 0%, rgba(0,0,0,0.0) 40%)"
         : "linear-gradient(225deg, rgba(0,0,0,0.22) 0%, rgba(0,0,0,0.0) 40%)";
-    });
-
-    const idsActuales = new Set(
-      unidades.map((u) => String(u?.id_unidad ?? "")).filter(Boolean)
-    );
-    for (const [id, el] of this._markerMap.entries()) {
-      if (!idsActuales.has(id)) {
-        el.remove();
-        this._markerMap.delete(id);
-      }
     }
 
-    this._resaltarFocus();
-  },
+    // Posición
+    el.style.left = `${pos.x}px`;
+    el.style.top = `${y}px`;
+
+    // Tooltip
+    el.title = this._tooltipUnidad(u, estaciones);
+
+    // Focus styling
+    el.style.boxShadow = (this._focusId === id)
+      ? "0 0 0 4px rgba(7,150,194,0.35), 0 10px 20px rgba(0,0,0,0.18)"
+      : "0 10px 20px rgba(0,0,0,0.18)";
+
+    el.style.transform = (this._focusId === id)
+      ? "translate(-50%, -50%) scale(1.06)"
+      : "translate(-50%, -50%) scale(1.0)";
+  });
+
+  // Limpieza de marcadores que ya no están
+  const idsActuales = new Set(
+    unidades.map((u) => String(u?.id_unidad ?? "")).filter(Boolean)
+  );
+
+  for (const [id, el] of this._markerMap.entries()) {
+    if (!idsActuales.has(id)) {
+      el.remove();
+      this._markerMap.delete(id);
+    }
+  }
+
+  this._resaltarFocus();
+},
+
 
   _posicionPixel(idx, prog, sentido, n) {
     const isReg = sentido === "REGRESO";
@@ -501,11 +542,28 @@ const moduloSimulacion = {
         const idx = this._clampInt(u?.idx_tramo, 0, Math.max(0, n - 1));
         const prog = this._clampNum(u?.progreso, 0, 0.9999);
         const pct = Math.round(prog * 100);
+        const isReg = String(sentido || "").toUpperCase().startsWith("REG");
+        const baseIdx = isReg ? (n - 1 - idx) : idx;
+        const nextIdx = isReg ? (baseIdx - 1 + n) % n : (baseIdx + 1) % n;
 
-        const ubic = this._ubicacionTexto(idx, pct, estado, sentido, estaciones);
+        const estacionBase = estaciones[baseIdx] || "";
+        const estacionSig = estaciones[nextIdx] || "";
+        const esRetorno = (estado !== "EN_ESTACION") && this._esTramoRetorno(estacionBase, estacionSig);
+
+
+        const ubic = esRetorno
+        ? `<span style="display:inline-flex; align-items:center; gap:6px;
+                        padding:4px 10px; border-radius:9999px;
+                        background: rgba(168,85,247,0.12);
+                        color: #6B21A8; border: 1px solid rgba(168,85,247,0.25);
+                        font-size:12px; font-weight:700;">
+                <span style="font-size:13px;"></span> Unidad retornando
+            </span>`
+        : this._ubicacionTexto(idx, pct, estado, sentido, estaciones);
+
 
         return `
-          <tr class="border-b border-gray-200 hover:bg-gray-50">
+          <tr class="border-b border-gray-200 hover:bg-gray-50" ${esRetorno ? 'style="background: rgba(168,85,247,0.06);"' : ""}>
             <td class="py-2 px-2 font-bold text-gray-900">#${u.id_unidad}</td>
             <td class="py-2 px-2">
               <span class="px-2 py-1 rounded text-xs ${sentido === "IDA" ? "bg-blue-100 text-blue-800" : "bg-green-100 text-green-800"}">
@@ -584,6 +642,25 @@ _ubicacionTexto(idx, pct, estado, sentido, estaciones) {
   _getEstaciones() {
     return Array.isArray(CONFIG?.estaciones) ? CONFIG.estaciones : [];
   },
+  _normNombre(s) {
+  return String(s || "")
+    .replace(/\u00A0/g, " ")                 // NBSP -> espacio
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")         // quita acentos
+    .replace(/\s+/g, " ")                    // colapsa espacios
+    .trim()
+    .toLowerCase();
+},
+
+_esTramoRetorno(estacion, siguiente) {
+  const a = this._normNombre(estacion);
+  const b = this._normNombre(siguiente);
+
+  return (
+    (a === "ciudad azteca" && b === "central de abastos") ||
+    (a === "central de abastos" && b === "ciudad azteca")
+  );
+},
 
   _wrapStationName(nombre) {
     const s = String(nombre || "");
