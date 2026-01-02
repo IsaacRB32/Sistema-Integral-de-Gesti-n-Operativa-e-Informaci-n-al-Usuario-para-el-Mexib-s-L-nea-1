@@ -15,6 +15,11 @@ const app = {
   },
 
   navegarA(vista) {
+    // Si vamos a la vista completa de simulación, cerrar dock para evitar IDs duplicados.
+    if (vista === 'simulacion' || vista === 'operaciones') {
+      try { simDock?.close?.(); } catch (e) { /* noop */ }
+    }
+
     // Validación básica
     if (!VISTAS || typeof VISTAS[vista] !== 'function') {
       console.error('Vista no encontrada:', vista);
@@ -53,7 +58,23 @@ const app = {
     try {
       switch (vista) {
         case 'unidades':
-          moduloUnidades?.init?.();
+          moduloUnidades?.init?.('catalogo');
+          break;
+        case 'operaciones':
+          // Vista dedicada: Operaciones (control + Simulación en vivo + Panel de Simulación)
+          try { simDock?.close?.(); } catch (e) { /* noop */ }
+
+          {
+            const p = moduloUnidades?.init?.('operaciones');
+            // Iniciar panel de simulación embebido (track + tabla)
+            if (p && typeof p.then === 'function') {
+              p.finally(() => {
+                try { moduloSimulacion?.iniciar?.(); } catch (e) { /* noop */ }
+              });
+            } else {
+              try { moduloSimulacion?.iniciar?.(); } catch (e) { /* noop */ }
+            }
+          }
           break;
         case 'incidencias':
           moduloIncidencias?.cargar?.();
@@ -76,8 +97,15 @@ const app = {
     if (!CONFIG?.socket) return;
 
     CONFIG.socket.on('actualizar_posiciones', (unidades) => {
-      if (this.vistaActual === 'simulacion') {
+      // Actualizar si:
+      // 1) Vista completa de simulación, o
+      // 2) Dock abierto (para dar contexto visual en Operaciones/Incidencias/Unidades)
+      if (this.vistaActual === 'simulacion' || this.vistaActual === 'operaciones' || simDock?.isOpen) {
         moduloSimulacion?.actualizar?.(unidades);
+      }
+      if (this.vistaActual === 'operaciones') {
+        // Refrescar tarjetas "Simulación en vivo" dentro de Operaciones
+        try { moduloUnidades?.renderizarSimulacion?.(unidades); } catch (e) { /* noop */ }
       }
     });
   },
@@ -85,7 +113,8 @@ const app = {
   iniciarAutoRefresh() {
     setInterval(() => {
       try {
-        if (this.vistaActual === 'unidades') moduloUnidades?.cargar?.();
+        if (this.vistaActual === 'unidades') moduloUnidades?.cargarTablaCatalogo?.();
+        if (this.vistaActual === 'operaciones') moduloUnidades?.cargar?.();
         if (this.vistaActual === 'incidencias') moduloIncidencias?.cargar?.();
         if (this.vistaActual === 'operadores') moduloOperadores?.cargar?.();
       } catch (e) {

@@ -1,22 +1,7 @@
 // Templates HTML de cada vista
 const VISTAS = {
     unidades: () => `
-        <!-- Sub-tabs internos -->
-        <div class="flex gap-2 mb-4">
-            <button id="tab-cat-unidades"
-                    class="px-4 py-2 rounded bg-mexibus-blue text-white"
-                    onclick="moduloUnidades.mostrarSeccion('catalogo')">
-                Todas las unidades
-            </button>
-            <button id="tab-op-unidades"
-                    class="px-4 py-2 rounded bg-gray-200"
-                    onclick="moduloUnidades.mostrarSeccion('operaciones')">
-                Operaciones
-            </button>   
-
-            </div>
-
-            <!-- 1) Catálogo -->
+        <!-- 1) Catálogo -->
                 <div id="seccion-unidades-catalogo">
                     <div class="flex items-center justify-between mb-3">
                     <div>
@@ -144,87 +129,176 @@ const VISTAS = {
                 </div>
                 </div>
 
-
-            <!-- 2) Operaciones -->
-            <div id="seccion-unidades-operaciones" class="hidden">
-
-            <!-- Contenedor 40% / 60% (desktop) -->
-            <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
-
-            <!-- IZQUIERDA: Control de Unidades (40%) -->
-            <div class="bg-white rounded shadow border p-4 lg:col-span-2">
-                <h3 class="font-semibold mb-4">Control de Unidades</h3>
-
-                <div id="msg-unidades" class="hidden border p-3 rounded mb-3"></div>
-
-                <!-- ====== METER UNIDAD ====== -->
-                <div class="mb-6">
-                <h4 class="font-semibold mb-3">Meter unidad</h4>
-
-                <label class="block text-sm font-medium mb-1">Unidad</label>
-                <select id="input-unidad-id" class="border rounded px-3 py-2 w-full mb-4">
-                    <option value="">Cargando unidades...</option>
-                </select>
-
-                <input type="hidden" id="input-ruta" value="1" />
-
-                <label class="block text-sm font-medium mb-1">Sentido</label>
-                <select id="input-sentido" class="border rounded px-3 py-2 w-full mb-4">
-                    <option value="IDA">IDA (Abastos → Azteca)</option>
-                    <option value="REGRESO">REGRESO (Azteca → Abastos)</option>
-                </select>
-
-                <label class="block text-sm font-medium mb-1">Operador</label>
-                <select id="input-operador" class="border rounded px-3 py-2 w-full mb-4">
-                    <option value="">-- Sin asignar --</option>
-                </select>
-
-                <label class="block text-sm font-medium mb-1">Velocidad</label>
-                <input id="input-velocidad"
-                        type="number"
-                        min="0"
-                        step="0.1"
-                        value="0.8"
-                        class="border rounded px-3 py-2 w-full mb-4"
-                        placeholder="Ej: 0.8">
-
-                <button class="bg-green-500 text-white px-4 py-2 rounded w-full"
-                        onclick="meterUnidad()">
-                    🚌 Meter
-                </button>
-                </div>
-
-                <hr class="my-4">
-
-                <!-- ====== SACAR UNIDAD ====== -->
+`,
+    operaciones: () => `
+        <div class="fade-in space-y-5">
+            <!-- Header -->
+            <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
                 <div>
-                <h4 class="font-semibold mb-3">Sacar unidad</h4>
-
-                <label class="block text-sm font-medium mb-1">Unidad (en circuito)</label>
-                <select id="input-unidad-id-sacar" class="border rounded px-3 py-2 w-full mb-4">
-                    <option value="">Cargando unidades en circuito...</option>
-                </select>
-
-                <button class="bg-red-500 text-white px-4 py-2 rounded w-full"
-                        onclick="sacarUnidad()">
-                    ⛔ Sacar
-                </button>
+                    <h2 class="text-xl font-bold text-gray-900">Operaciones</h2>
+                    <p class="text-sm text-gray-500">Alta y retiro de unidades con monitoreo visual en tiempo real.</p>
                 </div>
-            </div> <!-- ✅ CIERRE CORRECTO DEL PANEL IZQUIERDO -->
 
-            <!-- DERECHA: Simulación en vivo (60%) -->
-            <div class="bg-white rounded shadow border p-4 lg:col-span-3">
-                <h3 class="font-semibold mb-2">Simulación en vivo</h3>
-                <div id="simulacion-viva" class="border rounded bg-white shadow p-4 h-96 overflow-auto">
-                Cargando simulación...
+                <div class="text-xs text-gray-500">
+                    Tip: usa “Pantalla completa” para monitoreo a pantalla completa.
                 </div>
             </div>
 
-            </div>
-            </div>
+            <div class="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
 
+                <!-- LEFT: Control -->
+                <section class="xl:col-span-4">
+                    <div class="bg-white rounded-xl shadow-sm border p-5 xl:sticky xl:top-24">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="font-semibold text-gray-900">Control de unidades</h3>
+                            <span class="text-xs text-gray-500">Entrar / Salir</span>
+                        </div>
 
-    `,
+                        <div id="msg-unidades" class="hidden border p-3 rounded-lg mb-4 text-sm"></div>
+
+                        <!-- Meter unidad -->
+                        <div class="rounded-xl border bg-gray-50 p-4">
+                            <div class="flex items-center justify-between mb-3">
+                                <h4 class="text-sm font-semibold text-gray-900">Meter unidad</h4>
+                                <span class="text-xs text-gray-500">Agregar a circuito</span>
+                            </div>
+
+                            <input type="hidden" id="input-ruta" value="1" />
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div class="sm:col-span-2">
+                                    <label class="block text-sm font-medium mb-1 text-gray-700">Unidad</label>
+                                    <select id="input-unidad-id" class="border rounded-lg px-3 py-2 w-full bg-white">
+                                        <option value="">Cargando unidades...</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-medium mb-1 text-gray-700">Sentido</label>
+                                    <select id="input-sentido" class="border rounded-lg px-3 py-2 w-full bg-white">
+                                        <option value="IDA">IDA (Abastos → Azteca)</option>
+                                        <option value="REGRESO">REGRESO (Azteca → Abastos)</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-medium mb-1 text-gray-700">Velocidad</label>
+                                    <input id="input-velocidad" type="number" step="0.1" min="0.1" max="2.0"
+                                        class="border rounded-lg px-3 py-2 w-full bg-white" value="0.8" />
+                                    <div class="text-[11px] text-gray-500 mt-1">Sugerido: 0.6–1.0</div>
+                                </div>
+
+                                <div class="sm:col-span-2">
+                                    <label class="block text-sm font-medium mb-1 text-gray-700">Operador</label>
+                                    <select id="input-operador" class="border rounded-lg px-3 py-2 w-full bg-white">
+                                        <option value="">Sin asignar</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <button class="mt-4 w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-semibold bg-mexibus-green text-white hover:opacity-90 transition"
+                                onclick="meterUnidad()">
+                                Meter
+                            </button>
+                        </div>
+
+                        <!-- Sacar unidad -->
+                        <div class="rounded-xl border bg-gray-50 p-4 mt-4">
+                            <div class="flex items-center justify-between mb-3">
+                                <h4 class="text-sm font-semibold text-gray-900">Sacar unidad</h4>
+                                <span class="text-xs text-gray-500">Retirar del circuito</span>
+                            </div>
+
+                            <label class="block text-sm font-medium mb-1 text-gray-700">Unidad (en circuito)</label>
+                            <select id="input-unidad-id-sacar" class="border rounded-lg px-3 py-2 w-full bg-white">
+                                <option value="">Cargando unidades en circuito...</option>
+                            </select>
+
+                            <button class="mt-4 w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-semibold bg-red-600 text-white hover:opacity-90 transition"
+                                onclick="sacarUnidad()">
+                                Sacar
+                            </button>
+                        </div>
+
+                        <!-- Ayuda UX -->
+                        <div class="mt-4 text-xs text-gray-600 leading-5">
+                            <div class="font-semibold text-gray-800 mb-1">Notas</div>
+                            <ul class="list-disc pl-5 space-y-1">
+                                <li>“Simulación en vivo” muestra tarjetas con el estado actual.</li>
+                                <li>El “Panel de simulación” permite enfocar y seguir unidades.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- RIGHT: Live + Panel -->
+                <section class="xl:col-span-8 space-y-4">
+
+                    <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+
+                        <!-- Simulación en vivo -->
+                        <div class="bg-white rounded-xl shadow-sm border p-5 lg:col-span-2">
+                            <div class="flex items-center justify-between mb-3">
+                                <h3 class="font-semibold text-gray-900">Simulación en vivo</h3>
+                                <span class="text-xs text-gray-500">Tarjetas</span>
+                            </div>
+
+                            <div id="simulacion-viva" class="h-[28rem] overflow-auto scrollbar-custom pr-1">
+                                <div class="text-center py-6 text-gray-400 text-sm">Cargando...</div>
+                            </div>
+                        </div>
+
+                        <!-- Panel de simulación -->
+                        <div class="bg-white rounded-xl shadow-sm border p-5 lg:col-span-3">
+                            <div class="flex items-center justify-between mb-3">
+                                <h3 class="font-semibold text-gray-900">Panel de simulación</h3>
+                                <button onclick="app.navegarA('simulacion')"
+                                    class="px-3 py-2 rounded-lg text-xs font-semibold bg-mexibus-blue text-white hover:opacity-90 transition">
+                                    Pantalla completa
+                                </button>
+                            </div>
+
+                            <!-- Track -->
+                            <div id="sim-container" class="mb-4">
+                                <div id="cola-lineal"
+                                    class="p-4 bg-gray-50 rounded-lg border border-gray-200 overflow-x-auto scrollbar-custom">
+                                    <div class="text-center py-4 text-gray-400 text-sm">Cargando estaciones...</div>
+                                </div>
+                            </div>
+
+                            <!-- Tabla estado -->
+                            <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                <div class="flex items-center justify-between mb-3">
+                                    <h4 class="font-semibold text-gray-900">Estado en tiempo real</h4>
+                                    <div class="text-xs text-gray-500">Resumen por unidad</div>
+                                </div>
+
+                                <div class="overflow-x-auto scrollbar-custom">
+                                    <table class="w-full text-sm">
+                                        <thead>
+                                            <tr class="border-b-2 border-gray-200">
+                                                <th class="text-left py-2 px-2 text-gray-700">Unidad</th>
+                                                <th class="text-left py-2 px-2 text-gray-700">Sentido</th>
+                                                <th class="text-left py-2 px-2 text-gray-700">Estado</th>
+                                                <th class="text-left py-2 px-2 text-gray-700">Ubicación</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="panel-sim">
+                                            <tr><td colspan="4" class="text-center py-4 text-gray-400">Sin unidades</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+
+                </section>
+
+            </div>
+        </div>
+`,
+
     incidencias: () => `
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 fade-in">
             <!-- BANDEJA DE ENTRADA (Reemplaza al formulario) -->
@@ -291,45 +365,39 @@ const VISTAS = {
                 <p class="text-sm text-gray-600">Operadores y Supervisores (CRUD completo)</p>
             </div>
 
-            <div class="flex flex-col sm:flex-row gap-2 sm:items-center">
-                <div class="flex gap-2">
-                    <button id="filtro-rol-todos" onclick="moduloOperadores.setFiltroRol('ALL')"
-                        class="px-3 py-2 rounded-lg text-sm font-medium border bg-mexibus-blue text-white hover:opacity-90 transition">
-                        Todos
-                    </button>
-                    <button id="filtro-rol-operador" onclick="moduloOperadores.setFiltroRol('OPERADOR')"
-                        class="px-3 py-2 rounded-lg text-sm font-medium border bg-white text-gray-700 hover:bg-gray-50 transition">
-                        Operadores
-                    </button>
-                    <button id="filtro-rol-supervisor" onclick="moduloOperadores.setFiltroRol('SUPERVISOR')"
-                        class="px-3 py-2 rounded-lg text-sm font-medium border bg-white text-gray-700 hover:bg-gray-50 transition">
-                        Supervisores
-                    </button>
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-3 lg:items-end">
+                <div class="lg:col-span-4">
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">Búsqueda</label>
+                    <input id="usuarios-search" oninput="moduloOperadores.aplicarFiltros()"
+                        placeholder="Nombre, apellidos o email..."
+                        class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-mexibus-blue focus:outline-none" />
                 </div>
-                <div class="flex gap-2">
-                <button id="filtro-status-todos" onclick="moduloOperadores.setFiltroStatus('ALL')"
-                    class="px-3 py-2 rounded-lg text-sm font-medium border bg-mexibus-blue text-white hover:opacity-90 transition">
-                    Todos (estatus)
-                </button>
-                <button id="filtro-status-activo" onclick="moduloOperadores.setFiltroStatus('ACTIVO')"
-                    class="px-3 py-2 rounded-lg text-sm font-medium border bg-white text-gray-700 hover:bg-gray-50 transition">
-                    Activos
-                </button>
-                <button id="filtro-status-inactivo" onclick="moduloOperadores.setFiltroStatus('INACTIVO')"
-                    class="px-3 py-2 rounded-lg text-sm font-medium border bg-white text-gray-700 hover:bg-gray-50 transition">
-                    Inactivos
-                </button>
+                <div class="lg:col-span-3">
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">Rol</label>
+                    <select id="usuarios-filter-rol" onchange="moduloOperadores.setFiltroRol(this.value)"
+                        class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                        <option value="ALL">Todos</option>
+                        <option value="OPERADOR">OPERADOR</option>
+                        <option value="SUPERVISOR">SUPERVISOR</option>
+                    </select>
                 </div>
-
-                <div class="flex gap-2">
-                    <div class="relative">
-                        <input id="usuarios-search" oninput="moduloOperadores.aplicarFiltros()"
-                            placeholder="Buscar por nombre o email..."
-                            class="w-64 max-w-full bg-white border border-gray-300 rounded-lg pl-3 pr-3 py-2 text-sm focus:ring-2 focus:ring-mexibus-blue focus:outline-none" />
-                    </div>
+                <div class="lg:col-span-3">
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">Estatus</label>
+                    <select id="usuarios-filter-status" onchange="moduloOperadores.setFiltroStatus(this.value)"
+                        class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                        <option value="ALL">Todos</option>
+                        <option value="ACTIVO">ACTIVO</option>
+                        <option value="INACTIVO">INACTIVO</option>
+                    </select>
+                </div>
+                <div class="lg:col-span-2 flex gap-2">
                     <button onclick="moduloOperadores.mostrarFormularioNuevo()"
-                        class="bg-mexibus-blue text-white px-4 py-2 rounded-lg font-medium hover:opacity-90 transition">
+                        class="flex-1 bg-mexibus-blue text-white px-4 py-2 rounded-lg font-medium hover:opacity-90 transition">
                         Nuevo
+                    </button>
+                    <button onclick="moduloOperadores.limpiarFiltros()"
+                        class="flex-1 bg-white text-gray-800 px-4 py-2 rounded-lg font-medium border hover:bg-gray-50 transition">
+                        Limpiar
                     </button>
                 </div>
             </div>
@@ -427,3 +495,4 @@ const VISTAS = {
     </div>
     `,
 };
+

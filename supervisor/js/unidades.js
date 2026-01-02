@@ -123,6 +123,9 @@ const moduloUnidades = {
             utils.mostrarMensaje("msg-unidades", `${label} ingresada sin conductor`, "success");
             }
 
+            // Abrir simulación acoplable para dar contexto visual al supervisor.
+            try { simDock?.open?.({ wide: true, focusId: id }); } catch (e) { /* noop */ }
+
             setTimeout(() => {
             this.cargar();
             this.cargarConductores();
@@ -171,6 +174,9 @@ const moduloUnidades = {
 
             utils.mostrarMensaje("msg-unidades", `${label} sacada del servicio`, "success");
 
+            // Abrir simulación acoplable para confirmar visualmente la salida.
+            try { simDock?.open?.({ wide: true, focusId: id }); } catch (e) { /* noop */ }
+
             setTimeout(() => {
             this.cargar();
             this.cargarConductores();
@@ -186,7 +192,7 @@ const moduloUnidades = {
     // Función para obtener icono de estación (CON IMÁGENES PNG)
     obtenerIconoEstacion(nombreEstacion) {
         if (!nombreEstacion || nombreEstacion === 'Desconocida') {
-            return '<span class="text-xl">📍</span>';
+            return '<span class="inline-block w-3 h-3 rounded-full bg-gray-400"></span>';
         }
         
         const baseUrl = window.location.origin;
@@ -955,8 +961,9 @@ const moduloUnidades = {
 
         if (!unidades || unidades.length === 0) {
             cont.innerHTML = `
-                <div class="text-center text-gray-400 py-6">
-                    🚍 No hay unidades en circulación
+                <div class="text-center text-gray-400 py-10">
+                    <div class="text-sm font-semibold text-gray-500">No hay unidades en circulación</div>
+                    <div class="text-xs text-gray-400 mt-1">Cuando metas una unidad, aparecerá aquí en tiempo real.</div>
                 </div>
             `;
             return;
@@ -964,67 +971,59 @@ const moduloUnidades = {
 
         cont.innerHTML = unidades.map(u => {
             const estacion = CONFIG.estaciones[u.idx_tramo] || 'Desconocida';
-            const progreso = Math.round(u.progreso * 100);
+            const progreso = Math.round((Number(u.progreso) || 0) * 100);
 
-            const estadoColor = {
-                'EN_RUTA': 'bg-green-100 text-green-800',
-                'EN_ESTACION': 'bg-yellow-100 text-yellow-800',
-                'EN_COLA': 'bg-blue-100 text-blue-800',
-                'INCIDENCIA': 'bg-red-100 text-red-800',
-                'FUERA_DE_SERVICIO': 'bg-gray-200 text-gray-800'
-            }[u.estado_unidad] || 'bg-gray-200 text-gray-800';
+            const conductor = this.obtenerConductorAsignado?.(u.id_unidad) || null;
+            const nombreOperador = conductor ? conductor.nombre_completo : 'Sin asignar';
 
-            const conductor = this.conductoresDisponibles
-                .find(c => c.unidad_asignada === u.id_unidad);
+            const estado = (u.estado_unidad || '—').toUpperCase();
+            const sentido = (u.sentido || '—').toUpperCase();
+
+            const badge =
+                estado === 'INCIDENCIA' ? 'bg-red-50 text-red-700 border-red-200' :
+                estado === 'EN_COLA' ? 'bg-sky-50 text-sky-700 border-sky-200' :
+                estado === 'EN_ESTACION' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                'bg-green-50 text-green-700 border-green-200';
 
             return `
-                <div class="border rounded-lg p-4 mb-3 shadow-sm bg-white">
-                    
-                    <!-- Header -->
-                    <div class="flex justify-between items-center mb-2">
-                        <div class="font-bold text-lg">
-                            🚍 Unidad #${u.id_unidad}
+                <div class="border rounded-xl p-4 mb-3 bg-white shadow-sm hover:border-gray-300 transition">
+                    <div class="flex items-start justify-between gap-3">
+                        <div>
+                            <div class="text-sm font-bold text-gray-900">Unidad #${u.id_unidad}</div>
+                            <div class="text-xs text-gray-500 mt-0.5">Sentido: <span class="font-semibold text-gray-700">${sentido}</span></div>
                         </div>
 
-                        <span class="px-3 py-1 rounded-full text-xs font-semibold ${estadoColor}">
-                            ${u.estado_unidad.replace(/_/g, ' ')}
+                        <span class="inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold border ${badge}">
+                            ${estado}
                         </span>
                     </div>
 
-                    <!-- Datos -->
-                    <div class="text-sm text-gray-700 space-y-1">
-                        <div>
-                            <strong>Sentido:</strong>
-                            ${u.sentido === 'IDA' ? '→ IDA' : '← VUELTA'}
-                        </div>
-
+                    <div class="mt-3 grid grid-cols-1 gap-2 text-xs text-gray-700">
                         <div class="flex items-center gap-2">
                             ${this.obtenerIconoEstacion(estacion)}
-                            <span><strong>Estación:</strong> ${estacion}</span>
+                            <span><span class="font-semibold text-gray-900">Estación:</span> ${estacion}</span>
                         </div>
 
-                        <div>
-                            <strong>Operador:</strong>
-                            ${conductor ? conductor.nombre_completo : '👤 Sin asignar'}
+                        <div class="flex items-center justify-between gap-3">
+                            <span class="text-gray-600">Operador</span>
+                            <span class="font-semibold text-gray-900 text-right">${nombreOperador}</span>
                         </div>
                     </div>
 
-                    <!-- Progreso -->
                     <div class="mt-3">
-                        <div class="flex justify-between text-xs text-gray-600 mb-1">
+                        <div class="flex justify-between text-[11px] text-gray-500 mb-1">
                             <span>Progreso</span>
-                            <span>${progreso}%</span>
+                            <span class="font-semibold text-gray-700">${progreso}%</span>
                         </div>
                         <div class="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
-                            <div class="bg-gradient-to-r from-mexibus-blue to-mexibus-green h-2"
-                                style="width:${progreso}%"></div>
+                            <div class="bg-mexibus-blue h-2" style="width:${progreso}%"></div>
                         </div>
                     </div>
-
                 </div>
             `;
         }).join('');
     },
+
     iniciarAutoRefresh() {
         if (this._autoRefreshId) return; // ya está corriendo
         this._autoRefreshId = setInterval(() => {
@@ -1033,12 +1032,39 @@ const moduloUnidades = {
     },
 
 
-    async init() {
-        await this.cargarConductores();
-        await this.renderizarSelectUnidades();
-        await this.cargar();
-        await this.mostrarSeccion('catalogo');
-        this.iniciarAutoRefresh();
+    async init(modo = 'catalogo') {
+        // modo:
+        //  - 'catalogo'    => Vista "Unidades" (solo catálogo)
+        //  - 'operaciones' => Vista "Operaciones" (control + monitoreo)
+
+        const tieneCatalogo = Boolean(document.getElementById('seccion-unidades-catalogo'));
+        const tieneOperaciones = Boolean(
+            document.getElementById('input-unidad-id') ||
+            document.getElementById('input-unidad-id-sacar') ||
+            document.getElementById('simulacion-viva')
+        );
+
+        if (modo === 'operaciones') {
+            this.seccionActual = 'operaciones';
+
+            // Datos requeridos por el flujo de operaciones
+            await this.cargarConductores();
+            await this.renderizarSelectUnidades();
+            await this.cargar();
+
+            this.iniciarAutoRefresh();
+            return;
+        }
+
+        // Default: catálogo
+        this.seccionActual = 'catalogo';
+
+        if (tieneCatalogo) {
+            await this.cargarTablaCatalogo();
+        }
+
+        // Si por alguna razón la vista incluye Operaciones también, no las activamos aquí.
+        // (Operaciones se inicializa desde su propia pestaña)
     }
 
 

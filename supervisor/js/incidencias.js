@@ -241,6 +241,13 @@ async rechazar(idInc) {
 
         bandeja.innerHTML = incidenciasProcesadas.map(({ inc, procesada }) => {
             const iconoEstacion = this.obtenerIconoEstacion(procesada.estacion);
+
+            const btnSim = inc.id_unidad ? `
+                <button onclick="simDock.open({ wide: true, focusId: ${inc.id_unidad} })"
+                        class="w-full mb-2 bg-white hover:bg-gray-50 text-gray-800 px-3 py-2 rounded text-xs font-medium transition border flex items-center justify-center gap-2">
+                    👁️ Ver en simulación
+                </button>
+            ` : '';
             
             return `
             <div class="bg-yellow-50 border-l-4 border-yellow-500 rounded-r-lg shadow p-4 fade-in">
@@ -267,6 +274,7 @@ async rechazar(idInc) {
 
                 <p class="text-xs text-gray-700 mb-3 p-2 bg-white rounded border">${procesada.descripcion}</p>
 
+                ${btnSim}
                 <div class="flex gap-2">
                     <button onclick="moduloIncidencias.validar(${inc.id_incidencia})" 
                             class="flex-1 bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded text-xs font-medium transition">
@@ -315,6 +323,13 @@ async rechazar(idInc) {
 
         container.innerHTML = incidenciasProcesadas.map(({ inc, procesada }) => {
             const iconoEstacion = this.obtenerIconoEstacion(procesada.estacion);
+
+            const btnSim = inc.id_unidad ? `
+                <button onclick="simDock.open({ wide: true, focusId: ${inc.id_unidad} })"
+                        class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg text-gray-800 font-medium border transition flex items-center gap-2">
+                    👁️ Ver en simulación
+                </button>
+            ` : '';
             
             return `
             <div class="bg-white border-l-4 border-red-500 rounded-r-lg shadow-md p-5 mb-4 fade-in hover:shadow-lg transition-shadow">
@@ -323,11 +338,14 @@ async rechazar(idInc) {
                         <span class="bg-red-500 text-white px-3 py-1 rounded-full text-sm font-bold">#${procesada.id}</span>
                         <span class="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded">${procesada.fecha}</span>
                     </div>
-                    <button onclick="moduloIncidencias.resolver(${inc.id_incidencia}, ${inc.id_unidad || 'null'})" 
-                            class="bg-green-500 hover:bg-green-600 px-4 py-2 rounded-lg text-white font-medium shadow transition-colors flex items-center gap-2">
-                        <span>✅</span>
-                        Resolver
-                    </button>
+                    <div class="flex gap-2">
+                        ${btnSim}
+                        <button onclick="moduloIncidencias.resolver(${inc.id_incidencia}, ${inc.id_unidad || 'null'})" 
+                                class="bg-green-500 hover:bg-green-600 px-4 py-2 rounded-lg text-white font-medium shadow transition-colors flex items-center gap-2">
+                            <span>✅</span>
+                            Resolver
+                        </button>
+                    </div>
                 </div>
                 
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">

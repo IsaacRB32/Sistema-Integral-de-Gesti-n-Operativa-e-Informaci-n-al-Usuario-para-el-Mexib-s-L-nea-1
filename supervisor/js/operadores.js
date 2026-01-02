@@ -27,6 +27,13 @@ const moduloOperadores = {
     this.cargar();
   },
   actualizarBotonesFiltro() {
+    // Nuevo UI (selects)
+    const selRol = document.getElementById('usuarios-filter-rol');
+    if (selRol) selRol.value = this.filtroRol;
+    const selStatus = document.getElementById('usuarios-filter-status');
+    if (selStatus) selStatus.value = this.filtroStatus;
+
+    // Fallback compatibilidad (si existen botones)
     const setBtn = (id, active) => {
       const btn = document.getElementById(id);
       if (!btn) return;
@@ -45,6 +52,15 @@ const moduloOperadores = {
     setBtn("filtro-status-todos", this.filtroStatus === "ALL");
     setBtn("filtro-status-activo", this.filtroStatus === "ACTIVO");
     setBtn("filtro-status-inactivo", this.filtroStatus === "INACTIVO");
+  },
+
+  limpiarFiltros() {
+    this.filtroRol = 'ALL';
+    this.filtroStatus = 'ALL';
+    const search = document.getElementById('usuarios-search');
+    if (search) search.value = '';
+    this.actualizarBotonesFiltro();
+    this.cargar();
   },
 
   aplicarFiltros() {
