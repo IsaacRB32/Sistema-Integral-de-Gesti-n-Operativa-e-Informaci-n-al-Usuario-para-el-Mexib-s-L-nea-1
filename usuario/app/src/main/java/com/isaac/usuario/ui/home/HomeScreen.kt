@@ -6,12 +6,10 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.ExperimentalMaterialApi
@@ -22,24 +20,23 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.isaac.usuario.R
-import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.isaac.usuario.R
+import com.isaac.usuario.ui.recorrido.MiniRecorridoLinea1
+import com.isaac.usuario.ui.recorrido.MiniRecorridoLinea1FullScreen
+import com.isaac.usuario.ui.recorrido.estacionesLinea1Full
 import com.isaac.usuario.ui.utils.tiempoTranscurrido
 import kotlinx.coroutines.delay
-// Asegúrate de tener tu ViewModel importado correctamente
-// import com.isaac.usuario.ui.home.HomeViewModel
 
 // COLOR PRINCIPAL
 val AppTealColor = Color(0xFF00a1d3)
@@ -50,13 +47,26 @@ data class IncidenciaData(
     val tiempo: String,
     val estacion: String,
     val descripcion: String,
-    val icono: ImageVector
+    val iconoRes: Int
 )
+
+fun iconoDrawablePorIncidencia(nombre: String): Int {
+    return when (nombre) {
+        "Bloqueo por manifestación" -> R.drawable.bloqueomanifestacion
+        "Inundación" -> R.drawable.inundacion
+        "Colisión de unidad" -> R.drawable.colisionunidad
+        "Colisión de terceros" -> R.drawable.colisionterceros
+        "Fallas técnicas de la unidad" -> R.drawable.fallastecnicas
+        "Unidad detenida en el carril" -> R.drawable.unidaddetenida
+        "Incidente en la estación" -> R.drawable.incidenteestacion
+        "Otro" -> R.drawable.otraincidencia
+        else -> R.drawable.otraincidencia
+    }
+}
 
 @Composable
 fun HomeScreen() {
     var selectedTab by remember { mutableIntStateOf(0) }
-    // Asumiendo que inyectas o creas el VM aquí. Si usas Hilt sería hiltViewModel()
     val homeViewModel: HomeViewModel = viewModel()
 
     Scaffold(
@@ -72,7 +82,7 @@ fun HomeScreen() {
                 0 -> InicioTabContent(homeViewModel)
                 1 -> IncidenciasListTabContent(homeViewModel)
                 2 -> MapaFullTabContent()
-                3 -> AjustesTabContent()
+                3 -> AjustesTabContent() // Ahora es la pestaña de Información
             }
         }
     }
@@ -84,11 +94,20 @@ fun InicioTabContent(homeViewModel: HomeViewModel = viewModel()) {
     val context = LocalContext.current
     val ultimaIncidencia by homeViewModel.ultimaIncidencia
     val cargando by homeViewModel.cargando
+    val unidades by homeViewModel.unidades
 
+    //Se actualiza la última incidencia cada 10 segundos
     LaunchedEffect(Unit) {
         while (true) {
             homeViewModel.cargarUltimaIncidencia(context)
             delay(10_000)
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        while (true) {
+            homeViewModel.cargarSnapshot(context)
+            delay(3_000) // cada 3 segundos
         }
     }
 
@@ -102,14 +121,14 @@ fun InicioTabContent(homeViewModel: HomeViewModel = viewModel()) {
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            text = "¡Hola viajero!",
+            text = "¡Hola, pasajer@!",
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
-            color = Color.Black,
+            color = AppTealColor,
             modifier = Modifier.fillMaxWidth()
         )
         Text(
-            text = "Recuerda tomar precauciones antes de salir",
+            text = "Recuerda tomar precauciones.",
             style = MaterialTheme.typography.bodyLarge,
             color = Color.Gray,
             modifier = Modifier.fillMaxWidth()
@@ -119,7 +138,7 @@ fun InicioTabContent(homeViewModel: HomeViewModel = viewModel()) {
 
         Text(
             text = "⚠️ Última incidencia reportada:",
-            style = MaterialTheme.typography.labelLarge,
+            style = MaterialTheme.typography.titleMedium,
             color = Color.DarkGray,
             modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
         )
@@ -133,9 +152,10 @@ fun InicioTabContent(homeViewModel: HomeViewModel = viewModel()) {
                     tiempo = "Unidad ${ultimaIncidencia!!.id_unidad}",
                     estacion = tiempoTranscurrido(ultimaIncidencia!!.fecha_inicio),
                     descripcion = ultimaIncidencia!!.descripcion,
-                    icono = Icons.Default.Warning
+                    iconoRes = iconoDrawablePorIncidencia(
+                        ultimaIncidencia!!.nombre_incidencia
+                    )
                 )
-                // Aquí limitamos la descripción porque es la pantalla de resumen
                 IncidentCard(data = incidenciaUi, esDestacada = true, limitarDescripcion = true)
             }
         }
@@ -143,25 +163,30 @@ fun InicioTabContent(homeViewModel: HomeViewModel = viewModel()) {
         Spacer(modifier = Modifier.height(32.dp))
 
         Text(
-            text = "Tu ubicación actual:",
+            text = "Consulta el estado del recorrido",
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)
         )
 
-        Image(
-            painter = painterResource(id = R.drawable.mapa),
-            contentDescription = "Mini mapa",
-            contentScale = ContentScale.Crop,
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(200.dp)
+                .height(300.dp)
                 .clip(RoundedCornerShape(24.dp))
                 .border(2.dp, Color.White, RoundedCornerShape(24.dp))
-        )
+        ){
+            //Cambio (se dibujan las estaciones y las incidencias)
+            MiniRecorridoLinea1(
+                estaciones = estacionesLinea1Full,
+                unidades = unidades,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .border(2.dp, Color.White, RoundedCornerShape(24.dp))
+            )
+        }
     }
 }
-
 
 // PESTAÑA 2: LISTA DE INCIDENCIAS
 @Composable
@@ -211,10 +236,11 @@ fun IncidenciasListTabContent(homeViewModel: HomeViewModel = viewModel()) {
                                 tiempo = "Unidad ${incidencia.id_unidad}",
                                 estacion = tiempoTranscurrido(incidencia.fecha_inicio),
                                 descripcion = incidencia.descripcion,
-                                icono = Icons.Default.Warning
+                                iconoRes = iconoDrawablePorIncidencia(
+                                    incidencia.nombre_incidencia
+                                )
                             ),
                             esDestacada = false,
-                            // Aquí NO limitamos la descripción para que sea responsive
                             limitarDescripcion = false
                         )
                     }
@@ -224,117 +250,265 @@ fun IncidenciasListTabContent(homeViewModel: HomeViewModel = viewModel()) {
     }
 }
 
-// PESTAÑA 3: MAPA COMPLETO CON ZOOM
+// PESTAÑA 3: MAPA COMPLETO
 @Composable
 fun MapaFullTabContent() {
-    // Variables de estado para el Zoom y el Pan (Movimiento)
-    var scale by remember { mutableFloatStateOf(1f) }
-    var offset by remember { mutableStateOf(Offset.Zero) }
-
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xFFEFEFEF))
-            // Detectar gestos en toda la caja
-            .pointerInput(Unit) {
-                detectTransformGestures { _, pan, zoom, _ ->
-                    // Actualizamos el zoom (limitamos para que no se haga microscópico ni gigante)
-                    scale = maxOf(1f, minOf(scale * zoom, 5f))
-                    // Actualizamos la posición (pan)
-                    // Si el zoom es 1 (original), no dejamos mover para que no se pierda la imagen
-                    val newOffset = if (scale == 1f) Offset.Zero else offset + pan
-                    offset = newOffset
-                }
-            },
-        contentAlignment = Alignment.Center
-    ) {
-        Image(
-            painter = painterResource(id = R.drawable.mapa),
-            contentDescription = "Mapa Completo",
-            contentScale = ContentScale.Fit,
-            modifier = Modifier
-                .fillMaxSize()
-                // Aquí aplicamos la transformación gráfica
-                .graphicsLayer(
-                    scaleX = scale,
-                    scaleY = scale,
-                    translationX = offset.x,
-                    translationY = offset.y
-                )
-        )
-
-        // Botón para resetear el zoom si el usuario se pierde
-        if (scale > 1f) {
-            FloatingActionButton(
-                onClick = {
-                    scale = 1f
-                    offset = Offset.Zero
-                },
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(16.dp),
-                containerColor = AppTealColor
-            ) {
-                Icon(Icons.Default.ZoomOutMap, contentDescription = "Reset Zoom", tint = Color.White)
-            }
-        }
-    }
+    MiniRecorridoLinea1FullScreen(
+        modifier = Modifier.fillMaxSize()
+    )
 }
 
-
-// PESTAÑA 4: AJUSTES (Sin cambios mayores)
+// ==========================================
+// PESTAÑA 4: INFORMACIÓN (Antes Ajustes)
+// ==========================================
 @Composable
 fun AjustesTabContent() {
-    var notificacionesEnabled by remember { mutableStateOf(true) }
-
     Column(
-        modifier = Modifier.fillMaxSize().padding(24.dp)
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+            .verticalScroll(rememberScrollState())
     ) {
+        // --- SECCIÓN 1: HORARIOS ---
         Text(
-            text = "Configuración",
-            style = MaterialTheme.typography.headlineMedium,
+            text = "Horario del sistema de transporte",
+            style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(bottom = 32.dp)
+            color = Color.Black,
+            modifier = Modifier.padding(bottom = 16.dp)
         )
-        Row(
+
+        Card(
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+            shape = RoundedCornerShape(16.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+
+                // --- LUNES A VIERNES ---
+                ScheduleBadge(text = "Lunes a viernes")
+                Spacer(modifier = Modifier.height(12.dp))
+
+                ScheduleHeader() // Encabezados de tabla
+                ScheduleRow("Terminal Ojo de agua", "4:00 hrs", "01:40 hrs")
+                ScheduleRow("Terminal Cd. Azteca", "4:00 hrs", "01:40 hrs")
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // --- SÁBADO Y DOMINGO ---
+                ScheduleBadge(text = "Sábado y domingo")
+                Spacer(modifier = Modifier.height(12.dp))
+
+                ScheduleHeader() // Encabezados de tabla
+                ScheduleRow("Terminal Ojo de agua", "4:10 hrs", "01:37 hrs")
+                ScheduleRow("Terminal Cd. Azteca", "4:10 hrs", "01:37 hrs")
+            }
+        }
+
+        Spacer(modifier = Modifier.height(32.dp))
+
+        // --- SECCIÓN 2: TARIFA ---
+        Text(
+            text = "Tarifa del sistema de transporte",
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold,
+            color = Color.Black,
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
+
+        // TARJETA CON IMAGEN REAL
+        Card(
+            shape = RoundedCornerShape(12.dp),
             modifier = Modifier
                 .fillMaxWidth()
-                .background(Color.White, RoundedCornerShape(12.dp))
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+                .height(220.dp), // Ajusta la altura según se vea mejor tu imagen
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = if(notificacionesEnabled) Icons.Default.NotificationsActive else Icons.Default.NotificationsOff,
-                    contentDescription = null,
-                    tint = AppTealColor,
-                    modifier = Modifier.size(28.dp)
-                )
-                Spacer(modifier = Modifier.width(16.dp))
-                Column {
-                    Text(text = "Notificaciones", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                    Text(
-                        text = if (notificacionesEnabled) "Se notificarán incidentes" else "Notificaciones desactivadas",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.Gray
-                    )
-                }
-            }
-            Switch(
-                checked = notificacionesEnabled,
-                onCheckedChange = { notificacionesEnabled = it },
-                colors = SwitchDefaults.colors(
-                    checkedThumbColor = Color.White,
-                    checkedTrackColor = AppTealColor
-                )
+            Image(
+                painter = painterResource(id = R.drawable.tarjetamexibus),
+                contentDescription = "Tarjeta Movimex",
+                contentScale = ContentScale.Crop, // "Crop" recorta para llenar, "Fit" ajusta para verse completa
+                modifier = Modifier.fillMaxSize()
             )
         }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // --- SECCIÓN 3: DESGLOSE DE TARIFAS (Versión Bonita) ---
+        Text(
+            text = "Desglose de Tarifas",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = Color.Black,
+            modifier = Modifier.padding(bottom = 12.dp)
+        )
+
+        Card(
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+            shape = RoundedCornerShape(16.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+
+                // Renglón 1: General
+                FareRow(
+                    category = "Público General",
+                    price = "$10.00",
+                    description = "Tarifa base por viaje"
+                )
+
+                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), color = Color.LightGray.copy(alpha = 0.5f))
+
+                // Renglón 2: Estudiantes
+                FareRow(
+                    category = "Estudiantes",
+                    price = "$7.00",
+                    description = "Presentando credencial vigente"
+                )
+
+                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), color = Color.LightGray.copy(alpha = 0.5f))
+
+                // Renglón 3: Mujeres con Bienestar
+                FareRow(
+                    category = "Mujeres del Bienestar",
+                    price = "$9.50",
+                    description = "Con tarjeta del programa"
+                )
+
+                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), color = Color.LightGray.copy(alpha = 0.5f))
+
+                // Renglón 4: Grupos Vulnerables (Gratis)
+                // Aquí usamos un diseño especial para que resalte la gratuidad
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Acceso Gratuito",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.Black
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "• Niños menores de 5 años\n• Personas con discapacidad\n• Adultos mayores (60+)",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.Gray,
+                            lineHeight = 16.sp
+                        )
+                    }
+
+                    // Etiqueta "GRATIS"
+                    Surface(
+                        color = AppTealColor, // O puedes usar un verde Color(0xFF4CAF50)
+                        shape = RoundedCornerShape(50),
+                        modifier = Modifier.padding(start = 8.dp)
+                    ) {
+                        Text(
+                            text = "GRATIS",
+                            color = Color.White,
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                        )
+                    }
+                }
+            }
+        }
+
+        // Espacio final para que no quede pegado al borde
+        Spacer(modifier = Modifier.height(80.dp))
+    }
+}
+
+// --- COMPONENTES AUXILIARES PARA EL HORARIO ---
+
+@Composable
+fun ScheduleBadge(text: String) {
+    Surface(
+        color = AppTealColor,
+        shape = RoundedCornerShape(4.dp),
+    ) {
+        Text(
+            text = text,
+            color = Color.White,
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+        )
+    }
+}
+
+@Composable
+fun ScheduleHeader() {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.End
+    ) {
+        // Espacio vacío para alinear con el nombre de terminal
+        Spacer(modifier = Modifier.weight(1f))
+
+        Text(
+            text = "Primera salida",
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Bold,
+            color = Color.Black,
+            modifier = Modifier.width(80.dp),
+            textAlign = TextAlign.Center
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = "Ultima salida",
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Bold,
+            color = Color.Black,
+            modifier = Modifier.width(80.dp),
+            textAlign = TextAlign.Center
+        )
+    }
+}
+
+@Composable
+fun ScheduleRow(station: String, firstTime: String, lastTime: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = station,
+            style = MaterialTheme.typography.bodySmall,
+            color = Color.DarkGray,
+            modifier = Modifier.weight(1f)
+        )
+
+        Text(
+            text = firstTime,
+            style = MaterialTheme.typography.bodySmall,
+            color = Color.Black,
+            fontWeight = FontWeight.Medium,
+            modifier = Modifier.width(80.dp),
+            textAlign = TextAlign.Center
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = lastTime,
+            style = MaterialTheme.typography.bodySmall,
+            color = Color.Black,
+            fontWeight = FontWeight.Medium,
+            modifier = Modifier.width(80.dp),
+            textAlign = TextAlign.Center
+        )
     }
 }
 
 
-// COMPONENTE REUTILIZABLE: TARJETA DE INCIDENCIA RESPONSIVE
+// COMPONENTE REUTILIZABLE: TARJETA DE INCIDENCIA
 @Composable
 fun IncidentCard(data: IncidenciaData, esDestacada: Boolean, limitarDescripcion: Boolean = false) {
     val containerColor = if (esDestacada) Color.White else Color.White
@@ -353,45 +527,28 @@ fun IncidentCard(data: IncidenciaData, esDestacada: Boolean, limitarDescripcion:
             modifier = Modifier
                 .padding(16.dp)
                 .fillMaxWidth(),
-            // CAMBIO CLAVE: Alineación 'Top' en lugar de 'CenterVertically'
-            // Esto permite que si el texto es largo, el icono se quede arriba y no flote en medio.
             verticalAlignment = Alignment.Top
         ) {
-            // Icono Circular
-            Box(
+            Image(
+                painter = painterResource(id = data.iconoRes),
+                contentDescription = null,
                 modifier = Modifier
-                    .size(50.dp)
-                    .background(AppTealColor.copy(alpha = 0.1f), CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = data.icono,
-                    contentDescription = null,
-                    tint = AppTealColor,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-
+                    .size(48.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .border(width = 1.dp, color = Color.White, shape = RoundedCornerShape(10.dp)),
+                contentScale = ContentScale.Crop
+            )
             Spacer(modifier = Modifier.width(16.dp))
 
-            // Columna Central (Textos)
             Column(modifier = Modifier.weight(1f)) {
-                // Título
                 Text(
                     text = data.titulo,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = Color.Black
                 )
-
-                // Estación (Ubicación)
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        Icons.Default.Place,
-                        contentDescription = null,
-                        tint = Color.Gray,
-                        modifier = Modifier.size(14.dp)
-                    )
+                    Icon(Icons.Default.Timer, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(14.dp))
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
                         text = data.estacion,
@@ -400,38 +557,62 @@ fun IncidentCard(data: IncidenciaData, esDestacada: Boolean, limitarDescripcion:
                         color = Color.DarkGray
                     )
                 }
-
                 Spacer(modifier = Modifier.height(6.dp))
-
-                // Descripción (El texto largo)
                 Text(
                     text = data.descripcion,
-                    style = MaterialTheme.typography.bodyMedium, // Aumenté un poco el tamaño para legibilidad
+                    style = MaterialTheme.typography.bodyMedium,
                     color = Color.Gray,
-                    // Si limitarDescripcion es false, usa MAX_VALUE, permitiendo múltiples líneas
                     maxLines = if (limitarDescripcion) 2 else Int.MAX_VALUE,
-                    // Si se corta, pone "...", si no, se ajusta
                     overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                 )
             }
-
             Spacer(modifier = Modifier.width(8.dp))
+        }
+    }
+}
 
-            // Tiempo (Alineado arriba a la derecha)
+// TARJETA DE TARIFAS
+@Composable
+fun FareRow(category: String, price: String, description: String? = null) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Lado Izquierdo: Categoría y descripción
+        Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = data.tiempo,
-                style = MaterialTheme.typography.labelSmall,
-                color = AppTealColor,
+                text = category,
+                style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold,
-                // Modifier para asegurar que no se aplaste si el título es largo
-                modifier = Modifier.padding(top = 4.dp)
+                color = Color.Black
+            )
+            if (description != null) {
+                Text(
+                    text = description,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.Gray
+                )
+            }
+        }
+
+        // Lado Derecho: El Precio en una burbuja gris tenue
+        Surface(
+            color = Color(0xFFF0F0F0),
+            shape = RoundedCornerShape(8.dp)
+        ) {
+            Text(
+                text = price,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = AppTealColor, // El precio usa el color de tu app
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
             )
         }
     }
 }
 
-
-// BARRA DE NAVEGACIÓN (Sin cambios)
+// BARRA DE NAVEGACIÓN
 @Composable
 fun UsuarioBottomBar(selectedTab: Int, onTabSelected: (Int) -> Unit) {
     NavigationBar(
@@ -460,8 +641,8 @@ fun UsuarioBottomBar(selectedTab: Int, onTabSelected: (Int) -> Unit) {
             colors = NavigationBarItemDefaults.colors(selectedIconColor = AppTealColor, selectedTextColor = AppTealColor, indicatorColor = AppTealColor.copy(alpha = 0.1f))
         )
         NavigationBarItem(
-            icon = { Icon(Icons.Default.Settings, contentDescription = "Ajustes") },
-            label = { Text("Ajustes") },
+            icon = { Icon(Icons.Default.Info, contentDescription = "Info.") },
+            label = { Text("Info.") },
             selected = selectedTab == 3,
             onClick = { onTabSelected(3) },
             colors = NavigationBarItemDefaults.colors(selectedIconColor = AppTealColor, selectedTextColor = AppTealColor, indicatorColor = AppTealColor.copy(alpha = 0.1f))

@@ -16,6 +16,7 @@ class IncidenciasRepository {
         //----------------------------------------------------------------
         // Zona de cambio de IPs
         //----------------------------------------------------------------
+        //IP de Fernando Aranda
         //val url = "http://192.168.100.207:3000/api/sim/incidencias/activas"
         // IP de Isaac Rojas
         val url = "http://192.168.0.97:3000/api/sim/incidencias/activas"
