@@ -197,7 +197,7 @@ const VISTAS = {
                             </div>
 
                             <button class="mt-4 w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-semibold bg-mexibus-green text-white hover:opacity-90 transition"
-                                onclick="meterUnidad()">
+                                id="btn-meter-unidad" onclick="meterUnidad()">
                                 Meter
                             </button>
                         </div>
@@ -243,7 +243,7 @@ const VISTAS = {
                                 <span class="text-xs text-gray-500">Tarjetas</span>
                             </div>
 
-                            <div id="simulacion-viva" class="h-[28rem] overflow-auto scrollbar-custom pr-1">
+                            <div id="simulacion-viva" class="h-[calc(100vh-260px)] min-h-[36rem] overflow-auto scrollbar-custom pr-1">
                                 <div class="text-center py-6 text-gray-400 text-sm">Cargando...</div>
                             </div>
                         </div>
@@ -265,14 +265,6 @@ const VISTAS = {
                                     <div class="text-center py-4 text-gray-400 text-sm">Cargando estaciones...</div>
                                 </div>
                             </div>
-
-                            <!-- Tabla estado -->
-                            <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                                <div class="flex items-center justify-between mb-3">
-                                    <h4 class="font-semibold text-gray-900">Estado en tiempo real</h4>
-                                    <div class="text-xs text-gray-500">Resumen por unidad</div>
-                                </div>
-
                                 <div class="overflow-x-auto scrollbar-custom">
                                     <table class="w-full text-sm">
                                         <thead>

@@ -2,6 +2,11 @@
 
 const moduloUnidades = {
     conductoresDisponibles: [],
+    // Estado interno para UX en Operaciones
+    _lastSnapshot: [],
+    _simVivoFocusId: "",
+    _bindFocusTimer: null,
+    _bindFocusTries: 0,
 
     async cargarConductores() {
         try {
@@ -14,6 +19,11 @@ const moduloUnidades = {
 
             this.conductoresDisponibles = await res.json();
             this.renderizarSelectConductores();
+
+            // Si estamos en Operaciones, refrescar tarjetas con nombres de operador actualizados
+            if (this.seccionActual === 'operaciones') {
+                try { this.renderizarSimulacion(this._lastSnapshot || []); } catch (e) { /* noop */ }
+            }
 
         } catch (err) {
             console.error('Error obteniendo conductores:', err);
@@ -32,11 +42,11 @@ const moduloUnidades = {
         const ocupados = this.conductoresDisponibles.filter(c => c.estado === 'OCUPADO');
 
         if (disponibles.length === 0 && ocupados.length === 0) {
-            select.innerHTML = '<option value="">⚠️ No hay conductores registrados</option>';
+            select.innerHTML = '<option value="">No hay conductores registrados</option>';
             return;
         }
 
-        let html = '<option value="">-- Sin asignar --</option>';
+        let html = '<option value="">-- Selecciona un operador --</option>';
 
         if (disponibles.length > 0) {
             html += '<optgroup label="✅ Disponibles">';
@@ -55,6 +65,10 @@ const moduloUnidades = {
         }
 
         select.innerHTML = html;
+    
+
+        // Actualizar estado del botón Meter (UX)
+        try { this.actualizarEstadoBotonMeter?.(); } catch (e) { /* noop */ }
     },
 
     async meterUnidad() {
@@ -67,6 +81,24 @@ const moduloUnidades = {
 
         if (!id) {
             return utils.mostrarMensaje("msg-unidades", "Selecciona una unidad (FUERA de circuito)", "error");
+        }
+
+        // ✅ Regla: no permitir meter una unidad sin operador asignado
+        if (!conductorId) {
+            return utils.mostrarMensaje("msg-unidades", "Selecciona un operador disponible antes de meter la unidad.", "error");
+        }
+
+        // Validación extra: si el operador está marcado como ocupado, no permitir
+        const conductor = Array.isArray(this.conductoresDisponibles)
+            ? this.conductoresDisponibles.find(c => String(c.id_usuario) === String(conductorId))
+            : null;
+
+        if (conductor && conductor.estado && conductor.estado !== "DISPONIBLE") {
+            return utils.mostrarMensaje(
+                "msg-unidades",
+                `El operador seleccionado está ocupado${conductor.unidad_asignada ? ` (Unidad #${conductor.unidad_asignada})` : ""}.`,
+                "error"
+            );
         }
 
         const opt = sel?.selectedOptions?.[0];
@@ -87,49 +119,59 @@ const moduloUnidades = {
         const label = opt?.dataset?.label ?? `#${id}`;
 
         try {
+            // 1) Asignar conductor (obligatorio)
+            const resAsign = await fetch(`${CONFIG.API_BASE}/supervisor/asignar-conductor`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    id_usuario: parseInt(conductorId, 10),
+                    id_unidad: parseInt(id, 10)
+                })
+            });
+
+            const dataAsign = await resAsign.json().catch(() => ({}));
+            if (!resAsign.ok) {
+                const msg = dataAsign?.error || "No se pudo asignar el operador. Verifica disponibilidad.";
+                return utils.mostrarMensaje("msg-unidades", msg, "error");
+            }
+
+            // 2) Meter unidad al circuito (servidor también valida asignación)
             const resUnidad = await fetch(`${CONFIG.API_BASE}/sim/entrar`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                id_unidad: parseInt(id, 10),
-                id_ruta: parseInt(ruta, 10),
-                sentido,
-                idx_tramo: 0,
-                velocidad
-            })
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    id_unidad: parseInt(id, 10),
+                    id_ruta: parseInt(ruta, 10),
+                    sentido,
+                    idx_tramo: 0,
+                    velocidad
+                })
             });
 
             const dataUnidad = await resUnidad.json().catch(() => ({}));
             if (!resUnidad.ok || !dataUnidad.ok) {
-            return utils.mostrarMensaje("msg-unidades", dataUnidad.error || "Error al ingresar unidad", "error");
+                // Rollback: desasignar operador si no se logró meter al circuito
+                try {
+                    await fetch(`${CONFIG.API_BASE}/supervisor/desasignar-conductor`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ id_unidad: parseInt(id, 10) })
+                    });
+                } catch (e) { /* noop */ }
+
+                const msg = dataUnidad?.error || "No se pudo meter la unidad al circuito.";
+                return utils.mostrarMensaje("msg-unidades", msg, "error");
             }
 
-            if (conductorId) {
-            const resConductor = await fetch(`${CONFIG.API_BASE}/supervisor/asignar-conductor`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                id_usuario: parseInt(conductorId, 10),
-                id_unidad: parseInt(id, 10)
-                })
-            });
-
-            if (!resConductor.ok) {
-                utils.mostrarMensaje("msg-unidades", `${label} ingresada pero no se pudo asignar conductor`, "warning");
-            } else {
-                utils.mostrarMensaje("msg-unidades", `${label} ingresada con conductor asignado`, "success");
-            }
-            } else {
-            utils.mostrarMensaje("msg-unidades", `${label} ingresada sin conductor`, "success");
-            }
+            utils.mostrarMensaje("msg-unidades", `${label} ingresada con operador asignado`, "success");
 
             // Abrir simulación acoplable para dar contexto visual al supervisor.
             try { simDock?.open?.({ wide: true, focusId: id }); } catch (e) { /* noop */ }
 
             setTimeout(() => {
-            this.cargar();
-            this.cargarConductores();
-            this.renderizarSelectUnidades();
+                this.cargar();
+                this.cargarConductores();
+                this.renderizarSelectUnidades();
             }, 500);
 
         } catch (err) {
@@ -264,12 +306,24 @@ const moduloUnidades = {
         return `<span class="text-xl">${emoji}</span>`;
     },
 
+    // Devuelve el operador (conductor) asignado actualmente a una unidad.
+    // Se usa para pintar el nombre en las tarjetas de “Simulación en vivo”.
+    // Estructura esperada en /supervisor/conductores: { unidad_asignada, nombre_completo, ... }
+    obtenerConductorAsignado(id_unidad) {
+        const id = Number(id_unidad);
+        if (!Number.isFinite(id)) return null;
+
+        const lista = Array.isArray(this.conductoresDisponibles) ? this.conductoresDisponibles : [];
+        return lista.find(c => Number(c?.unidad_asignada) === id) || null;
+    },
+
     async cargar() {
         try {
             const res = await fetch(`${CONFIG.API_BASE}/sim/snapshot`);
             const unidades = await res.json();
 
-            this.renderizarSimulacion(unidades);
+            this._lastSnapshot = Array.isArray(unidades) ? unidades : [];
+            this.renderizarSimulacion(this._lastSnapshot);
             
             const tbody = document.getElementById('tabla-unidades');
             if (!tbody) return;
@@ -288,9 +342,16 @@ const moduloUnidades = {
                     'FUERA_DE_SERVICIO': 'bg-gray-500 text-white'
                 }[u.estado_unidad] || 'bg-gray-500 text-white';
 
-                const estacion = CONFIG.estaciones[u.idx_tramo] || 'Desconocida';
-                const progreso = Math.round(u.progreso * 100);
-                const iconoEstacion = this.obtenerIconoEstacion(estacion);
+const estaciones = Array.isArray(CONFIG?.estaciones) ? CONFIG.estaciones : [];
+const n = estaciones.length;
+const idx = Math.max(0, Math.min(Math.max(0, n - 1), parseInt(u.idx_tramo, 10) || 0));
+const prog = Math.max(0, Math.min(0.9999, Number(u.progreso) || 0));
+const pct = Math.round(prog * 100);
+const isReg = String(u.sentido || '').toUpperCase().startsWith('REG');
+const baseIdx = isReg ? (n - 1 - idx) : idx;
+const estacion = estaciones[baseIdx] || 'Desconocida';
+const progreso = pct;
+const iconoEstacion = this.obtenerIconoEstacion(estacion);
 
                 // Buscar conductor asignado
                 const conductor = this.conductoresDisponibles.find(c => c.unidad_asignada === u.id_unidad);
@@ -436,8 +497,8 @@ const moduloUnidades = {
         }
 
         if (!Array.isArray(unidades) || unidades.length === 0) {
-            if (selectMeter) selectMeter.innerHTML = `<option value="">⚠️ No hay unidades registradas</option>`;
-            if (selectSacar) selectSacar.innerHTML = `<option value="">⚠️ No hay unidades en circuito</option>`;
+            if (selectMeter) selectMeter.innerHTML = `<option value="">No hay unidades registradas</option>`;
+            if (selectSacar) selectSacar.innerHTML = `<option value="">No hay unidades en circuito</option>`;
             return;
         }
 
@@ -492,12 +553,16 @@ const moduloUnidades = {
             if (dentro.length === 0) {
             const opt = document.createElement("option");
             opt.value = "";
-            opt.textContent = "⚠️ No hay unidades EN circuito";
+            opt.textContent = "No hay unidades EN circuito";
             selectSacar.appendChild(opt);
             } else {
             dentro.forEach(u => selectSacar.appendChild(crearOption(u)));
             }
         }
+    
+
+        // Actualizar estado del botón Meter (UX)
+        try { this.actualizarEstadoBotonMeter?.(); } catch (e) { /* noop */ }
     },
 
     seccionActual: 'catalogo',
@@ -956,10 +1021,17 @@ const moduloUnidades = {
     },
 
     renderizarSimulacion(unidades) {
+        this._lastSnapshot = Array.isArray(unidades) ? unidades : [];
         const cont = document.getElementById('simulacion-viva');
         if (!cont) return;
 
-        if (!unidades || unidades.length === 0) {
+        const focusId = String(this._simVivoFocusId || "");
+        const all = Array.isArray(unidades) ? unidades : [];
+
+        // Si hay filtro activo, solo mostramos esa unidad
+        const lista = focusId ? all.filter(u => String(u.id_unidad) === focusId) : all;
+
+        if (!all || all.length === 0) {
             cont.innerHTML = `
                 <div class="text-center text-gray-400 py-10">
                     <div class="text-sm font-semibold text-gray-500">No hay unidades en circulación</div>
@@ -969,15 +1041,71 @@ const moduloUnidades = {
             return;
         }
 
-        cont.innerHTML = unidades.map(u => {
-            const estacion = CONFIG.estaciones[u.idx_tramo] || 'Desconocida';
-            const progreso = Math.round((Number(u.progreso) || 0) * 100);
+        if (focusId && lista.length === 0) {
+            cont.innerHTML = `
+                <div class="border rounded-xl p-4 bg-white">
+                    <div class="text-sm font-semibold text-gray-900">Unidad #${focusId}</div>
+                    <div class="text-xs text-gray-500 mt-1">No hay datos de esa unidad en este momento.</div>
+                    <button class="mt-3 px-3 py-2 rounded-lg bg-gray-200 text-gray-800 text-xs font-semibold hover:bg-gray-300 transition"
+                            onclick="moduloUnidades.limpiarFiltroSimVivo()">
+                        Ver todas
+                    </button>
+                </div>
+            `;
+            return;
+        }
 
-            const conductor = this.obtenerConductorAsignado?.(u.id_unidad) || null;
+        const header = focusId ? `
+            <div class="flex items-center justify-between border rounded-xl p-3 mb-3 bg-gray-50">
+                <div class="text-xs text-gray-700">
+                    Mostrando solo <span class="font-semibold">Unidad #${focusId}</span>
+                </div>
+                <button class="px-3 py-2 rounded-lg bg-white border text-xs font-semibold hover:bg-gray-100 transition"
+                        onclick="moduloUnidades.limpiarFiltroSimVivo()">
+                    Ver todas
+                </button>
+            </div>
+        ` : '';
+
+        cont.innerHTML = header + lista.map(u => {
+
+            const conductor = this.obtenerConductorAsignado(u.id_unidad);
             const nombreOperador = conductor ? conductor.nombre_completo : 'Sin asignar';
+            const sinOperador = !conductor;
 
             const estado = (u.estado_unidad || '—').toUpperCase();
             const sentido = (u.sentido || '—').toUpperCase();
+// Ubicación consistente con el Panel de simulación (respeta IDA/REGRESO)
+const estaciones = Array.isArray(CONFIG?.estaciones) ? CONFIG.estaciones : [];
+const n = estaciones.length;
+
+const clampInt = (v, lo, hi) => {
+    const x = parseInt(v, 10);
+    if (Number.isNaN(x)) return lo;
+    return Math.max(lo, Math.min(hi, x));
+};
+const clampNum = (v, lo, hi) => {
+    const x = Number(v);
+    if (!Number.isFinite(x)) return lo;
+    return Math.max(lo, Math.min(hi, x));
+};
+
+const idx = clampInt(u?.idx_tramo, 0, Math.max(0, n - 1));
+const prog = clampNum(u?.progreso, 0, 0.9999);
+const pct = Math.round(prog * 100);
+
+const isReg = sentido.startsWith('REG');
+const baseIdx = isReg ? (n - 1 - idx) : idx;
+const nextIdx = isReg ? (baseIdx - 1 + n) % n : (baseIdx + 1) % n;
+
+const estacionBase = estaciones[baseIdx] || 'Desconocida';
+const estacionSig = estaciones[nextIdx] || 'Desconocida';
+
+const ubicacionTxt = (estado === 'EN_ESTACION')
+    ? estacionBase
+    : `${estacionBase} → ${estacionSig} (${pct}%)`;
+
+const progreso = pct;
 
             const badge =
                 estado === 'INCIDENCIA' ? 'bg-red-50 text-red-700 border-red-200' :
@@ -985,8 +1113,13 @@ const moduloUnidades = {
                 estado === 'EN_ESTACION' ? 'bg-amber-50 text-amber-700 border-amber-200' :
                 'bg-green-50 text-green-700 border-green-200';
 
+            const isFocus = focusId && String(u.id_unidad) === focusId;
+            const focusCls = isFocus ? 'ring-2 ring-mexibus-blue border-mexibus-blue' : '';
+
             return `
-                <div class="border rounded-xl p-4 mb-3 bg-white shadow-sm hover:border-gray-300 transition">
+                <div class="border rounded-xl p-4 mb-3 bg-white shadow-sm hover:border-gray-300 transition cursor-pointer ${focusCls}"
+                     data-unidad-id="${u.id_unidad}"
+                     title="Clic para enfocar esta unidad">
                     <div class="flex items-start justify-between gap-3">
                         <div>
                             <div class="text-sm font-bold text-gray-900">Unidad #${u.id_unidad}</div>
@@ -1000,13 +1133,13 @@ const moduloUnidades = {
 
                     <div class="mt-3 grid grid-cols-1 gap-2 text-xs text-gray-700">
                         <div class="flex items-center gap-2">
-                            ${this.obtenerIconoEstacion(estacion)}
-                            <span><span class="font-semibold text-gray-900">Estación:</span> ${estacion}</span>
+                            ${this.obtenerIconoEstacion(estacionBase)}
+                            <span><span class="font-semibold text-gray-900">Ubicación:</span> ${ubicacionTxt}</span>
                         </div>
 
                         <div class="flex items-center justify-between gap-3">
                             <span class="text-gray-600">Operador</span>
-                            <span class="font-semibold text-gray-900 text-right">${nombreOperador}</span>
+                            <span class="font-semibold text-right ${sinOperador ? "text-red-600" : "text-gray-900"}">${nombreOperador}</span>
                         </div>
                     </div>
 
@@ -1031,7 +1164,119 @@ const moduloUnidades = {
         }, 3000);
     },
 
+    // =========================
+    // UX en Operaciones
+    // =========================
+    vincularUXOperaciones() {
+        // Habilitar/deshabilitar botón Meter según selección
+        const selUnidad = document.getElementById("input-unidad-id");
+        const selOperador = document.getElementById("input-operador");
 
+        if (selUnidad && !selUnidad.dataset.boundMeterBtn) {
+            selUnidad.dataset.boundMeterBtn = "1";
+            selUnidad.addEventListener("change", () => this.actualizarEstadoBotonMeter());
+        }
+
+        if (selOperador && !selOperador.dataset.boundMeterBtn) {
+            selOperador.dataset.boundMeterBtn = "1";
+            selOperador.addEventListener("change", () => this.actualizarEstadoBotonMeter());
+        }
+
+        this.actualizarEstadoBotonMeter();
+
+        // Click en tarjetas de Simulación en vivo: enfocar unidad
+        const cont = document.getElementById("simulacion-viva");
+        if (cont && !cont.dataset.boundClick) {
+            cont.dataset.boundClick = "1";
+            cont.addEventListener("click", (e) => {
+                const card = e.target?.closest?.("[data-unidad-id]");
+                if (!card) return;
+                const id = card.getAttribute("data-unidad-id");
+                if (id) this.enfocarUnidad(id);
+            });
+        }
+
+        // Sincronizar con el selector "Enfocar unidad" del Panel de simulación
+        this._bindFocusTries = 0;
+        if (this._bindFocusTimer) clearInterval(this._bindFocusTimer);
+
+        this._bindFocusTimer = setInterval(() => {
+            this._bindFocusTries++;
+            const selFocus = document.getElementById("sim-select-unidad");
+
+            if (selFocus && !selFocus.dataset.boundSimVivo) {
+                selFocus.dataset.boundSimVivo = "1";
+                selFocus.addEventListener("change", () => {
+                    this._simVivoFocusId = String(selFocus.value || "");
+                    this.renderizarSimulacion(this._lastSnapshot || []);
+                });
+
+                // Estado inicial (preservar filtro si el supervisor ya seleccionó una unidad)
+                const current = this._simVivoFocusId ? String(this._simVivoFocusId) : String(selFocus.value || "");
+                if (current && String(selFocus.value || "") !== current) selFocus.value = current;
+                this._simVivoFocusId = String(selFocus.value || "");
+                this.renderizarSimulacion(this._lastSnapshot || []);
+            }
+
+            if (selFocus || this._bindFocusTries > 15) {
+                clearInterval(this._bindFocusTimer);
+                this._bindFocusTimer = null;
+            }
+        }, 250);
+    },
+
+    actualizarEstadoBotonMeter() {
+        const btn = document.getElementById("btn-meter-unidad");
+        if (!btn) return;
+
+        const selUnidad = document.getElementById("input-unidad-id");
+        const selOperador = document.getElementById("input-operador");
+
+        const idUnidad = selUnidad?.value;
+        const idOperador = selOperador?.value;
+
+        // Determinar si la unidad seleccionada ya está en circuito
+        const opt = selUnidad?.selectedOptions?.[0];
+        const enCircuito = opt?.dataset?.enCircuito === "1";
+
+        const habilitar = Boolean(idUnidad) && Boolean(idOperador) && !enCircuito;
+
+        btn.disabled = !habilitar;
+        btn.classList.toggle("opacity-50", !habilitar);
+        btn.classList.toggle("cursor-not-allowed", !habilitar);
+        btn.title = habilitar ? "" : "Selecciona una unidad FUERA de circuito y un operador disponible.";
+    },
+
+    enfocarUnidad(id) {
+        const target = String(id || "");
+        this._simVivoFocusId = target;
+
+        const selFocus = document.getElementById("sim-select-unidad");
+        if (selFocus) {
+            const exists = Array.from(selFocus.options).some(o => String(o.value) === target);
+            if (!exists) {
+                const opt = document.createElement("option");
+                opt.value = target;
+                opt.textContent = `Unidad #${target}`;
+                selFocus.appendChild(opt);
+            }
+            selFocus.value = target;
+            selFocus.dispatchEvent(new Event("change", { bubbles: true }));
+        } else {
+            this.renderizarSimulacion(this._lastSnapshot || []);
+        }
+    },
+
+    limpiarFiltroSimVivo() {
+        this._simVivoFocusId = "";
+        const selFocus = document.getElementById("sim-select-unidad");
+        if (selFocus) {
+            selFocus.value = "";
+            selFocus.dispatchEvent(new Event("change", { bubbles: true }));
+        } else {
+            this.renderizarSimulacion(this._lastSnapshot || []);
+        }
+    },
     async init(modo = 'catalogo') {
         // modo:
         //  - 'catalogo'    => Vista "Unidades" (solo catálogo)
@@ -1052,6 +1297,7 @@ const moduloUnidades = {
             await this.renderizarSelectUnidades();
             await this.cargar();
 
+            this.vincularUXOperaciones();
             this.iniciarAutoRefresh();
             return;
         }

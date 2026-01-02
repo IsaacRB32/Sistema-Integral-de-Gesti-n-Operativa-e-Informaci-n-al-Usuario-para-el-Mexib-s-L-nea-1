@@ -45,6 +45,19 @@ router.post("/sim/entrar", async (req, res) => {
       return res.status(400).json({ ok: false, error: "id_unidad, id_ruta y sentido son obligatorios" });
     }
 
+    // ✅ Regla: no permitir meter unidades al circuito sin un operador asignado
+    const asig = await pool.query(
+      `SELECT 1 FROM AsignacionesUnidad WHERE id_unidad=$1 AND activo=TRUE LIMIT 1`,
+      [id_unidad]
+    );
+    if (asig.rowCount === 0) {
+      return res.status(400).json({
+        ok: false,
+        error: "La unidad no tiene operador asignado. Asigna un conductor antes de meterla al circuito."
+      });
+    }
+
+
     // estado inicial
     const estado = (estado_inicial === "EN_ESTACION" ? "EN_ESTACION" : "EN_RUTA");
 

@@ -78,6 +78,16 @@ const moduloSimulacion = {
     this._actualizarTrack(unidades);
     this.actualizarTabla(unidades);
 
+    // Sincronizar "Simulación en vivo" (columna central) en la vista Operaciones.
+    // Nota: en algunos escenarios el panel se actualiza por snapshot/polling y no por Socket;
+    // por eso refrescamos aquí si existe el contenedor.
+    try {
+      const contSimVivo = document.getElementById('simulacion-viva');
+      if (contSimVivo && typeof moduloUnidades !== 'undefined' && typeof moduloUnidades.renderizarSimulacion === 'function') {
+        moduloUnidades.renderizarSimulacion(unidades);
+      }
+    } catch (_e) {}
+
     if (this._dom.lblUpdated) {
       const d = new Date();
       const hh = String(d.getHours()).padStart(2, "0");
@@ -523,10 +533,23 @@ _actualizarTrack(unidades) {
       return;
     }
 
+
+    // Filtro por "Enfocar unidad": si hay una unidad seleccionada, mostrar solo esa.
+    const focusId = String(this._focusId || "");
+    const lista = focusId
+      ? unidades.filter(u => String(u?.id_unidad ?? "") === focusId)
+      : unidades;
+
+    if (focusId && lista.length === 0) {
+      panel.innerHTML =
+        `<tr><td colspan="4" class="text-center py-4 text-gray-400">Sin datos para #${focusId}</td></tr>`;
+      return;
+    }
+
     const estaciones = this._getEstaciones();
     const n = estaciones.length;
 
-    panel.innerHTML = unidades
+    panel.innerHTML = lista
       .map((u) => {
         const estado = String(u?.estado_unidad || "");
         const sentido = String(u?.sentido || "IDA");
