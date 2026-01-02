@@ -132,6 +132,14 @@ const simDock = {
   _aplicarAncho() {
     if (!this._dock) return;
 
+    // En móvil conviene usar el panel a pantalla completa.
+    const vw = (typeof window !== 'undefined' && window.innerWidth) ? window.innerWidth : 1024;
+    if (vw < 640) {
+      this._dock.style.width = '100vw';
+      this._dock.style.maxWidth = '100vw';
+      return;
+    }
+
     // 420px normal / 820px wide (con máximo en viewport)
     if (this._isWide) {
       this._dock.style.width = '820px';

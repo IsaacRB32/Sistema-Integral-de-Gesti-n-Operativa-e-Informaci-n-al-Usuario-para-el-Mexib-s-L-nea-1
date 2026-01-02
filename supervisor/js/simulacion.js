@@ -17,6 +17,12 @@ const moduloSimulacion = {
   CELL_PX: 140,
   MARGIN_PX: 70,
 
+  // Estado responsivo
+  _scaleBucket: "desktop",
+  _resizeBound: false,
+  _resizeTimer: null,
+  _lastUnidades: [],
+
   // =========================
   // Geometría (nuevo layout)
   //   - IDA arriba
@@ -66,14 +72,36 @@ const moduloSimulacion = {
     this._dom.colaLineal = colaLineal;
     this._markerMap.clear();
 
+    // Ajuste responsivo antes de renderizar.
+    this._setScaleByViewport();
+
     this._asegurarUI();
     this._renderBaseTrack();
     this._cargarSnapshot();
+
+    // Recalcular el track si cambia el tamaño de pantalla.
+    if (!this._resizeBound && typeof window !== 'undefined') {
+      this._resizeBound = true;
+      window.addEventListener('resize', () => {
+        clearTimeout(this._resizeTimer);
+        this._resizeTimer = setTimeout(() => {
+          const prevBucket = this._scaleBucket;
+          this._setScaleByViewport();
+          // Sólo re-render si cambió el bucket (evita parpadeo constante).
+          if (prevBucket !== this._scaleBucket) {
+            this._renderBaseTrack();
+            this._actualizarTrack(this._lastUnidades || []);
+          }
+        }, 140);
+      }, { passive: true });
+    }
   },
 
   actualizar(unidades) {
     if (!Array.isArray(unidades)) unidades = [];
     if (!this._dom.trackInner) return;
+
+    this._lastUnidades = unidades;
 
     this._actualizarTrack(unidades);
     this.actualizarTabla(unidades);
@@ -202,6 +230,47 @@ const moduloSimulacion = {
       "relative p-0 bg-white rounded-lg border border-gray-200 overflow-x-auto scrollbar-custom";
     colaLineal.innerHTML = `<div id="sim-track-inner" class="relative"></div>`;
     this._dom.trackInner = document.getElementById("sim-track-inner");
+  },
+
+  _setScaleByViewport() {
+    const w = (typeof window !== 'undefined' && window.innerWidth) ? window.innerWidth : 1024;
+
+    // Buckets: móvil (<640), tablet (<1024), desktop
+    if (w < 640) {
+      this._scaleBucket = 'mobile';
+      this.CELL_PX = 95;
+      this.MARGIN_PX = 40;
+      this.TRACK_H = 180;
+      this.Y_LANE_IDA = 20;
+      this.Y_LINE = 82;
+      this.Y_STATION = 75;
+      this.Y_LABEL = 98;
+      this.Y_LANE_REG = 148;
+      return;
+    }
+
+    if (w < 1024) {
+      this._scaleBucket = 'tablet';
+      this.CELL_PX = 120;
+      this.MARGIN_PX = 55;
+      this.TRACK_H = 200;
+      this.Y_LANE_IDA = 24;
+      this.Y_LINE = 95;
+      this.Y_STATION = 88;
+      this.Y_LABEL = 110;
+      this.Y_LANE_REG = 168;
+      return;
+    }
+
+    this._scaleBucket = 'desktop';
+    this.CELL_PX = 140;
+    this.MARGIN_PX = 70;
+    this.TRACK_H = 210;
+    this.Y_LANE_IDA = 26;
+    this.Y_LINE = 100;
+    this.Y_STATION = 92;
+    this.Y_LABEL = 112;
+    this.Y_LANE_REG = 174;
   },
 
   _renderBaseTrack() {

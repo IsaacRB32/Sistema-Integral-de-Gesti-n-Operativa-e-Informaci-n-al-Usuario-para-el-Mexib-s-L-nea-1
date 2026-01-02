@@ -3,14 +3,14 @@ const VISTAS = {
     unidades: () => `
         <!-- 1) Catálogo -->
                 <div id="seccion-unidades-catalogo">
-                    <div class="flex items-center justify-between mb-3">
+                    <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between mb-3">
                     <div>
                         <h2 class="text-xl font-bold text-gray-800">Catálogo de unidades</h2>
                         <p class="text-sm text-gray-500">Administra altas, bajas y reingresos de unidades. No se permite modificar si está en circuito.</p>
                     </div>
 
                     <button
-                        class="bg-mexibus-blue text-white px-4 py-2 rounded-lg hover:opacity-90 transition"
+                        class="w-full sm:w-auto bg-mexibus-blue text-white px-4 py-2 rounded-lg hover:opacity-90 transition"
                         onclick="moduloUnidades.mostrarFormularioNuevoUnidad()"
                     >
                         Agregar
@@ -88,14 +88,14 @@ const VISTAS = {
                     </div>
                 </div>
 
-                <div class="flex gap-2 items-end mt-3">
+                <div class="flex flex-col sm:flex-row gap-2 items-stretch sm:items-end mt-3">
                     <button class="bg-green-600 text-white px-4 py-2 rounded w-full hover:opacity-90"
                             onclick="moduloUnidades.guardarUnidadCatalogo()">
                     Guardar
                     </button>
 
                     <button type="button"
-                            class="bg-gray-300 px-6 py-2 rounded"
+                            class="bg-gray-300 px-6 py-2 rounded w-full sm:w-auto"
                             onclick="moduloUnidades.cerrarFormUnidadCatalogo()">
                     Cancelar
                     </button>
@@ -105,7 +105,7 @@ const VISTAS = {
 
                 <!-- Tabla catálogo -->
                 <div class="bg-white rounded shadow border overflow-x-auto">
-                    <table class="w-full">
+                    <table class="w-full text-xs sm:text-sm">
                     <thead>
                     <tr class="border-b bg-gray-50">
                         <th class="text-left p-2">Unidad</th>
@@ -144,11 +144,11 @@ const VISTAS = {
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
                 <!-- LEFT: Control -->
-                <section class="xl:col-span-4">
-                    <div class="bg-white rounded-xl shadow-sm border p-5 xl:sticky xl:top-24">
+                <section class="lg:col-span-4">
+                    <div class="bg-white rounded-xl shadow-sm border p-4 sm:p-5 lg:sticky lg:top-24">
                         <div class="flex items-center justify-between mb-4">
                             <h3 class="font-semibold text-gray-900">Control de unidades</h3>
                             <span class="text-xs text-gray-500">Entrar / Salir</span>
@@ -232,24 +232,24 @@ const VISTAS = {
                 </section>
 
                 <!-- RIGHT: Live + Panel -->
-                <section class="xl:col-span-8 space-y-4">
+                <section class="lg:col-span-8 space-y-4">
 
                     <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
 
                         <!-- Simulación en vivo -->
-                        <div class="bg-white rounded-xl shadow-sm border p-5 lg:col-span-2">
+                        <div class="bg-white rounded-xl shadow-sm border p-4 sm:p-5 order-2 lg:order-1 lg:col-span-2">
                             <div class="flex items-center justify-between mb-3">
                                 <h3 class="font-semibold text-gray-900">Simulación en vivo</h3>
                                 <span class="text-xs text-gray-500">Tarjetas</span>
                             </div>
 
-                            <div id="simulacion-viva" class="h-[calc(100vh-260px)] min-h-[36rem] overflow-auto scrollbar-custom pr-1">
+                            <div id="simulacion-viva" class="max-h-[55vh] sm:max-h-[65vh] lg:max-h-none lg:h-[calc(100vh-260px)] lg:min-h-[36rem] overflow-auto scrollbar-custom pr-1">
                                 <div class="text-center py-6 text-gray-400 text-sm">Cargando...</div>
                             </div>
                         </div>
 
                         <!-- Panel de simulación -->
-                        <div class="bg-white rounded-xl shadow-sm border p-5 lg:col-span-3">
+                        <div class="bg-white rounded-xl shadow-sm border p-4 sm:p-5 order-1 lg:order-2 lg:col-span-3">
                             <div class="flex items-center justify-between mb-3">
                                 <h3 class="font-semibold text-gray-900">Panel de simulación</h3>
                                 <button onclick="app.navegarA('simulacion')"
@@ -266,7 +266,7 @@ const VISTAS = {
                                 </div>
                             </div>
                                 <div class="overflow-x-auto scrollbar-custom">
-                                    <table class="w-full text-sm">
+                                    <table class="w-full text-xs sm:text-sm">
                                         <thead>
                                             <tr class="border-b-2 border-gray-200">
                                                 <th class="text-left py-2 px-2 text-gray-700">Unidad</th>
@@ -294,11 +294,11 @@ const VISTAS = {
     incidencias: () => `
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 fade-in">
             <!-- BANDEJA DE ENTRADA (Reemplaza al formulario) -->
-            <div class="lg:col-span-1 bg-white rounded-lg p-6 shadow-lg border border-gray-200">
+            <div class="lg:col-span-1 bg-white rounded-lg p-4 sm:p-6 shadow-lg border border-gray-200">
                 <h2 class="text-xl font-bold mb-4 text-mexibus-dark">📥 Bandeja de Entrada</h2>
                 <p class="text-sm text-gray-600 mb-4">Incidencias pendientes de validación</p>
                 
-                <div id="bandeja-pendientes" class="space-y-3 overflow-y-auto max-h-[500px] scrollbar-custom">
+                <div id="bandeja-pendientes" class="space-y-3 overflow-y-auto max-h-[55vh] sm:max-h-[500px] scrollbar-custom">
                     <div class="text-center py-8 text-gray-400">Cargando...</div>
                 </div>
 
@@ -306,9 +306,9 @@ const VISTAS = {
             </div>
 
             <!-- LISTA DE INCIDENCIAS ACTIVAS (Se mantiene igual) -->
-            <div class="lg:col-span-2 bg-white rounded-lg p-6 shadow-lg border border-gray-200">
+            <div class="lg:col-span-2 bg-white rounded-lg p-4 sm:p-6 shadow-lg border border-gray-200">
                 <h2 class="text-xl font-bold mb-4 text-gray-900">⚠️ Incidencias Activas</h2>
-                <div class="space-y-3 overflow-y-auto max-h-[600px] scrollbar-custom" id="lista-incidencias">
+                <div class="space-y-3 overflow-y-auto max-h-[60vh] sm:max-h-[600px] scrollbar-custom" id="lista-incidencias">
                     <div class="text-center py-8 text-gray-400">Cargando...</div>
                 </div>
             </div>
@@ -316,7 +316,7 @@ const VISTAS = {
     `,
 
     simulacion: () => `
-    <div class="bg-white rounded-lg p-6 shadow-lg border border-gray-200 fade-in">
+    <div class="bg-white rounded-lg p-4 sm:p-6 shadow-lg border border-gray-200 fade-in">
         <h2 class="text-xl font-bold mb-4 text-gray-900">Simulación en Tiempo Real</h2>
 
         <!-- El módulo JS insertará aquí el toolbar + el track -->
@@ -329,7 +329,7 @@ const VISTAS = {
         <div class="bg-gray-50 rounded-lg p-4 border border-gray-300">
         <h3 class="font-bold mb-3 text-gray-900">Estado en Tiempo Real</h3>
         <div class="overflow-x-auto scrollbar-custom">
-            <table class="w-full text-sm">
+            <table class="w-full text-xs sm:text-sm">
             <thead>
                 <tr class="border-b-2 border-gray-300">
                 <th class="text-left py-2 px-2 text-gray-700">Unidad</th>
@@ -350,7 +350,7 @@ const VISTAS = {
 
    operadores: () => `
     <div class="fade-in">
-        <div class="bg-white rounded-xl p-6 shadow-lg border border-gray-200">
+        <div class="bg-white rounded-xl p-4 sm:p-6 shadow-lg border border-gray-200">
         <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-4">
             <div>
                 <h2 class="text-2xl font-bold text-mexibus-dark">Gestión de Usuarios</h2>
@@ -382,13 +382,13 @@ const VISTAS = {
                         <option value="INACTIVO">INACTIVO</option>
                     </select>
                 </div>
-                <div class="lg:col-span-2 flex gap-2">
+                <div class="lg:col-span-2 flex flex-col sm:flex-row gap-2">
                     <button onclick="moduloOperadores.mostrarFormularioNuevo()"
-                        class="flex-1 bg-mexibus-blue text-white px-4 py-2 rounded-lg font-medium hover:opacity-90 transition">
+                        class="w-full sm:flex-1 bg-mexibus-blue text-white px-4 py-2 rounded-lg font-medium hover:opacity-90 transition">
                         Nuevo
                     </button>
                     <button onclick="moduloOperadores.limpiarFiltros()"
-                        class="flex-1 bg-white text-gray-800 px-4 py-2 rounded-lg font-medium border hover:bg-gray-50 transition">
+                        class="w-full sm:flex-1 bg-white text-gray-800 px-4 py-2 rounded-lg font-medium border hover:bg-gray-50 transition">
                         Limpiar
                     </button>
                 </div>
@@ -453,20 +453,20 @@ const VISTAS = {
             </div>
             </div>
 
-            <div class="flex gap-2 mt-4">
+            <div class="flex flex-col sm:flex-row gap-2 mt-4">
             <button onclick="moduloOperadores.guardar()"
-                class="bg-green-600 text-white px-4 py-2 rounded-lg font-medium hover:opacity-90 transition">
+                class="w-full sm:w-auto bg-green-600 text-white px-4 py-2 rounded-lg font-medium hover:opacity-90 transition">
                 Guardar
             </button>
             <button onclick="moduloOperadores.cancelar()"
-                class="bg-gray-300 text-gray-900 px-4 py-2 rounded-lg font-medium hover:bg-gray-400 transition">
+                class="w-full sm:w-auto bg-gray-300 text-gray-900 px-4 py-2 rounded-lg font-medium hover:bg-gray-400 transition">
                 Cancelar
             </button>
             </div>
         </div>
 
             <div class="overflow-x-auto scrollbar-custom">
-            <table class="w-full text-sm">
+            <table class="w-full text-xs sm:text-sm">
             <thead>
                 <tr class="border-b-2 border-gray-200">
                 <th class="text-left py-2 px-2 text-gray-700">Nombre</th>
