@@ -104,9 +104,15 @@ router.post("/sim/entrar", async (req, res) => {
 router.post("/sim/incidencia", async (req, res) => {
   const client = await pool.connect();
   try {
-    const { id_unidad, descripcion = null, id_cincidencia = null } = req.body || {};
+    const {
+      id_unidad,
+      descripcion = null,
+      id_cincidencia = null,
+      nombre_incidencia = null,
+      tipo = null
+    } = req.body || {};
+
     if (!id_unidad) {
-      client.release();
       return res.status(400).json({ ok: false, error: "id_unidad es obligatorio" });
     }
 
@@ -120,18 +126,54 @@ router.post("/sim/incidencia", async (req, res) => {
        RETURNING id_unidad, id_ruta, idx_tramo, progreso, sentido`,
       [id_unidad]
     );
+
     if (upd.rowCount === 0) {
-      await client.query("ROLLBACK"); client.release();
+      await client.query("ROLLBACK");
       return res.status(404).json({ ok: false, error: "La unidad no existe" });
     }
 
-    // Tomar id_cincidencia por defecto "Otro" si no lo mandan
+    // Determinar catálogo real
     let catId = id_cincidencia;
+
+    // 1) Si mandan nombre/tipo, lo preferimos y resolvemos contra DB
+    const nombre = (nombre_incidencia ?? tipo ?? null);
+    if (nombre) {
+      const q = await client.query(
+        `SELECT id_cincidencia
+           FROM CatalogoIncidencias
+          WHERE LOWER(nombre_incidencia) = LOWER($1)
+          LIMIT 1`,
+        [nombre]
+      );
+      if (q.rowCount > 0) catId = q.rows[0].id_cincidencia;
+    }
+
+    // 2) Si catId existe pero es inválido, lo anulamos
+    if (catId) {
+      const v = await client.query(
+        `SELECT 1 FROM CatalogoIncidencias WHERE id_cincidencia=$1 LIMIT 1`,
+        [catId]
+      );
+      if (v.rowCount === 0) catId = null;
+    }
+
+    // 3) Fallback a "Otro"
     if (!catId) {
       const q = await client.query(
-        `SELECT id_cincidencia FROM CatalogoIncidencias WHERE nombre_incidencia='Otro' LIMIT 1`
+        `SELECT id_cincidencia
+           FROM CatalogoIncidencias
+          WHERE nombre_incidencia='Otro'
+          LIMIT 1`
       );
       catId = q.rows[0]?.id_cincidencia || null;
+    }
+
+    if (!catId) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({
+        ok: false,
+        error: "No se pudo resolver la incidencia (ni por nombre ni existe 'Otro' en el catálogo)."
+      });
     }
 
     const ins = await client.query(
@@ -149,14 +191,16 @@ router.post("/sim/incidencia", async (req, res) => {
     );
 
     await client.query("COMMIT");
-    client.release();
     res.json({ ok: true, id_incidencia });
   } catch (e) {
-    await client.query("ROLLBACK"); client.release();
+    try { await client.query("ROLLBACK"); } catch {}
     console.error("incidencia:", e);
     res.status(500).json({ ok: false, error: "Error al registrar incidencia" });
+  } finally {
+    client.release();
   }
 });
+
 
 /**
  * GET /sim/incidencias/activas

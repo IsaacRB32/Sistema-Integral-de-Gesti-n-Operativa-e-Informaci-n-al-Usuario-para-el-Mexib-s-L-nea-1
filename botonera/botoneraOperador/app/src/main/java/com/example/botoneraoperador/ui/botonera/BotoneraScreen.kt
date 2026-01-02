@@ -9,6 +9,7 @@ import androidx.core.view.WindowInsetsControllerCompat
 
 import android.os.Build
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.ui.res.painterResource
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -26,6 +27,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.example.botoneraoperador.R
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.layout.ContentScale
@@ -39,16 +41,23 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material3.Icon
 
 // Responsive
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.rememberCoroutineScope
 import com.example.botoneraoperador.data.session.SessionManager
 import com.example.botoneraoperador.ui.incidencias.IncidenciasViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -90,21 +99,56 @@ fun BotoneraScreen(
     HideSystemBars()
 
     val context = LocalContext.current
+    val sessionManager = remember { SessionManager(context) }
+    val scope = rememberCoroutineScope()
+
+    var showLogoutDialog by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.White)
     ) {
-        TopBar()
+        TopBar(
+            onTerminarTurno = { showLogoutDialog = true }
+        )
         IconGrid(viewModel)
     }
+
+    // Confirmación (puedes quitarla si lo quieres directo)
+    if (showLogoutDialog) {
+        AlertDialog(
+            onDismissRequest = { showLogoutDialog = false },
+            title = { Text("Terminar turno") },
+            text = { Text("Se cerrará la sesión actual. ¿Desea continuar?") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showLogoutDialog = false
+                        scope.launch {
+                            sessionManager.clearSession()
+                            navController.navigate("login") {
+                                popUpTo("botonera") { inclusive = true }
+                                launchSingleTop = true
+                            }
+                        }
+                    }
+                ) { Text("Sí, terminar") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showLogoutDialog = false }) {
+                    Text("Cancelar")
+                }
+            }
+        )
+    }
 }
+
 
 // Barra superior
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun TopBar() {
+fun TopBar(onTerminarTurno: () -> Unit) {
     val configuration = LocalConfiguration.current
     val isTablet = configuration.screenWidthDp > 600
 
@@ -128,6 +172,10 @@ fun TopBar() {
     val paddingH = if (isTablet) 32.dp else 16.dp
     val paddingV = if (isTablet) 20.dp else 12.dp
 
+    val btnHeight = if (isTablet) 40.dp else 32.dp
+    val btnFont = if (isTablet) 16.sp else 12.sp
+    val btnIcon = if (isTablet) 18.dp else 16.dp
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -135,7 +183,7 @@ fun TopBar() {
             .padding(horizontal = paddingH, vertical = paddingV),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        //Logo
+        // Logo
         Image(
             painter = painterResource(id = R.drawable.mexibusicon),
             contentDescription = "Logo Mexibus",
@@ -143,7 +191,7 @@ fun TopBar() {
             contentScale = ContentScale.Fit
         )
 
-        //Fecha
+        // Fecha
         Text(
             text = dateString,
             color = Color.White,
@@ -151,15 +199,58 @@ fun TopBar() {
             fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(start = if (isTablet) 24.dp else 12.dp)
         )
+
         Spacer(modifier = Modifier.weight(1f))
 
-        //Hora
-        Text(
-            text = timeString,
-            color = Color.White,
-            fontSize = timeSize,
-            fontWeight = FontWeight.Bold
-        )
+        // Cápsula a la izquierda + Hora a la derecha (MISMA FILA)
+        Row(
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            OutlinedButton(
+                onClick = onTerminarTurno,
+                modifier = Modifier.height(btnHeight),
+                shape = RoundedCornerShape(999.dp),
+                border = BorderStroke(1.dp, Color.White),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = Color.White,
+                    containerColor = Color.Transparent
+                ),
+                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 0.dp)
+            ) {
+                // Ícono dentro de cajita
+                Box(
+                    modifier = Modifier
+                        .size(if (isTablet) 28.dp else 22.dp)
+                        .border(1.dp, Color.White, RoundedCornerShape(6.dp)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ExitToApp,
+                        contentDescription = null,
+                        modifier = Modifier.size(if (isTablet) 16.dp else 14.dp),
+                        tint = Color.White
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(10.dp))
+
+                Text(
+                    text = "Terminar turno",
+                    fontSize = btnFont,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+
+            Spacer(modifier = Modifier.width(if (isTablet) 18.dp else 12.dp))
+
+            Text(
+                text = timeString,
+                color = Color.White,
+                fontSize = timeSize,
+                fontWeight = FontWeight.Bold
+            )
+        }
     }
 }
 
