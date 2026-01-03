@@ -131,12 +131,11 @@ router.post("/sim/incidencia", async (req, res) => {
 
     await client.query("BEGIN");
 
-    // Congelar unidad
+    // Obtener snapshot (sin congelar)
     const upd = await client.query(
-      `UPDATE UnidadesMB
-         SET estado_unidad='INCIDENCIA'
-       WHERE id_unidad=$1
-       RETURNING id_unidad, id_ruta, idx_tramo, progreso, sentido`,
+      `SELECT id_unidad, id_ruta, idx_tramo, progreso, sentido
+        FROM UnidadesMB
+        WHERE id_unidad=$1`,
       [id_unidad]
     );
 
@@ -190,11 +189,11 @@ router.post("/sim/incidencia", async (req, res) => {
     }
 
     const ins = await client.query(
-      `INSERT INTO Incidencias (descripcion, id_estado, id_cincidencia, id_unidad)
-       VALUES ($1, 1, $2, $3)
-       RETURNING id_incidencia`,
-      [descripcion, catId, id_unidad]
-    );
+    `INSERT INTO Incidencias (descripcion, id_estado, id_cincidencia, id_unidad)
+    VALUES ($1, 3, $2, $3)
+    RETURNING id_incidencia`,
+    [descripcion, catId, id_unidad]
+  );
     const id_incidencia = ins.rows[0].id_incidencia;
 
     await client.query(

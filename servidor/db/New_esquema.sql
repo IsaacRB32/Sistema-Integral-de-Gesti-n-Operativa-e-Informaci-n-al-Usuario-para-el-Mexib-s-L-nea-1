@@ -1,6 +1,6 @@
 -- ===========================================================
 --  MEXIBÚS LÍNEA 1 - ESQUEMA COMPLETO (Simulación Circular)
---  Esquema.sql
+--  Esquema.sql 
 -- ===========================================================
 
 -- =========================
@@ -346,3 +346,32 @@ ON CONFLICT (email) DO NOTHING;
 -- ===========================================================
 -- FIN
 -- ===========================================================
+
+INSERT INTO EstadosIncidencias(id_estado, estado_incidencia)
+VALUES (1,'ACTIVA'), (2,'RESUELTA'), (3,'PENDIENTE')
+ON CONFLICT (id_estado) DO UPDATE
+SET estado_incidencia = EXCLUDED.estado_incidencia;
+
+-- Asegurar columnas necesarias (idempotente)
+ALTER TABLE Incidencias
+  ADD COLUMN IF NOT EXISTS fecha_fin TIMESTAMP;
+
+ALTER TABLE Incidencias
+  ADD COLUMN IF NOT EXISTS id_usuario_atiende INT;
+
+-- Si existe y está NOT NULL, lo hacemos nullable (seguro)
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_name='incidencias' AND column_name='id_usuario_atiende'
+  ) THEN
+    BEGIN
+      EXECUTE 'ALTER TABLE Incidencias ALTER COLUMN id_usuario_atiende DROP NOT NULL';
+    EXCEPTION WHEN others THEN
+      -- Si ya era nullable o no aplica, no pasa nada
+      NULL;
+    END;
+  END IF;
+END$$;

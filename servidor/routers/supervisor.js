@@ -93,33 +93,105 @@ router.get("/incidencias/:id", async (req, res) => {
 
 // En supervisor.js - CORREGIR el endpoint PUT
 router.put("/incidencias/:id", async (req, res) => {
+  const client = await pool.connect();
+  const io = req.app.get("io");
+
   try {
     const { id } = req.params;
-    const { id_estado, id_usuario_atiende } = req.body || {};
+    const { id_estado } = req.body || {};
     const observacion = (req.body?.observacion ?? req.body?.observaciones ?? null);
 
     if (!id_estado) {
-      return res.status(400).json({ error: "id_estado es obligatorio" });
+      return res.status(400).json({ ok: false, error: "id_estado es obligatorio" });
     }
 
-    // Si se valida o finaliza, se asigna fecha_fin
-    const query = `
+    await client.query("BEGIN");
+
+    // 1) Actualizar incidencia y obtener unidad asociada
+    const updInc = await client.query(
+      `
       UPDATE Incidencias
       SET 
         id_estado = $1,
-        id_usuario_atiende = $2,
-        fecha_fin = CASE WHEN $1 != 1 THEN CURRENT_TIMESTAMP ELSE fecha_fin END,
-        descripcion = descripcion || 
-            CASE WHEN $3 IS NOT NULL THEN (' | Obs: ' || $3) ELSE '' END
-      WHERE id_incidencia = $4;
-    `;
-    await pool.query(query, [id_estado, id_usuario_atiende, observacion, id]);
-    res.status(200).json({ message: "Incidencia actualizada correctamente" });
+        fecha_fin = CASE WHEN $1::int != 1 THEN CURRENT_TIMESTAMP ELSE fecha_fin END,
+        descripcion = CASE
+          WHEN $2::text IS NULL OR $2::text = '' THEN descripcion
+          ELSE COALESCE(descripcion,'') || ' | Obs: ' || $2::text
+        END
+      WHERE id_incidencia = $3
+      RETURNING id_unidad;
+      `,
+      [Number(id_estado), observacion, Number(id)]
+    );
+
+    if (updInc.rowCount === 0) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ ok: false, error: "Incidencia no encontrada" });
+    }
+
+    const id_unidad = updInc.rows[0].id_unidad;
+
+    // 2) Efecto en unidad según decisión del supervisor
+    if (Number(id_estado) === 1) {
+      // VALIDAR => se congela la unidad
+      await client.query(
+        `UPDATE UnidadesMB
+           SET estado_unidad='INCIDENCIA', dwell_hasta=NULL
+         WHERE id_unidad=$1`,
+        [id_unidad]
+      );
+
+      await client.query(
+        `INSERT INTO EventosUnidad (id_unidad, tipo, detalle)
+         VALUES ($1, 'VALIDAR_INCIDENCIA', $2::jsonb)`,
+        [id_unidad, JSON.stringify({ id_incidencia: Number(id) })]
+      );
+    } else if (Number(id_estado) === 2) {
+      // RECHAZAR => la unidad sigue normal
+      await client.query(
+        `UPDATE UnidadesMB
+           SET estado_unidad='EN_RUTA', dwell_hasta=NULL
+         WHERE id_unidad=$1`,
+        [id_unidad]
+      );
+
+      await client.query(
+        `INSERT INTO EventosUnidad (id_unidad, tipo, detalle)
+         VALUES ($1, 'RECHAZAR_INCIDENCIA', $2::jsonb)`,
+        [id_unidad, JSON.stringify({ id_incidencia: Number(id) })]
+      );
+    }
+
+    await client.query("COMMIT");
+
+    // 3) Emitir snapshot para refrescar simulación (opcional)
+    if (io && id_unidad) {
+      const { rows: snapshot } = await client.query(
+        `SELECT id_unidad, id_ruta, sentido, idx_tramo, progreso, estado_unidad, en_circuito, dwell_hasta
+           FROM UnidadesMB
+          WHERE id_unidad=$1`,
+        [id_unidad]
+      );
+      io.emit("actualizar_posiciones", snapshot);
+    }
+
+    return res.json({ ok: true });
   } catch (error) {
+    try { await client.query("ROLLBACK"); } catch {}
+
     console.error("Error al actualizar incidencia:", error);
-    res.status(500).json({ error: "Error al actualizar incidencia" });
+
+    // IMPORTANTE: devuelve el error real para que lo veas en la UI
+    return res.status(500).json({
+      ok: false,
+      error: error.message,
+      detail: error.detail || null
+    });
+  } finally {
+    client.release();
   }
 });
+
 
 //   4. Consultar estado de todas las unidades (GET /api/supervisor/unidades)
 router.get("/unidades", async (req, res) => {
