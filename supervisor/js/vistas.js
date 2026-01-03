@@ -224,7 +224,7 @@ const VISTAS = {
                         <div class="mt-4 text-xs text-gray-600 leading-5">
                             <div class="font-semibold text-gray-800 mb-1">Notas</div>
                             <ul class="list-disc pl-5 space-y-1">
-                                <li>“Simulación en vivo” muestra tarjetas con el estado actual.</li>
+                                <li>“Corredor en vivo” muestra tarjetas con el estado actual.</li>
                                 <li>El “Panel de simulación” permite enfocar y seguir unidades.</li>
                             </ul>
                         </div>
@@ -239,7 +239,7 @@ const VISTAS = {
                         <!-- Simulación en vivo -->
                         <div class="bg-white rounded-xl shadow-sm border p-4 sm:p-5 order-2 lg:order-1 lg:col-span-2">
                             <div class="flex items-center justify-between mb-3">
-                                <h3 class="font-semibold text-gray-900">Simulación en vivo</h3>
+                                <h3 class="font-semibold text-gray-900">Corredor en vivo</h3>
                                 <span class="text-xs text-gray-500">Tarjetas</span>
                             </div>
 
@@ -251,7 +251,7 @@ const VISTAS = {
                         <!-- Panel de simulación -->
                         <div class="bg-white rounded-xl shadow-sm border p-4 sm:p-5 order-1 lg:order-2 lg:col-span-3">
                             <div class="flex items-center justify-between mb-3">
-                                <h3 class="font-semibold text-gray-900">Panel de simulación</h3>
+                                <h3 class="font-semibold text-gray-900">Panel del corredor</h3>
                                 <button onclick="app.navegarA('simulacion')"
                                     class="px-3 py-2 rounded-lg text-xs font-semibold bg-mexibus-blue text-white hover:opacity-90 transition">
                                     Pantalla completa
@@ -317,7 +317,7 @@ const VISTAS = {
 
     simulacion: () => `
     <div class="bg-white rounded-lg p-4 sm:p-6 shadow-lg border border-gray-200 fade-in">
-        <h2 class="text-xl font-bold mb-4 text-gray-900">Simulación en Tiempo Real</h2>
+        <h2 class="text-xl font-bold mb-4 text-gray-900">Corredor en Tiempo Real</h2>
 
         <!-- El módulo JS insertará aquí el toolbar + el track -->
         <div id="sim-container" class="mb-6">
@@ -354,7 +354,7 @@ const VISTAS = {
         <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-4">
             <div>
                 <h2 class="text-2xl font-bold text-mexibus-dark">Gestión de Usuarios</h2>
-                <p class="text-sm text-gray-600">Operadores y Supervisores (CRUD completo)</p>
+                <p class="text-sm text-gray-600">Operadores y Supervisores</p>
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-3 lg:items-end">
