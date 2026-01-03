@@ -12,7 +12,9 @@ class SimulacionRepository {
         onSuccess: (List<UnidadMB>) -> Unit,
         onError: () -> Unit
     ) {
-        val url = "http://192.168.100.207:3000/api/sim/snapshot"
+        //val url = "http://192.168.100.207:3000/api/sim/snapshot"
+        // IP de Isaac Rojas
+        val url = "http://192.168.0.97:3000/api/sim/snapshot"
 
         val request = JsonArrayRequest(
             Request.Method.GET,

@@ -3,79 +3,81 @@ import { pool } from "../db/conexion.js";
 
 const router = express.Router();
 
-//   1. Registrar nueva incidencia (POST /api/operador/incidencias)
+// ===============================
+// Registrar incidencia + congelar unidad
+// POST /api/operador/incidencias
+// ===============================
 router.post("/incidencias", async (req, res) => {
-  console.log("LLEGÓ PETICIÓN DESDE LA APP");
+  console.log("Incidencia recibida desde la botonera");
   console.log("BODY:", req.body);
+
+  const client = await pool.connect();
+
   try {
-    const { descripcion, id_cincidencia, id_estacion, id_usuario_reporta } = req.body;
+    const {
+      descripcion,
+      id_cincidencia,
+      id_estacion,
+      id_usuario_reporta,
+      id_unidad
+    } = req.body;
 
-    // Estado inicial: 1 = Pendiente (asumiendo que existe en EstadosIncidencias)
-    const id_estado = 1;
+    if (!id_unidad) {
+      return res.status(400).json({ error: "id_unidad es obligatorio" });
+    }
 
-    const query = `
+    await client.query("BEGIN");
+
+    // Registrar la incidencia
+    const id_estado = 1; // Pendiente
+
+    const insertIncidencia = `
       INSERT INTO Incidencias (
-        descripcion, id_estado, id_estacion, id_cincidencia, id_usuario_reporta
+        descripcion,
+        id_estado,
+        id_estacion,
+        id_cincidencia,
+        id_usuario_reporta
       )
       VALUES ($1, $2, $3, $4, $5)
       RETURNING id_incidencia;
     `;
 
-    const values = [descripcion, id_estado, id_estacion, id_cincidencia, id_usuario_reporta];
-    const result = await pool.query(query, values);
+    const incRes = await client.query(insertIncidencia, [
+      descripcion,
+      id_estado,
+      id_estacion,
+      id_cincidencia,
+      id_usuario_reporta
+    ]);
+
+    // Congelar la unidad EXACTAMENTE donde va
+    // NO se toca idx_tramo ni progreso
+    const freezeUnidad = `
+      UPDATE UnidadesMB
+      SET estado_unidad = 'INCIDENCIA'
+      WHERE id_unidad = $1
+        AND en_circuito = TRUE;
+    `;
+
+    await client.query(freezeUnidad, [id_unidad]);
+
+    await client.query("COMMIT");
+
+    console.log(`Unidad ${id_unidad} congelada en INCIDENCIA`);
 
     res.status(201).json({
-      message: "Incidencia registrada correctamente",
-      id_incidencia: result.rows[0].id_incidencia,
+      message: "Incidencia registrada y unidad congelada",
+      id_incidencia: incRes.rows[0].id_incidencia,
+      id_unidad
     });
 
   } catch (error) {
+    await client.query("ROLLBACK");
     console.error("Error al registrar incidencia:", error);
     res.status(500).json({ error: "Error al registrar incidencia" });
-  }
-});
-
-//   2. Actualizar posición y estado de la unidad (PUT /api/operador/unidades/:id)
-router.put("/unidades/:id", async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { pos_x, pos_y, estado_unidad } = req.body;
-
-    const query = `
-      UPDATE UnidadesMB
-      SET pos_x = $1, pos_y = $2, estado_unidad = $3
-      WHERE id_unidad = $4;
-    `;
-
-    await pool.query(query, [pos_x, pos_y, estado_unidad, id]);
-    res.status(200).json({ message: "Unidad actualizada correctamente" });
-
-  } catch (error) {
-    console.error("Error al actualizar unidad:", error);
-    res.status(500).json({ error: "Error al actualizar unidad" });
-  }
-});
-
-//   3. Consultar estado actual de la unidad (GET /api/operador/unidades/:id)
-router.get("/unidades/:id", async (req, res) => {
-  try {
-    const { id } = req.params;
-    const query = `
-      SELECT u.id_unidad, u.pos_x, u.pos_y, u.estado_unidad, e.nombre_estacion
-      FROM UnidadesMB u
-      LEFT JOIN Estaciones e ON u.id_estacion = e.id_estacion
-      WHERE u.id_unidad = $1;
-    `;
-
-    const result = await pool.query(query, [id]);
-    if (result.rows.length === 0)
-      return res.status(404).json({ message: "Unidad no encontrada" });
-
-    res.status(200).json(result.rows[0]);
-
-  } catch (error) {
-    console.error("Error al consultar unidad:", error);
-    res.status(500).json({ error: "Error al consultar unidad" });
+  } finally {
+    client.release();
   }
 });
 

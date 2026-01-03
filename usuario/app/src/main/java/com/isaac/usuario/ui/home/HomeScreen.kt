@@ -34,7 +34,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.isaac.usuario.R
 import com.isaac.usuario.ui.recorrido.MiniRecorridoLinea1
 import com.isaac.usuario.ui.recorrido.MiniRecorridoLinea1FullScreen
-import com.isaac.usuario.ui.recorrido.estacionesLinea1Full
+import com.isaac.usuario.ui.recorrido.estacionesLinea1
 import com.isaac.usuario.ui.utils.tiempoTranscurrido
 import kotlinx.coroutines.delay
 
@@ -178,12 +178,10 @@ fun InicioTabContent(homeViewModel: HomeViewModel = viewModel()) {
         ){
             //Cambio (se dibujan las estaciones y las incidencias)
             MiniRecorridoLinea1(
-                estaciones = estacionesLinea1Full,
                 unidades = unidades,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .border(2.dp, Color.White, RoundedCornerShape(24.dp))
+                modifier = Modifier.fillMaxSize()
             )
+
         }
     }
 }
@@ -251,12 +249,31 @@ fun IncidenciasListTabContent(homeViewModel: HomeViewModel = viewModel()) {
 }
 
 // PESTAÑA 3: MAPA COMPLETO
+// PESTAÑA 3: MAPA COMPLETO
 @Composable
-fun MapaFullTabContent() {
-    MiniRecorridoLinea1FullScreen(
-        modifier = Modifier.fillMaxSize()
-    )
+fun MapaFullTabContent(homeViewModel: HomeViewModel = viewModel()) {
+    val context = LocalContext.current
+    val unidades by homeViewModel.unidades
+
+    // Si NO quieres volver a pedir snapshot aquí porque ya lo haces en Inicio,
+    // puedes quitar este LaunchedEffect. Pero si quieres que el mapa se actualice
+    // aunque estés en la pestaña Mapa, déjalo.
+    LaunchedEffect(Unit) {
+        while (true) {
+            homeViewModel.cargarSnapshot(context)
+            delay(3_000)
+        }
+    }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        MiniRecorridoLinea1FullScreen(
+            unidades = unidades,
+            modifier = Modifier.fillMaxSize()
+        )
+    }
 }
+
+
 
 // ==========================================
 // PESTAÑA 4: INFORMACIÓN (Antes Ajustes)
