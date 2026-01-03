@@ -4,7 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Supervisor - Login | Mexibús L1</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <link rel="manifest" href="./manifest.webmanifest">
+    <meta name="theme-color" content="#0ea5b7">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <link rel="icon" href="./mexibusSystemImages/mexibusIcon.png">
+    <link rel="apple-touch-icon" href="./pwa/icons/icon-192.png">
+<script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -84,5 +91,15 @@
     </div>
 
     <script src="./js/login.js"></script>
+
+    <script>
+      // Registro de Service Worker (PWA)
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker.register("./sw.js").catch(console.error);
+        });
+      }
+    </script>
+
 </body>
 </html>
