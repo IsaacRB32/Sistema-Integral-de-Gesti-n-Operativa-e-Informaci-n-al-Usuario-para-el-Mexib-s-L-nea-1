@@ -19,7 +19,9 @@ class IncidenciasRepository {
         //IP de Fernando Aranda
         //val url = "http://192.168.100.207:3000/api/sim/incidencias/activas"
         // IP de Isaac Rojas
-        val url = "http://192.168.0.97:3000/api/sim/incidencias/activas"
+        //val url = "http://192.168.0.97:3000/api/sim/incidencias/activas"
+        //IP de Hotspot de Cel
+        val url = "http://10.119.215.30:3000/api/sim/incidencias/activas"
 
         val request = JsonObjectRequest(
             Request.Method.GET,
@@ -73,7 +75,10 @@ class IncidenciasRepository {
 
         //val url = "http://192.168.100.207:3000/api/sim/incidencias/activas"
         //IP de Isaac Rojas Barron
-        val url = "http://192.168.0.97:3000/api/sim/incidencias/activas"
+        //val url = "http://192.168.0.97:3000/api/sim/incidencias/activas"
+        //IP de Hotspot de Cel
+        val url = "http://10.119.215.30:3000/api/sim/incidencias/activas"
+
         val request = JsonObjectRequest(
             Request.Method.GET,
             url,

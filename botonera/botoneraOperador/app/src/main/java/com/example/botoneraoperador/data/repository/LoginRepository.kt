@@ -21,7 +21,9 @@ class LoginRepository {
         //----------------------------------------------
         //IP--ISAAC ROJAS BARRON
         //----------------------------------------------
-        val url="http://192.168.0.97:3000/api/login"
+        //val url="http://192.168.0.97:3000/api/login"
+        //IP de Hotspot de Cel
+        val url = "http://10.119.215.30:3000/api/login"
 
         val body = JSONObject().apply {
             put("email", email)

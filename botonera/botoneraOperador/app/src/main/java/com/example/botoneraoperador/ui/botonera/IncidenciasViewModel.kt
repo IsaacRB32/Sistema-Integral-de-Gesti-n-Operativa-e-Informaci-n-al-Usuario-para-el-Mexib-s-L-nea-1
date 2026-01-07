@@ -45,7 +45,9 @@ class IncidenciasViewModel : ViewModel() {
             //----------------------------------------------
             //IP--ISAAC ROJAS BARRON
             //----------------------------------------------
-            val url = "http://192.168.0.97:3000/api/sim/incidencia"
+            //val url = "http://192.168.0.97:3000/api/sim/incidencia"
+            //IP de Hotspot de Cel
+            val url = "http://10.119.215.30:3000/api/sim/incidencia"
 
             val request = JsonObjectRequest(
                 Request.Method.POST,

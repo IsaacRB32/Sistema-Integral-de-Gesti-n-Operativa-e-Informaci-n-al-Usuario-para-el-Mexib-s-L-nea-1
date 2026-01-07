@@ -14,8 +14,9 @@ class SimulacionRepository {
     ) {
         //val url = "http://192.168.100.207:3000/api/sim/snapshot"
         // IP de Isaac Rojas
-        val url = "http://192.168.0.97:3000/api/sim/snapshot"
-
+        //val url = "http://192.168.0.97:3000/api/sim/snapshot"
+        //IP de Hotspot de Cel
+        val url = "http://10.119.215.30:3000/api/sim/snapshot"
         val request = JsonArrayRequest(
             Request.Method.GET,
             url,
